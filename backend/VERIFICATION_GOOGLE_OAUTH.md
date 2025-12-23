@@ -4,8 +4,8 @@
 
 Les nouveaux identifiants Google OAuth ont été configurés :
 
-- **Client ID** : `253547115402-c1eua4a15pjsg6e6aa9bvg3j6hnlr5b4.apps.googleusercontent.com`
-- **Client Secret** : `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`
+- **Client ID** : `VOTRE_CLIENT_ID_GOOGLE`
+- **Client Secret** : `VOTRE_CLIENT_SECRET_GOOGLE`
 - **Redirect URI** : `http://localhost:5001/api/auth/google/callback`
 
 ## ⚠️ IMPORTANT : Vérifier dans Google Cloud Console

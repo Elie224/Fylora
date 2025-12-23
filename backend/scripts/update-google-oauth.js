@@ -6,8 +6,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const GOOGLE_CLIENT_ID = '253547115402-c1eua4a15pjsg6e6aa9bvg3j6hnlr5b4.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = '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';
+// Remplacez ces valeurs par vos propres credentials Google OAuth
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'VOTRE_CLIENT_ID_GOOGLE';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'VOTRE_CLIENT_SECRET_GOOGLE';
 const GOOGLE_REDIRECT_URI = 'http://localhost:5001/api/auth/google/callback';
 
 const envPath = path.join(__dirname, '..', '.env');
