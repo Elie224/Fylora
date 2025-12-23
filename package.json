@@ -1,12 +1,22 @@
 {
   "name": "fylora",
   "version": "1.0.0",
-  "description": "Fylora - Cloud Storage Application",
+  "description": "Fylora - Cloud Storage Platform",
   "scripts": {
-    "check-oauth": "cd backend && npm run check-oauth",
-    "backend:check-oauth": "cd backend && npm run check-oauth"
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend-web && npm install"
   },
-  "dependencies": {
-    "redis": "^5.10.0"
-  }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Elie224/Fylora.git"
+  },
+  "keywords": [
+    "cloud-storage",
+    "file-management",
+    "fylora"
+  ],
+  "author": "",
+  "license": "ISC"
 }
