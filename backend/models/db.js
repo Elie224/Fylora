@@ -43,9 +43,17 @@ function garantirBaseFylora(uri) {
 // Appliquer la protection stricte
 mongoUri = garantirBaseFylora(mongoUri);
 
-if (!mongoUri) {
-  console.error('❌ MongoDB connection string not found. Set MONGO_URI in environment.');
-  process.exit(1);
+if (!mongoUri || mongoUri.includes('localhost') || mongoUri.includes('127.0.0.1')) {
+  console.error('❌ MongoDB connection string not found or invalid.');
+  console.error('   Please set MONGODB_URI in Render environment variables.');
+  console.error('   Expected format: mongodb+srv://username:password@cluster.mongodb.net/Fylora');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('   Current value:', mongoUri ? mongoUri.replace(/:[^:]*@/, ':****@') : 'undefined');
+    // Ne pas faire exit(1) en production pour permettre les tentatives de reconnexion
+    console.warn('⚠️  Continuing without MongoDB connection. Service will retry...');
+  } else {
+    process.exit(1);
+  }
 }
 
 // Forcer IPv4 si localhost (éviter les problèmes IPv6)

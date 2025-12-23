@@ -53,11 +53,10 @@ module.exports = {
         .map(origin => origin.trim())
         .filter(origin => origin.length > 0);
       
-      // Autoriser les requêtes sans origine (comme les requêtes depuis Postman, curl, ou applications mobiles)
+      // Autoriser les requêtes sans origine (health checks Render, Postman, curl, applications mobiles)
       if (!origin) {
-        if (process.env.NODE_ENV === 'production') {
-          return callback(new Error('No origin provided'));
-        }
+        // En production, autoriser les health checks et requêtes système
+        return callback(null, true);
         return callback(null, true);
       }
       
