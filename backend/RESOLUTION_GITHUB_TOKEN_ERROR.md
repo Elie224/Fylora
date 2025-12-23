@@ -39,10 +39,10 @@ Ouvrez votre fichier `.env` dans le dossier `backend` et mettez à jour :
 GITHUB_CLIENT_SECRET=votre_nouveau_client_secret_copié
 ```
 
-**Exemple avec votre nouveau secret** :
+**Exemple** :
 ```env
-GITHUB_CLIENT_ID=Ov23liHlxn1IFFA0hIkJ
-GITHUB_CLIENT_SECRET=votre_nouveau_secret_de_40_caracteres
+GITHUB_CLIENT_ID=VOTRE_CLIENT_ID_GITHUB
+GITHUB_CLIENT_SECRET=VOTRE_CLIENT_SECRET_GITHUB
 GITHUB_REDIRECT_URI=http://localhost:5001/api/auth/github/callback
 ```
 
@@ -67,7 +67,7 @@ Si vous préférez utiliser le script :
 
 ```bash
 cd backend
-node scripts/update-github-oauth.js Ov23liHlxn1IFFA0hIkJ <NOUVEAU_CLIENT_SECRET>
+node scripts/update-github-oauth.js <VOTRE_CLIENT_ID> <NOUVEAU_CLIENT_SECRET>
 ```
 
 ### Étape 6 : Redémarrer le serveur

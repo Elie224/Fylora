@@ -46,8 +46,8 @@ OAuth github error: Error: Failed to obtain access token
 Vérifiez que votre fichier `.env` dans `backend/` contient :
 
 ```env
-GITHUB_CLIENT_ID=Ov23liHlxn1IFFA0hIkJ
-GITHUB_CLIENT_SECRET=3b654eb56074e3ada7c1eb1a6c4342a3b7bdfa0a
+GITHUB_CLIENT_ID=VOTRE_CLIENT_ID_GITHUB
+GITHUB_CLIENT_SECRET=VOTRE_CLIENT_SECRET_GITHUB
 GITHUB_REDIRECT_URI=http://localhost:5001/api/auth/github/callback
 ```
 
@@ -62,7 +62,7 @@ Si vous avez régénéré le Client Secret, utilisez le script :
 
 ```bash
 cd backend
-node scripts/update-github-oauth.js Ov23liHlxn1IFFA0hIkJ <NOUVEAU_CLIENT_SECRET>
+node scripts/update-github-oauth.js <VOTRE_CLIENT_ID> <NOUVEAU_CLIENT_SECRET>
 ```
 
 ## 🧪 Test après correction

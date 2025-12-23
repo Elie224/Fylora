@@ -4,8 +4,8 @@
 
 Les nouveaux identifiants GitHub OAuth ont été configurés :
 
-- **Client ID** : `Ov23liHlxn1IFFA0hIkJ`
-- **Client Secret** : `db8d9d9322cbb7d0e35b04afb6a5dc4b1b13df09`
+- **Client ID** : `VOTRE_CLIENT_ID_GITHUB` (configuré dans `.env`)
+- **Client Secret** : `VOTRE_CLIENT_SECRET_GITHUB` (configuré dans `.env`)
 - **Redirect URI** : `http://localhost:5001/api/auth/github/callback`
 
 ## ⚠️ IMPORTANT : Vérifier dans GitHub Settings
@@ -13,7 +13,7 @@ Les nouveaux identifiants GitHub OAuth ont été configurés :
 Avant de tester, **vérifiez que les URIs sont correctement configurées** dans GitHub :
 
 1. Allez sur [GitHub Developer Settings - OAuth Apps](https://github.com/settings/developers)
-2. Trouvez votre application OAuth avec le Client ID : `Ov23liHlxn1IFFA0hIkJ`
+2. Trouvez votre application OAuth avec le Client ID configuré dans votre `.env`
 3. Cliquez dessus pour l'éditer
 4. Vérifiez que **Authorization callback URL** contient **EXACTEMENT** :
    ```

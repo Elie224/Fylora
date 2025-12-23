@@ -13,7 +13,7 @@ Les nouveaux identifiants Google OAuth ont été configurés :
 Avant de tester, **vérifiez que les URIs sont correctement configurées** dans Google Cloud Console :
 
 1. Allez sur [Google Cloud Console - Credentials](https://console.cloud.google.com/apis/credentials)
-2. Trouvez votre client OAuth avec le Client ID : `253547115402-c1eua4a15pjsg6e6aa9bvg3j6hnlr5b4`
+2. Trouvez votre client OAuth avec le Client ID configuré dans votre `.env`
 3. Cliquez dessus pour l'éditer
 4. Vérifiez que **Authorized redirect URIs** contient **EXACTEMENT** :
    ```

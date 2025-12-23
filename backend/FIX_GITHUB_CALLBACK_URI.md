@@ -44,8 +44,8 @@ Assurez-vous que tous les champs sont corrects :
 ### Étape 3 : Vérifier dans le code
 
 Les identifiants ont été mis à jour dans le `.env` :
-- ✅ Client ID : `Ov23liHlxn1IFFA0hIkJ`
-- ✅ Client Secret : `3b654eb56074e3ada7c1eb1a6c4342a3b7bdfa0a`
+- ✅ Client ID : Configuré dans `.env`
+- ✅ Client Secret : Configuré dans `.env`
 - ✅ Redirect URI : `http://localhost:5001/api/auth/github/callback`
 
 ### Étape 4 : Redémarrer le serveur
