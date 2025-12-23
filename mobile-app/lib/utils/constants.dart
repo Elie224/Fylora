@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 /// Constantes simplifiées pour faciliter l'utilisation
 class Constants {
   /// URL de base de l'API backend
+  /// En production, pointe vers Render. En développement, utilise localhost.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:5001',
+    defaultValue: 'https://fylora-1.onrender.com', // URL Render par défaut
   );
 
   /// URL complète de l'API (base + /api)
@@ -38,9 +39,10 @@ class AppConstants {
   
   /// URL de base de l'API backend
   /// Peut être surchargée via la variable d'environnement API_URL
+  /// En production, pointe vers Render. En développement, utilise localhost.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:5001',
+    defaultValue: 'https://fylora-1.onrender.com', // URL Render par défaut
   );
   
   /// URL complète de l'API (base + /api)
