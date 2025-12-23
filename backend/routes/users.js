@@ -4,12 +4,13 @@ const usersController = require('../controllers/usersController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { validate, changePasswordSchema } = require('../middlewares/validation');
 const { validateFileUpload } = require('../middlewares/fileValidation');
+const { cacheMiddleware } = require('../utils/cache');
 
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
 
-// Obtenir les informations de l'utilisateur connecté
-router.get('/me', usersController.getMe);
+// Obtenir les informations de l'utilisateur connecté avec cache (20 secondes)
+router.get('/me', cacheMiddleware(20000), usersController.getMe);
 
 // Mettre à jour le profil
 router.patch('/me', usersController.updateProfile);
@@ -18,7 +19,7 @@ router.patch('/me', usersController.updateProfile);
 router.post('/me/avatar', usersController.uploadAvatar);
 
 // Changer le mot de passe
-router.patch('/me/password', validate(changePasswordSchema), usersController.changePassword);
+router.patch('/me/password', changePasswordSchema, validate, usersController.changePassword);
 
 // Mettre à jour les préférences
 router.patch('/me/preferences', usersController.updatePreferences);

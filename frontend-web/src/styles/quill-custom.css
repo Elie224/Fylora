@@ -1,0 +1,96 @@
+/* Styles personnalisés pour React Quill selon le thème */
+
+/* Thème clair */
+.ql-container {
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 400px;
+}
+
+.ql-editor {
+  min-height: 400px;
+}
+
+.ql-toolbar {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom: none;
+}
+
+.ql-container {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-top: none;
+}
+
+/* Thème sombre */
+[data-theme="dark"] .ql-container,
+[data-theme="dark"] .ql-editor {
+  color: #e0e0e0;
+  background-color: #1e1e1e;
+}
+
+[data-theme="dark"] .ql-toolbar {
+  background-color: #2d2d2d;
+  border-color: #333333;
+}
+
+[data-theme="dark"] .ql-toolbar .ql-stroke {
+  stroke: #e0e0e0;
+}
+
+[data-theme="dark"] .ql-toolbar .ql-fill {
+  fill: #e0e0e0;
+}
+
+[data-theme="dark"] .ql-toolbar button:hover,
+[data-theme="dark"] .ql-toolbar button.ql-active {
+  background-color: #404040;
+}
+
+[data-theme="dark"] .ql-container {
+  border-color: #333333;
+}
+
+[data-theme="dark"] .ql-editor.ql-blank::before {
+  color: #666666;
+}
+
+/* Thème clair */
+[data-theme="light"] .ql-container,
+[data-theme="light"] .ql-editor {
+  color: #1a202c;
+  background-color: #ffffff;
+}
+
+[data-theme="light"] .ql-toolbar {
+  background-color: #f8f9fa;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .ql-toolbar .ql-stroke {
+  stroke: #4a5568;
+}
+
+[data-theme="light"] .ql-toolbar .ql-fill {
+  fill: #4a5568;
+}
+
+[data-theme="light"] .ql-toolbar button:hover,
+[data-theme="light"] .ql-toolbar button.ql-active {
+  background-color: #e2e8f0;
+}
+
+[data-theme="light"] .ql-container {
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .ql-editor.ql-blank::before {
+  color: #a0aec0;
+}
+
+
+
+
+

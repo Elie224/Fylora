@@ -4,7 +4,13 @@ const User = require('../models/userModel');
 const Session = require('../models/sessionModel');
 const { AppError } = require('../middlewares/errorHandler');
 const config = require('../config');
+const logger = require('../utils/logger');
+const { verify2FAToken } = require('./twoFactorController');
 
+/**
+ * Nombre de rounds pour le hachage bcrypt
+ * Plus élevé = plus sécurisé mais plus lent
+ */
 const SALT_ROUNDS = 10;
 
 async function signup(req, res, next) {
@@ -39,81 +45,127 @@ async function signup(req, res, next) {
     const body = req.validatedBody || req.body;
     const { email, password } = body;
 
-    // Check existing user
-    let existing;
+    // Vérifier si un utilisateur avec cet email existe déjà
+    let utilisateurExistant;
     try {
-      existing = await User.findByEmail(email);
-    } catch (err) {
-      console.error('Error checking existing user:', err);
-      if (err.message && err.message.includes('MongoDB')) {
+      utilisateurExistant = await User.findByEmail(email);
+    } catch (erreur) {
+      logger.logError(erreur, { contexte: 'vérification_email_existant', email });
+      if (erreur.message && erreur.message.includes('MongoDB')) {
         return res.status(503).json({ 
           error: { 
-            message: 'Database connection not available. Please try again in a moment.' 
+            message: 'Connexion à la base de données indisponible. Veuillez réessayer dans un instant.' 
           } 
         });
       }
-      throw err;
+      throw erreur;
     }
     
-    if (existing) {
-      return res.status(409).json({ error: { message: 'Email already in use' } });
-    }
-
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-    let created;
-    try {
-      created = await User.create({ email, passwordHash });
-    } catch (err) {
-      console.error('Error creating user:', err);
-      if (err.message && err.message.includes('MongoDB')) {
-        return res.status(503).json({ 
-          error: { 
-            message: 'Database connection not available. Please try again in a moment.' 
-          } 
-        });
-      }
-      throw err;
-    }
-
-    // Créer le dossier racine pour l'utilisateur
-    const FolderModel = require('../models/folderModel');
-    try {
-      await FolderModel.create({ name: 'Root', ownerId: created.id, parentId: null });
-    } catch (e) {
-      console.error('Failed to create root folder for user:', e.message || e);
-      // Ne pas bloquer l'inscription si la création du dossier échoue
-    }
-
-    const payload = { id: created.id, email: created.email };
-    const access_token = generateAccessToken(payload);
-    const refresh_token = generateRefreshToken(payload);
-
-    // Persist refresh token in sessions table
-    try {
-      const userAgent = req.get('user-agent') || null;
-      const ip = req.ip || req.headers['x-forwarded-for'] || null;
-      await Session.createSession({ userId: created.id, refreshToken: refresh_token, userAgent, ipAddress: ip, deviceName: null, expiresIn: config.jwt.refreshExpiresIn });
-    } catch (e) {
-      console.error('Failed to create session for user:', e.message || e);
-    }
-
-    res.status(201).json({ data: { user: created, access_token, refresh_token }, message: 'Account created successfully' });
-  } catch (err) {
-    console.error('Signup error:', err);
-    // Si c'est une erreur MongoDB de connexion
-    if (err.message && err.message.includes('MongoDB is not connected')) {
-      return res.status(503).json({ 
+    if (utilisateurExistant) {
+      logger.logWarn(`Tentative d'inscription avec un email déjà utilisé: ${email}`);
+      return res.status(409).json({ 
         error: { 
-          message: 'Database connection not available. Please try again in a moment.' 
+          message: 'Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.' 
         } 
       });
     }
-    // Si c'est une erreur de validation Mongoose (email déjà utilisé)
-    if (err.name === 'MongoServerError' && err.code === 11000) {
-      return res.status(409).json({ error: { message: 'Email already in use' } });
+
+    // Hacher le mot de passe de manière sécurisée
+    const motDePasseHache = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Créer le nouvel utilisateur
+    let nouvelUtilisateur;
+    try {
+      nouvelUtilisateur = await User.create({ email, passwordHash: motDePasseHache });
+      logger.logInfo(`Nouvel utilisateur créé: ${email}`, { userId: nouvelUtilisateur.id });
+    } catch (erreur) {
+      logger.logError(erreur, { contexte: 'création_utilisateur', email });
+      if (erreur.message && erreur.message.includes('MongoDB')) {
+        return res.status(503).json({ 
+          error: { 
+            message: 'Connexion à la base de données indisponible. Veuillez réessayer dans un instant.' 
+          } 
+        });
+      }
+      throw erreur;
     }
-    next(err);
+
+    // Créer automatiquement le dossier racine pour le nouvel utilisateur
+    const FolderModel = require('../models/folderModel');
+    try {
+      await FolderModel.create({ 
+        name: 'Root', 
+        ownerId: nouvelUtilisateur.id, 
+        parentId: null 
+      });
+      logger.logInfo(`Dossier racine créé pour l'utilisateur ${nouvelUtilisateur.id}`);
+    } catch (erreur) {
+      logger.logError(erreur, { 
+        contexte: 'création_dossier_racine', 
+        userId: nouvelUtilisateur.id 
+      });
+      // Ne pas bloquer l'inscription si la création du dossier échoue
+      // L'utilisateur pourra créer son dossier racine manuellement si nécessaire
+    }
+
+    // Générer les tokens d'authentification
+    const donneesToken = { id: nouvelUtilisateur.id, email: nouvelUtilisateur.email };
+    const tokenAcces = generateAccessToken(donneesToken);
+    const tokenRafraichissement = generateRefreshToken(donneesToken);
+
+    // Enregistrer la session dans la base de données
+    try {
+      const userAgent = req.get('user-agent') || null;
+      const adresseIP = req.ip || req.headers['x-forwarded-for'] || null;
+      await Session.createSession({ 
+        userId: nouvelUtilisateur.id, 
+        refreshToken: tokenRafraichissement, 
+        userAgent, 
+        ipAddress: adresseIP, 
+        deviceName: null, 
+        expiresIn: config.jwt.refreshExpiresIn 
+      });
+      logger.logInfo(`Session créée pour l'utilisateur ${nouvelUtilisateur.id}`);
+    } catch (erreur) {
+      logger.logError(erreur, { 
+        contexte: 'création_session_inscription', 
+        userId: nouvelUtilisateur.id 
+      });
+      // Ne pas bloquer l'inscription si la création de session échoue
+    }
+
+    res.status(201).json({ 
+      data: { 
+        user: nouvelUtilisateur, 
+        access_token: tokenAcces, 
+        refresh_token: tokenRafraichissement 
+      }, 
+      message: 'Compte créé avec succès. Bienvenue sur Fylora !' 
+    });
+  } catch (erreur) {
+    logger.logError(erreur, { contexte: 'inscription', email: req.body?.email });
+    
+    // Gérer les erreurs spécifiques de connexion MongoDB
+    if (erreur.message && erreur.message.includes('MongoDB is not connected')) {
+      return res.status(503).json({ 
+        error: { 
+          message: 'Connexion à la base de données indisponible. Veuillez réessayer dans un instant.' 
+        } 
+      });
+    }
+    
+    // Gérer les erreurs de duplication d'email (index unique)
+    if (erreur.name === 'MongoServerError' && erreur.code === 11000) {
+      logger.logWarn(`Tentative d'inscription avec email dupliqué: ${req.body?.email}`);
+      return res.status(409).json({ 
+        error: { 
+          message: 'Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.' 
+        } 
+      });
+    }
+    
+    // Passer les autres erreurs au gestionnaire d'erreurs global
+    next(erreur);
   }
 }
 
@@ -146,121 +198,224 @@ async function login(req, res, next) {
       }
     }
 
-    const body = req.validatedBody || req.body;
-    const { email, password } = body;
+    const donneesRequete = req.validatedBody || req.body;
+    const { email, password } = donneesRequete;
 
-    const user = await User.findByEmail(email);
-    if (!user || !user.password_hash) {
-      return res.status(401).json({ error: { message: 'Invalid credentials' } });
-    }
-
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) {
-      return res.status(401).json({ error: { message: 'Invalid credentials' } });
-    }
-
-    // Mettre à jour last_login_at AVANT de récupérer les données utilisateur
-    await User.updateLastLogin(user.id);
-
-    const payload = { id: user.id, email: user.email };
-    const access_token = generateAccessToken(payload);
-    const refresh_token = generateRefreshToken(payload);
-
-    // Persist session
-    try {
-      const userAgent = req.get('user-agent') || null;
-      const ip = req.ip || req.headers['x-forwarded-for'] || null;
-      await Session.createSession({ userId: user.id, refreshToken: refresh_token, userAgent, ipAddress: ip, deviceName: null, expiresIn: config.jwt.refreshExpiresIn });
-    } catch (e) {
-      console.error('Failed to create session on login:', e.message || e);
-    }
-
-    // Récupérer les données utilisateur mises à jour (avec last_login_at)
-    const updatedUser = await User.findById(user.id);
-
-    // Remove sensitive fields before returning
-    const safeUser = {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      display_name: updatedUser.display_name,
-      avatar_url: updatedUser.avatar_url,
-      quota_used: updatedUser.quota_used,
-      quota_limit: updatedUser.quota_limit,
-      preferences: updatedUser.preferences,
-      is_admin: updatedUser.is_admin || false,
-      created_at: updatedUser.created_at,
-      last_login_at: updatedUser.last_login_at || new Date(), // Utiliser la date mise à jour
-    };
-
-    res.status(200).json({ data: { user: safeUser, access_token, refresh_token }, message: 'Login successful' });
-  } catch (err) {
-    console.error('Login error:', err);
-    if (err.message && err.message.includes('MongoDB is not connected')) {
-      return res.status(503).json({ 
+    // Rechercher l'utilisateur par email
+    const utilisateur = await User.findByEmail(email);
+    if (!utilisateur || !utilisateur.password_hash) {
+      logger.logWarn(`Tentative de connexion avec email inexistant: ${email}`);
+      return res.status(401).json({ 
         error: { 
-          message: 'Database connection not available. Please try again in a moment.' 
+          message: 'Identifiants incorrects. Vérifiez votre email et votre mot de passe.' 
         } 
       });
     }
-    next(err);
-  }
-}
 
-async function refresh(req, res, next) {
-  try {
-    const { refresh_token } = req.body;
-
-    if (!refresh_token) {
-      return res.status(400).json({ error: { message: 'Refresh token is required' } });
+    // Vérifier le mot de passe
+    const motDePasseValide = await bcrypt.compare(password, utilisateur.password_hash);
+    if (!motDePasseValide) {
+      logger.logWarn(`Tentative de connexion avec mot de passe incorrect pour: ${email}`);
+      return res.status(401).json({ 
+        error: { 
+          message: 'Identifiants incorrects. Vérifiez votre email et votre mot de passe.' 
+        } 
+      });
     }
 
-    // Vérifier le refresh token
-    let decoded;
+    // Vérifier si 2FA est activé
+    const TwoFactorAuth = require('../models/TwoFactorAuth');
+    const twoFactor = await TwoFactorAuth.findOne({ user_id: utilisateur.id, enabled: true });
+    
+    if (twoFactor) {
+      // 2FA activé - vérifier le token
+      const { two_factor_token } = donneesRequete;
+      
+      if (!two_factor_token) {
+        return res.status(200).json({
+          data: {
+            requires_2fa: true,
+            message: 'Two-factor authentication required',
+          },
+        });
+      }
+
+      // Vérifier le token 2FA
+      const twoFactorResult = await verify2FAToken(utilisateur.id, two_factor_token);
+      
+      if (!twoFactorResult.valid) {
+        logger.logWarn(`Invalid 2FA token for user: ${email}`);
+        return res.status(401).json({
+          error: {
+            message: 'Invalid 2FA token. Please try again.',
+          },
+        });
+      }
+    }
+
+    // Mettre à jour la date de dernière connexion
+    await User.updateLastLogin(utilisateur.id);
+    logger.logInfo(`Connexion réussie pour l'utilisateur: ${email}`, { userId: utilisateur.id });
+
+    // Générer les tokens d'authentification
+    const donneesToken = { id: utilisateur.id, email: utilisateur.email };
+    const tokenAcces = generateAccessToken(donneesToken);
+    const tokenRafraichissement = generateRefreshToken(donneesToken);
+
+    // Enregistrer la session dans la base de données
     try {
-      decoded = verifyToken(refresh_token, true);
-    } catch (err) {
-      return res.status(401).json({ error: { message: 'Invalid or expired refresh token' } });
+      const userAgent = req.get('user-agent') || null;
+      const adresseIP = req.ip || req.headers['x-forwarded-for'] || null;
+      await Session.createSession({ 
+        userId: utilisateur.id, 
+        refreshToken: tokenRafraichissement, 
+        userAgent, 
+        ipAddress: adresseIP, 
+        deviceName: null, 
+        expiresIn: config.jwt.refreshExpiresIn 
+      });
+      logger.logInfo(`Session créée pour l'utilisateur ${utilisateur.id}`);
+    } catch (erreur) {
+      logger.logError(erreur, { 
+        contexte: 'création_session_connexion', 
+        userId: utilisateur.id 
+      });
+      // Ne pas bloquer la connexion si la création de session échoue
     }
 
-    // Vérifier que la session existe et n'est pas révoquée
-    const session = await Session.findByToken(refresh_token);
-    if (!session || session.is_revoked) {
-      return res.status(401).json({ error: { message: 'Invalid or expired refresh token' } });
-    }
+    // Récupérer les données utilisateur mises à jour (avec last_login_at)
+    const utilisateurMisAJour = await User.findById(utilisateur.id);
 
-    // Générer de nouveaux tokens
-    const payload = { id: decoded.id, email: decoded.email };
-    const new_access_token = generateAccessToken(payload);
-    const new_refresh_token = generateRefreshToken(payload);
-
-    // Mettre à jour la session avec le nouveau refresh token
-    await Session.rotateToken(refresh_token, new_refresh_token, config.jwt.refreshExpiresIn);
+    // Retirer les champs sensibles avant de retourner les données
+    const utilisateurSecurise = {
+      id: utilisateurMisAJour.id,
+      email: utilisateurMisAJour.email,
+      display_name: utilisateurMisAJour.display_name,
+      avatar_url: utilisateurMisAJour.avatar_url,
+      quota_used: utilisateurMisAJour.quota_used,
+      quota_limit: utilisateurMisAJour.quota_limit,
+      preferences: utilisateurMisAJour.preferences,
+      is_admin: utilisateurMisAJour.is_admin || false,
+      created_at: utilisateurMisAJour.created_at,
+      last_login_at: utilisateurMisAJour.last_login_at || new Date(),
+    };
 
     res.status(200).json({ 
       data: { 
-        access_token: new_access_token, 
-        refresh_token: new_refresh_token 
+        user: utilisateurSecurise, 
+        access_token: tokenAcces, 
+        refresh_token: tokenRafraichissement 
       }, 
-      message: 'Token refreshed successfully' 
+      message: 'Connexion réussie. Bienvenue sur Fylora !' 
     });
-  } catch (err) {
-    console.error('Refresh error:', err);
-    next(err);
+  } catch (erreur) {
+    logger.logError(erreur, { contexte: 'connexion', email: req.body?.email });
+    
+    if (erreur.message && erreur.message.includes('MongoDB is not connected')) {
+      return res.status(503).json({ 
+        error: { 
+          message: 'Connexion à la base de données indisponible. Veuillez réessayer dans un instant.' 
+        } 
+      });
+    }
+    
+    next(erreur);
   }
 }
 
-async function logout(req, res, next) {
+/**
+ * Rafraîchir les tokens d'authentification
+ * Génère de nouveaux tokens d'accès et de rafraîchissement
+ */
+async function refresh(req, res, next) {
   try {
-    const { refresh_token } = req.body;
+    const { refresh_token: tokenRafraichissement } = req.body;
 
-    if (refresh_token) {
-      await Session.revokeByToken(refresh_token);
+    if (!tokenRafraichissement) {
+      return res.status(400).json({ 
+        error: { 
+          message: 'Le token de rafraîchissement est requis.' 
+        } 
+      });
     }
 
-    res.status(200).json({ message: 'Logout successful' });
-  } catch (err) {
-    console.error('Logout error:', err);
-    next(err);
+    // Vérifier et décoder le token de rafraîchissement
+    let donneesDecodees;
+    try {
+      donneesDecodees = verifyToken(tokenRafraichissement, true);
+    } catch (erreur) {
+      const errorType = erreur.name === 'TokenExpiredError' ? 'expiré' : 'invalide';
+      logger.logWarn(`Tentative de rafraîchissement avec token ${errorType}`, { 
+        error: erreur.name,
+        message: erreur.message 
+      });
+      return res.status(401).json({ 
+        error: { 
+          message: 'Token de rafraîchissement invalide ou expiré. Veuillez vous reconnecter.' 
+        } 
+      });
+    }
+
+    // Vérifier que la session existe et n'est pas révoquée
+    const session = await Session.findByToken(tokenRafraichissement);
+    if (!session || session.is_revoked) {
+      const userId = donneesDecodees?.id || 'inconnu';
+      const reason = !session ? 'session inexistante' : 'session révoquée';
+      logger.logWarn(`Tentative de rafraîchissement avec ${reason} pour l'utilisateur ${userId}`);
+      return res.status(401).json({ 
+        error: { 
+          message: 'Token de rafraîchissement invalide ou expiré. Veuillez vous reconnecter.' 
+        } 
+      });
+    }
+
+    // Générer de nouveaux tokens
+    const donneesToken = { id: donneesDecodees.id, email: donneesDecodees.email };
+    const nouveauTokenAcces = generateAccessToken(donneesToken);
+    const nouveauTokenRafraichissement = generateRefreshToken(donneesToken);
+
+    // Mettre à jour la session avec le nouveau token de rafraîchissement
+    await Session.rotateToken(
+      tokenRafraichissement, 
+      nouveauTokenRafraichissement, 
+      config.jwt.refreshExpiresIn
+    );
+    
+    logger.logInfo(`Tokens rafraîchis pour l'utilisateur ${donneesDecodees.id}`);
+
+    res.status(200).json({ 
+      data: { 
+        access_token: nouveauTokenAcces, 
+        refresh_token: nouveauTokenRafraichissement 
+      }, 
+      message: 'Tokens rafraîchis avec succès.' 
+    });
+  } catch (erreur) {
+    logger.logError(erreur, { contexte: 'rafraîchissement_token' });
+    next(erreur);
+  }
+}
+
+/**
+ * Déconnexion de l'utilisateur
+ * Révoque le token de rafraîchissement pour invalider la session
+ */
+async function logout(req, res, next) {
+  try {
+    const { refresh_token: tokenRafraichissement } = req.body;
+    const userId = req.user?.id;
+
+    if (tokenRafraichissement) {
+      await Session.revokeByToken(tokenRafraichissement);
+      logger.logInfo(`Session révoquée pour l'utilisateur ${userId || 'inconnu'}`);
+    }
+
+    res.status(200).json({ 
+      message: 'Déconnexion réussie. À bientôt sur Fylora !' 
+    });
+  } catch (erreur) {
+    logger.logError(erreur, { contexte: 'déconnexion', userId: req.user?.id });
+    next(erreur);
   }
 }
 

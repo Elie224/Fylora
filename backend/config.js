@@ -3,8 +3,8 @@ require('dotenv').config();
 
 module.exports = {
   server: {
-    // Render utilise PORT, sinon SERVER_PORT, sinon 5000 par défaut
-    port: process.env.PORT || process.env.SERVER_PORT || 5000,
+    // Render utilise PORT, sinon SERVER_PORT, sinon 5001 par défaut (changé pour éviter conflit)
+    port: process.env.PORT || process.env.SERVER_PORT || 5001,
     host: process.env.SERVER_HOST || '0.0.0.0',
     nodeEnv: process.env.NODE_ENV || 'development',
   },
@@ -25,17 +25,34 @@ module.exports = {
   },
   cors: {
     origin: function (origin, callback) {
-      // Liste des origines autorisées
+      // En développement, autoriser toutes les origines localhost
+      if (process.env.NODE_ENV !== 'production') {
+        // Autoriser les requêtes sans origine (preflight OPTIONS)
+        if (!origin) {
+          return callback(null, true);
+        }
+        
+        // Autoriser toutes les origines localhost avec n'importe quel port
+        if (origin.includes('localhost') || 
+            origin.includes('127.0.0.1') ||
+            origin.match(/^http:\/\/192\.168\.\d+\.\d+/) ||
+            origin.match(/^http:\/\/10\.\d+\.\d+\.\d+/) ||
+            origin.match(/^http:\/\/localhost:\d+/) ||
+            origin.match(/^http:\/\/127\.0\.0\.1:\d+/)) {
+          return callback(null, true);
+        }
+      }
+      
+      // En production, utiliser la liste des origines autorisées
       const defaultOrigins = process.env.NODE_ENV === 'production' 
         ? [] 
-        : 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:19000,exp://localhost:19000';
+        : 'http://localhost:3001,http://127.0.0.1:3001,http://localhost:19000,exp://localhost:19000';
       const allowedOrigins = (process.env.CORS_ORIGIN || defaultOrigins)
         .split(',')
         .map(origin => origin.trim())
         .filter(origin => origin.length > 0);
       
       // Autoriser les requêtes sans origine (comme les requêtes depuis Postman, curl, ou applications mobiles)
-      // En production, être plus strict
       if (!origin) {
         if (process.env.NODE_ENV === 'production') {
           return callback(new Error('No origin provided'));
@@ -47,23 +64,18 @@ module.exports = {
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        // En développement, autoriser localhost, 127.0.0.1, et les adresses IP locales (192.168.x.x, 10.x.x.x)
-        if (process.env.NODE_ENV !== 'production') {
-          if (origin.includes('localhost') || 
-              origin.includes('127.0.0.1') ||
-              origin.match(/^http:\/\/192\.168\.\d+\.\d+/) ||
-              origin.match(/^http:\/\/10\.\d+\.\d+\.\d+/)) {
-            return callback(null, true);
-          }
-        }
         console.warn(`CORS blocked origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 86400, // 24 heures pour le cache preflight
   },
   upload: {
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || 32212254720), // 30 Go par défaut (30 * 1024 * 1024 * 1024 bytes)
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || 1099511627776), // 1 TO par défaut (1 * 1024 * 1024 * 1024 * 1024 bytes)
     uploadDir: process.env.UPLOAD_DIR || './uploads',
   },
   oauth: {
@@ -71,15 +83,15 @@ module.exports = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       redirectUri: process.env.GOOGLE_REDIRECT_URI || (process.env.NODE_ENV === 'production' 
-        ? 'https://supfile-1.onrender.com/api/auth/google/callback'
-        : 'http://localhost:5000/api/auth/google/callback'),
+        ? 'https://fylora-api.onrender.com/api/auth/google/callback'
+        : 'http://localhost:5001/api/auth/google/callback'),
     },
     github: {
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       redirectUri: process.env.GITHUB_REDIRECT_URI || (process.env.NODE_ENV === 'production'
-        ? 'https://supfile-1.onrender.com/api/auth/github/callback'
-        : 'http://localhost:5000/api/auth/github/callback'),
+        ? 'https://fylora-api.onrender.com/api/auth/github/callback'
+        : 'http://localhost:5001/api/auth/github/callback'),
     },
   },
 };

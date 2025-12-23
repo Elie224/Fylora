@@ -2,9 +2,11 @@
 const rateLimit = require('express-rate-limit');
 
 // Rate limiter général pour toutes les routes
+// En développement, limite plus élevée. En production, limite plus stricte.
+const isDevelopment = process.env.NODE_ENV !== 'production';
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limite de 100 requêtes par IP par fenêtre
+  max: isDevelopment ? 2000 : 100, // Limite beaucoup plus élevée en développement (2000 req/15min)
   message: {
     error: {
       message: 'Too many requests from this IP, please try again later.',
@@ -13,6 +15,10 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true, // Retourner les headers de rate limit dans `RateLimit-*`
   legacyHeaders: false, // Désactiver les headers `X-RateLimit-*`
+  skip: (req) => {
+    // Ignorer les requêtes OPTIONS (preflight CORS)
+    return req.method === 'OPTIONS';
+  },
 });
 
 // Rate limiter strict pour l'authentification (protection contre force brute)
@@ -58,10 +64,35 @@ const shareLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiter pour les routes API authentifiées (basé sur l'utilisateur, pas l'IP)
+// Ce limiter doit être appliqué APRÈS l'authentification pour avoir accès à req.user
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isDevelopment ? 5000 : 500, // Limite très élevée en développement, raisonnable en production
+  keyGenerator: (req) => {
+    // Utiliser l'ID utilisateur si authentifié, sinon l'IP
+    return req.user?.id ? `user:${req.user.id}` : req.ip;
+  },
+  message: {
+    error: {
+      message: 'Too many requests, please try again later.',
+      status: 429,
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Ignorer les requêtes OPTIONS (preflight CORS)
+    return req.method === 'OPTIONS';
+  },
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
   uploadLimiter,
   shareLimiter,
+  apiLimiter,
 };
+
 

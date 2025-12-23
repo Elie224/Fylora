@@ -3,12 +3,16 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './services/authStore';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import performanceMetrics from './utils/performanceMetrics';
+import { viewPreloader } from './utils/viewPreloader';
 import './styles.css';
 
 // Lazy loading des pages pour améliorer les performances
+const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
@@ -20,6 +24,8 @@ const Preview = lazy(() => import('./pages/Preview'));
 const Share = lazy(() => import('./pages/Share'));
 const Search = lazy(() => import('./pages/Search'));
 const Trash = lazy(() => import('./pages/Trash'));
+const Activity = lazy(() => import('./pages/Activity'));
+const Notes = lazy(() => import('./pages/Notes'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 // Composant de chargement
@@ -34,36 +40,55 @@ const LoadingFallback = () => (
   </div>
 );
 
+// Configuration du router pour éviter les avertissements Fast Refresh
+const routerFutureConfig = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+};
+
 function App() {
-  const { user, accessToken, initialize } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const initialize = useAuthStore((s) => s.initialize);
+  const logout = useAuthStore((s) => s.logout);
 
-  // Forcer le thème clair
+  // Initialiser l'authentification une seule fois au montage
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'light');
-    localStorage.setItem('theme', 'light');
-  }, []);
+    // Initialiser de manière asynchrone pour vérifier la validité du token
+    const initAuth = async () => {
+      await initialize();
+      
+      // Précharger les vues clés après connexion
+      if (user && accessToken) {
+        viewPreloader.preloadKeyViews(user.id);
+      }
+    };
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // initialize est stable avec Zustand
 
+  // Gérer la déconnexion automatique depuis l'intercepteur API
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    const handleAuthLogout = async () => {
+      await logout();
+      // La redirection sera gérée par ProtectedRoute
+    };
 
-  useEffect(() => {
-    // Toujours forcer le thème clair
-    document.documentElement.setAttribute('data-theme', 'light');
-    localStorage.setItem('theme', 'light');
-  }, [user]);
+    window.addEventListener('auth:logout', handleAuthLogout);
+    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // logout est stable avec Zustand
 
   return (
     <ErrorBoundary>
-      <LanguageProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
+      <ThemeProvider>
+        <LanguageProvider>
+          <BrowserRouter future={routerFutureConfig}>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
+        {/* Page d'accueil - toujours accessible, redirige vers dashboard si connecté */}
+        <Route path="/" element={user && accessToken ? <Navigate to="/dashboard" replace /> : <Home />} />
+        {/* Pages d'authentification - redirigent vers dashboard si déjà connecté */}
         <Route path="/login" element={user && accessToken ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/signup" element={user && accessToken ? <Navigate to="/dashboard" replace /> : <Signup />} />
         <Route path="/auth/callback" element={<OAuthCallback />} />
@@ -141,11 +166,46 @@ function App() {
             </Layout>
           }
         />
-        <Route path="/" element={<Navigate to={user && accessToken ? '/dashboard' : '/login'} replace />} />
+        <Route
+          path="/activity"
+          element={
+            <Layout>
+              <ProtectedRoute>
+                <Activity />
+              </ProtectedRoute>
+            </Layout>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <Layout>
+              <ProtectedRoute>
+                <Notes />
+              </ProtectedRoute>
+            </Layout>
+          }
+        />
+        {/* Redirection pour l'ancienne route /favorites (supprimée) */}
+        <Route
+          path="/favorites"
+          element={<Navigate to="/files" replace />}
+        />
+        <Route
+          path="/notes/:id"
+          element={
+            <Layout>
+              <ProtectedRoute>
+                <Notes />
+              </ProtectedRoute>
+            </Layout>
+          }
+        />
             </Routes>
           </Suspense>
         </BrowserRouter>
       </LanguageProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/oauth_service.dart';
 import '../../utils/constants.dart';
-import '../../widgets/supfile_logo.dart';
+import '../../widgets/fylora_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -144,8 +144,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 40),
-                    // Logo personnalisé SUPFile
-                    const SupFileLogo(
+                    // Logo personnalisé Fylora
+                    const FyloraLogo(
                       size: 120,
                       showIcon: true,
                       useGradient: true,

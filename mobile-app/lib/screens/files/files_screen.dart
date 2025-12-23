@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../providers/files_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/tags_service.dart';
 import '../../models/file.dart';
 import '../../models/folder.dart';
 import '../../utils/constants.dart';
@@ -23,7 +24,9 @@ class FilesScreen extends StatefulWidget {
 
 class _FilesScreenState extends State<FilesScreen> {
   final ApiService _apiService = ApiService();
+  final TagsService _tagsService = TagsService();
   List<FolderItem> _breadcrumbs = [];
+  Map<String, List<dynamic>> _fileTags = {}; // Cache des tags par fichier
   
   @override
   void initState() {
@@ -32,7 +35,35 @@ class _FilesScreenState extends State<FilesScreen> {
       Provider.of<FilesProvider>(context, listen: false)
           .loadFiles(folderId: widget.folderId);
       _loadBreadcrumbs();
+      _loadFileTags();
     });
+  }
+
+  Future<void> _loadFileTags() async {
+    // Attendre un peu pour que les fichiers soient chargés
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (!mounted) return;
+    
+    final filesProvider = Provider.of<FilesProvider>(context, listen: false);
+    final files = filesProvider.allItems
+        .where((item) => item['type'] == 'file')
+        .map((item) => item['item'] as FileItem)
+        .toList();
+
+    for (var file in files) {
+      if (!mounted) break;
+      try {
+        final response = await _tagsService.getFileTags(file.id);
+        if (response.statusCode == 200 && mounted) {
+          setState(() {
+            _fileTags[file.id] = response.data['data']['tags'] ?? [];
+          });
+        }
+      } catch (e) {
+        // Ignorer les erreurs silencieusement
+      }
+    }
   }
   
   Future<void> _loadBreadcrumbs() async {
@@ -259,7 +290,10 @@ class _FilesScreenState extends State<FilesScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: () => filesProvider.loadFiles(folderId: widget.folderId),
+                  onRefresh: () async {
+                    await filesProvider.loadFiles(folderId: widget.folderId);
+                    await _loadFileTags();
+                  },
                   child: ListView.builder(
                     itemCount: filesProvider.allItems.length,
                     // Optimisations de performance
@@ -516,17 +550,41 @@ class _FilesScreenState extends State<FilesScreen> {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text(
-                '${file.formattedSize} • ${file.mimeType ?? 'Fichier'}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
+              Row(
+                children: [
+                  Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${file.formattedSize} • ${file.mimeType ?? 'Fichier'}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
+              if (_fileTags[file.id] != null && _fileTags[file.id]!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: _fileTags[file.id]!
+                        .map((tag) => Chip(
+                              label: Text(
+                                tag['name'] ?? '',
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                              backgroundColor: Colors.blue.shade100,
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ))
+                        .toList(),
+                  ),
+                ),
             ],
           ),
         ),
@@ -613,6 +671,8 @@ class _FilesScreenState extends State<FilesScreen> {
             context.go('/share?file=${file.id}');
           } else if (value == 'download') {
             await _downloadFile(file);
+          } else if (value == 'tags') {
+            _showTagsDialog(context, file);
           } else if (value == 'move') {
             _showMoveDialog(context, file.id, file.name, false);
           } else if (value == 'rename') {
@@ -726,6 +786,108 @@ class _FilesScreenState extends State<FilesScreen> {
             child: const Text('Renommer'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showTagsDialog(BuildContext context, FileItem file) async {
+    List<dynamic> availableTags = [];
+    List<dynamic> fileTags = [];
+
+    // Charger les tags disponibles et les tags du fichier
+    try {
+      final tagsResponse = await _tagsService.listTags();
+      if (tagsResponse.statusCode == 200) {
+        availableTags = tagsResponse.data['data']['tags'] ?? [];
+      }
+
+      final fileTagsResponse = await _tagsService.getFileTags(file.id);
+      if (fileTagsResponse.statusCode == 200) {
+        fileTags = fileTagsResponse.data['data']['tags'] ?? [];
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du chargement des tags: $e')),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final selectedTags = <String>{...fileTags.map((t) => t['id'].toString())};
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Tags: ${file.name}'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (availableTags.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('Aucun tag disponible. Créez-en un d\'abord.'),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: availableTags.map((tag) {
+                        final isSelected = selectedTags.contains(tag['id'].toString());
+                        return FilterChip(
+                          label: Text(tag['name'] ?? ''),
+                          selected: isSelected,
+                          onSelected: (selected) async {
+                            try {
+                              if (selected) {
+                                await _tagsService.addTagToFile(file.id, tag['id'].toString());
+                                setDialogState(() {
+                                  selectedTags.add(tag['id'].toString());
+                                });
+                              } else {
+                                await _tagsService.removeTagFromFile(file.id, tag['id'].toString());
+                                setDialogState(() {
+                                  selectedTags.remove(tag['id'].toString());
+                                });
+                              }
+                              // Mettre à jour le cache
+                              final updatedResponse = await _tagsService.getFileTags(file.id);
+                              if (updatedResponse.statusCode == 200 && mounted) {
+                                setState(() {
+                                  _fileTags[file.id] = updatedResponse.data['data']['tags'] ?? [];
+                                });
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Erreur: $e')),
+                                );
+                              }
+                            }
+                          },
+                          backgroundColor: Colors.grey.shade200,
+                          selectedColor: Colors.blue.shade100,
+                        );
+                      }).toList(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
       ),
     );
   }

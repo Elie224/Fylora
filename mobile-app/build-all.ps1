@@ -1,14 +1,14 @@
-# Script de build automatique pour SUPFile Mobile
+# Script de build automatique pour Fylora Mobile
 # Usage: .\build-all.ps1
 
 param(
-    [string]$ApiUrl = "http://localhost:5000",
+    [string]$ApiUrl = "http://localhost:5001",
     [switch]$Android = $true,
     [switch]$Web = $true,
     [switch]$Clean = $true
 )
 
-Write-Host "SUPFile Mobile - Build de Production" -ForegroundColor Green
+Write-Host "Fylora Mobile - Build de Production" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 

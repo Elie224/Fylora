@@ -1,156 +1,195 @@
-// Système de queue simple pour les tâches lourdes
-// Pour la production, utiliser Bull ou RabbitMQ
-
+/**
+ * Système de queues pour traitements lourds en arrière-plan
+ * Supporte Redis Bull pour la production, mémoire pour le développement
+ */
 const EventEmitter = require('events');
-const logger = require('./logger');
 
-class SimpleQueue extends EventEmitter {
-  constructor(options = {}) {
+class MemoryQueue extends EventEmitter {
+  constructor(name) {
     super();
-    this.queue = [];
+    this.name = name;
+    this.jobs = [];
     this.processing = false;
-    this.concurrency = options.concurrency || 1;
-    this.activeJobs = 0;
-    this.maxRetries = options.maxRetries || 3;
-    this.retryDelay = options.retryDelay || 1000;
+    this.workers = [];
   }
 
-  /**
-   * Ajouter une tâche à la queue
-   */
-  async add(job, options = {}) {
-    const jobData = {
-      id: options.id || `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      data: job,
-      attempts: 0,
-      maxRetries: options.maxRetries || this.maxRetries,
-      priority: options.priority || 0,
+  async add(jobData, options = {}) {
+    const job = {
+      id: require('uuid').v4(),
+      data: jobData,
+      options: {
+        delay: options.delay || 0,
+        attempts: options.attempts || 3,
+        backoff: options.backoff || { type: 'exponential', delay: 2000 },
+        ...options
+      },
       createdAt: new Date(),
+      attempts: 0,
+      status: 'waiting'
     };
 
-    // Insérer selon la priorité
-    if (jobData.priority > 0) {
-      const index = this.queue.findIndex(j => j.priority < jobData.priority);
-      if (index === -1) {
-        this.queue.push(jobData);
-      } else {
-        this.queue.splice(index, 0, jobData);
-      }
-    } else {
-      this.queue.push(jobData);
-    }
-
-    logger.logDebug(`Job added to queue: ${jobData.id}`, { queueLength: this.queue.length });
-    this.emit('added', jobData);
-
-    // Démarrer le traitement si pas déjà en cours
-    if (!this.processing) {
+    this.jobs.push(job);
+    this.emit('job:added', job);
+    
+    // Traiter immédiatement si pas de délai
+    if (!options.delay) {
       this.process();
+    } else {
+      setTimeout(() => this.process(), options.delay);
     }
 
-    return jobData.id;
+    return job;
   }
 
-  /**
-   * Traiter la queue
-   */
   async process() {
-    if (this.processing || this.activeJobs >= this.concurrency) {
+    if (this.processing || this.jobs.length === 0) {
       return;
     }
 
     this.processing = true;
 
-    while (this.queue.length > 0 && this.activeJobs < this.concurrency) {
-      const job = this.queue.shift();
-      if (!job) break;
+    while (this.jobs.length > 0) {
+      const job = this.jobs.shift();
+      
+      if (job.status === 'waiting') {
+        job.status = 'processing';
+        this.emit('job:processing', job);
 
-      this.activeJobs++;
-      this.executeJob(job);
+        try {
+          // Appeler le worker
+          for (const worker of this.workers) {
+            await worker(job.data);
+          }
+          
+          job.status = 'completed';
+          this.emit('job:completed', job);
+        } catch (error) {
+          job.attempts++;
+          job.lastError = error.message;
+
+          if (job.attempts >= job.options.attempts) {
+            job.status = 'failed';
+            this.emit('job:failed', job);
+          } else {
+            // Réessayer avec backoff
+            const delay = job.options.backoff.type === 'exponential'
+              ? job.options.backoff.delay * Math.pow(2, job.attempts - 1)
+              : job.options.backoff.delay;
+            
+            setTimeout(() => {
+              job.status = 'waiting';
+              this.jobs.push(job);
+              this.process();
+            }, delay);
+          }
+        }
+      }
     }
 
     this.processing = false;
   }
 
-  /**
-   * Exécuter une tâche
-   */
-  async executeJob(job) {
-    try {
-      logger.logDebug(`Executing job: ${job.id}`, { attempts: job.attempts + 1 });
-      this.emit('started', job);
+  onJob(worker) {
+    this.workers.push(worker);
+  }
 
-      // Exécuter la tâche
-      const result = await job.data();
+  async getJob(jobId) {
+    return this.jobs.find(j => j.id === jobId);
+  }
 
-      logger.logInfo(`Job completed: ${job.id}`);
-      this.emit('completed', { job, result });
-
-      this.activeJobs--;
-      
-      // Continuer le traitement
-      if (this.queue.length > 0) {
-        this.process();
-      }
-    } catch (error) {
-      job.attempts++;
-      logger.logError(error, { context: 'queue job', jobId: job.id, attempts: job.attempts });
-
-      if (job.attempts < job.maxRetries) {
-        // Réessayer après un délai
-        logger.logWarn(`Retrying job: ${job.id}`, { attempts: job.attempts, maxRetries: job.maxRetries });
-        setTimeout(() => {
-          this.queue.unshift(job); // Remettre en début de queue
-          this.activeJobs--;
-          this.process();
-        }, this.retryDelay * job.attempts); // Délai exponentiel
-      } else {
-        // Échec définitif
-        logger.logError(new Error(`Job failed after ${job.attempts} attempts: ${job.id}`), {
-          context: 'queue job failure',
-          jobId: job.id,
-        });
-        this.emit('failed', { job, error });
-        this.activeJobs--;
-        
-        // Continuer le traitement
-        if (this.queue.length > 0) {
-          this.process();
-        }
-      }
+  async getJobs(status = null) {
+    if (status) {
+      return this.jobs.filter(j => j.status === status);
     }
-  }
-
-  /**
-   * Obtenir les statistiques de la queue
-   */
-  getStats() {
-    return {
-      queueLength: this.queue.length,
-      activeJobs: this.activeJobs,
-      processing: this.processing,
-      concurrency: this.concurrency,
-    };
-  }
-
-  /**
-   * Vider la queue
-   */
-  clear() {
-    this.queue = [];
-    logger.logInfo('Queue cleared');
+    return this.jobs;
   }
 }
 
-// Instance globale de queue
-const defaultQueue = new SimpleQueue({
-  concurrency: 2, // Traiter 2 tâches en parallèle
-  maxRetries: 3,
-  retryDelay: 1000,
-});
+class QueueManager {
+  constructor() {
+    this.queues = new Map();
+    this.useRedis = false;
+    this.init();
+  }
 
-module.exports = {
-  SimpleQueue,
-  defaultQueue,
+  async init() {
+    // Essayer Redis Bull si disponible
+    try {
+      const Bull = require('bull');
+      this.Bull = Bull;
+      this.useRedis = true;
+      console.log('✅ Redis Bull available for queues');
+    } catch (error) {
+      console.warn('⚠️  Redis Bull not available, using memory queues');
+      this.useRedis = false;
+    }
+  }
+
+  getQueue(name) {
+    if (this.queues.has(name)) {
+      return this.queues.get(name);
+    }
+
+    let queue;
+    if (this.useRedis && this.Bull) {
+      queue = new this.Bull(name, {
+        redis: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: process.env.REDIS_PORT || 6379,
+          password: process.env.REDIS_PASSWORD,
+        },
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000,
+          },
+        },
+      });
+    } else {
+      queue = new MemoryQueue(name);
+    }
+
+    this.queues.set(name, queue);
+    return queue;
+  }
+
+  async addJob(queueName, jobData, options = {}) {
+    const queue = this.getQueue(queueName);
+    return await queue.add(jobData, options);
+  }
+
+  async processQueue(queueName, worker) {
+    const queue = this.getQueue(queueName);
+    
+    if (this.useRedis && this.Bull) {
+      queue.process(worker);
+    } else {
+      queue.onJob(worker);
+    }
+  }
+}
+
+// Instance singleton
+const queueManager = new QueueManager();
+
+// Queues prédéfinies
+const queues = {
+  // Traitement de fichiers (OCR, métadonnées, etc.)
+  fileProcessing: queueManager.getQueue('file-processing'),
+  
+  // Envoi d'emails
+  emails: queueManager.getQueue('emails'),
+  
+  // Nettoyage et maintenance
+  cleanup: queueManager.getQueue('cleanup'),
+  
+  // Webhooks
+  webhooks: queueManager.getQueue('webhooks'),
 };
 
+module.exports = {
+  queueManager,
+  queues,
+  MemoryQueue,
+};

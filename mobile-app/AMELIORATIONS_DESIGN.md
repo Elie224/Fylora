@@ -1,4 +1,4 @@
-# 🎨 Améliorations du Design - Application Mobile SUPFile
+# 🎨 Améliorations du Design - Application Mobile Fylora
 
 ## 📋 Vue d'ensemble
 
@@ -50,7 +50,7 @@ L'application mobile a été entièrement redesignée avec la palette de couleur
 **Améliorations :**
 - **Fond dégradé** : Dégradé subtil violet → gris → blanc
 - **Logo moderne** : Cercle avec gradient violet et ombre portée
-- **Titre stylisé** : "SUPFile" en violet avec espacement des lettres
+- **Titre stylisé** : "Fylora" en violet avec espacement des lettres
 - **Sous-titre** : "Connexion à votre espace" en gris
 - **Champs de saisie** : Design moderne avec bordures arrondies (12px)
 - **Bouton principal** : Gradient violet avec ombre et animation
@@ -215,4 +215,5 @@ L'application mobile présente maintenant :
 ---
 
 **Design créé avec la palette SUPINFO (#502A88) pour un rendu professionnel et moderne !** 🎨✨
+
 

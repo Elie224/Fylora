@@ -68,8 +68,8 @@ class FileSecurity {
     '.msi',
   ];
   
-  /// Taille maximale de fichier (30 GB)
-  static const int maxFileSize = 32212254720;
+  /// Taille maximale de fichier (1 TO)
+  static const int maxFileSize = 1099511627776;
   
   /// Taille maximale pour les images (50 MB)
   static const int maxImageSize = 52428800;
@@ -214,6 +214,7 @@ class FileValidationResult {
     this.error,
   });
 }
+
 
 
 

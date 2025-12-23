@@ -1,6 +1,6 @@
 # Instructions pour remplacer l'icône de lanceur Android
 
-Pour remplacer l'icône Flutter par défaut par votre logo "supfile" personnalisé, vous devez remplacer les fichiers `ic_launcher.png` dans les différents dossiers de résolution.
+Pour remplacer l'icône Flutter par défaut par votre logo "Fylora" personnalisé, vous devez remplacer les fichiers `ic_launcher.png` dans les différents dossiers de résolution.
 
 ## Emplacements des icônes
 
@@ -16,9 +16,9 @@ android/app/src/main/res/
 
 ## Création des icônes
 
-1. **Créer un logo "supfile"** avec les spécifications suivantes :
+1. **Créer un logo "Fylora"** avec les spécifications suivantes :
    - Fond circulaire avec gradient violet SUPINFO (#502A88 → #6B3FA8)
-   - Texte "supfile" en blanc au centre
+   - Texte "Fylora" en blanc au centre
    - Style moderne et professionnel
 
 2. **Générer les différentes tailles** :
@@ -38,5 +38,6 @@ android/app/src/main/res/
 
 ## Note
 
-Le logo personnalisé "supfile" est déjà intégré dans l'application elle-même (écrans de connexion, etc.) via le widget `SupFileLogo`. Les icônes de lanceur Android sont uniquement pour l'affichage sur l'écran d'accueil du téléphone.
+Le logo personnalisé "Fylora" est déjà intégré dans l'application elle-même (écrans de connexion, etc.) via le widget `FyloraLogo`. Les icônes de lanceur Android sont uniquement pour l'affichage sur l'écran d'accueil du téléphone.
+
 

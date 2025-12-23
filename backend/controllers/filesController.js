@@ -11,6 +11,7 @@ const logger = require('../utils/logger');
 const { compareObjectIds } = require('../utils/objectId');
 const { successResponse, errorResponse } = require('../utils/response');
 const { calculateRealQuotaUsed, updateQuotaAfterOperation } = require('../utils/quota');
+const { trackFileUsage } = require('../utils/fileUsageTracker');
 
 // Configuration multer pour l'upload
 const storage = multer.diskStorage({
@@ -33,7 +34,7 @@ const storage = multer.diskStorage({
       
       cb(null, uploadDir);
     } catch (error) {
-      logger.logError(error, { context: 'upload directory creation' });
+      logger.logError(error, { contexte: 'création_répertoire_upload' });
       cb(error);
     }
   },
@@ -126,7 +127,7 @@ async function listFiles(req, res, next) {
       }
     }
 
-    // Récupérer les fichiers et dossiers avec pagination côté base de données
+    // Utiliser FileModel.findByOwner pour requêtes optimisées avec formatage cohérent
     const skipNum = parseInt(skip);
     const limitNum = parseInt(limit);
     
@@ -186,7 +187,7 @@ async function uploadFile(req, res, next) {
     const user = await UserModel.findById(userId);
     const currentUsed = await calculateRealQuotaUsed(userId);
     const fileSize = req.file.size;
-    const quotaLimit = user.quota_limit || 32212254720; // 30 Go par défaut
+    const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
 
     if (currentUsed + fileSize > quotaLimit) {
       // Supprimer le fichier uploadé
@@ -226,6 +227,19 @@ async function uploadFile(req, res, next) {
       return res.status(500).json({ error: { message: 'Failed to save file' } });
     }
 
+    // Vérifier la déduplication
+    const duplicateCheck = await fileDeduplication.checkDuplicate(userId, req.file.path);
+    let finalFilePath = req.file.path;
+    let actualSize = fileSize;
+
+    if (duplicateCheck.isDuplicate) {
+      // Fichier dupliqué - créer un lien symbolique ou référence
+      const newPath = path.join(config.upload.uploadDir, `user_${userId}`, `${uuidv4()}${path.extname(req.file.originalname)}`);
+      await fileDeduplication.createSymlink(duplicateCheck.existingFilePath, newPath);
+      finalFilePath = newPath;
+      actualSize = 0; // Pas de quota supplémentaire pour les doublons
+    }
+
     // Créer l'entrée en base de données
     const file = await FileModel.create({
       name: req.file.originalname,
@@ -233,19 +247,35 @@ async function uploadFile(req, res, next) {
       size: fileSize,
       folderId,
       ownerId: userId,
-      filePath: req.file.path,
+      filePath: finalFilePath,
     });
 
-    // Mettre à jour le quota utilisé (ajouter la taille du fichier)
-    await updateQuotaAfterOperation(userId, fileSize);
+    // Mettre à jour le quota utilisé (ajouter la taille du fichier seulement si pas doublon)
+    if (!duplicateCheck.isDuplicate) {
+      await updateQuotaAfterOperation(userId, fileSize);
+    }
 
-    // Invalider le cache du dashboard pour cet utilisateur
+    // Traitement asynchrone en arrière-plan (OCR, métadonnées, empreinte)
+    await queues.fileProcessing.add({
+      fileId: file.id,
+      userId,
+      filePath: finalFilePath,
+      mimeType: req.file.mimetype,
+      fileSize,
+    });
+
+    // Indexation async pour recherche
+    await searchEngine.indexFileAsync(file.id, userId, finalFilePath, req.file.mimetype);
+
+    // Invalider le cache
+    await smartCache.invalidateFile(file.id, userId);
     const { invalidateUserCache } = require('../utils/cache');
     invalidateUserCache(userId);
 
     res.status(201).json({
       data: file,
       message: 'File uploaded successfully',
+      isDuplicate: duplicateCheck.isDuplicate,
     });
   } catch (err) {
     // Supprimer le fichier en cas d'erreur
@@ -328,6 +358,14 @@ async function downloadFile(req, res, next) {
     res.setHeader('Content-Disposition', `attachment; filename="${file.name}"`);
     res.setHeader('Content-Length', file.size);
 
+    // Tracker l'utilisation
+    if (userId) {
+      trackFileUsage(id, userId, 'download', {
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+      }).catch(() => {}); // Ne pas bloquer si le tracking échoue
+    }
+
     res.sendFile(path.resolve(file.file_path));
   } catch (err) {
     next(err);
@@ -359,6 +397,13 @@ async function previewFile(req, res, next) {
         file.mime_type?.startsWith('text/')) {
       res.setHeader('Content-Type', file.mime_type);
       res.setHeader('Content-Disposition', `inline; filename="${file.name}"`);
+      
+      // Tracker l'utilisation
+      trackFileUsage(id, userId, 'preview', {
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+      }).catch(() => {}); // Ne pas bloquer si le tracking échoue
+      
       return res.sendFile(path.resolve(file.file_path));
     }
 
@@ -547,6 +592,62 @@ async function restoreFile(req, res, next) {
   }
 }
 
+// Supprimer définitivement un fichier
+async function permanentDeleteFile(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const file = await FileModel.findById(id);
+    if (!file) {
+      return res.status(404).json({ error: { message: 'File not found' } });
+    }
+
+    // Comparer les ObjectId correctement
+    const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
+    const userOwnerId = userId?.toString ? userId.toString() : userId;
+    
+    if (fileOwnerId !== userOwnerId) {
+      return res.status(403).json({ error: { message: 'Access denied' } });
+    }
+
+    // Vérifier que le fichier est bien dans la corbeille
+    if (!file.is_deleted) {
+      return res.status(400).json({ error: { message: 'File is not in trash. Use delete endpoint instead.' } });
+    }
+
+    // Récupérer la taille du fichier avant suppression définitive
+    const fileSize = file.size || 0;
+    
+    // Supprimer le fichier physique du système de fichiers
+    const fs = require('fs').promises;
+    const path = require('path');
+    if (file.file_path) {
+      try {
+        await fs.unlink(file.file_path);
+      } catch (err) {
+        console.warn(`Could not delete physical file: ${file.file_path}`, err);
+        // Continuer même si le fichier physique n'existe pas
+      }
+    }
+    
+    // Supprimer définitivement de la base de données
+    await FileModel.delete(id);
+    
+    // Mettre à jour le quota utilisé (soustraire la taille du fichier)
+    await updateQuotaAfterOperation(userId, -fileSize);
+    
+    // Invalider le cache du dashboard pour cet utilisateur
+    const { invalidateUserCache } = require('../utils/cache');
+    invalidateUserCache(userId);
+    
+    res.status(200).json({ message: 'File permanently deleted' });
+  } catch (err) {
+    console.error('Error permanently deleting file:', err);
+    next(err);
+  }
+}
+
 // Lister les fichiers supprimés (corbeille)
 async function listTrash(req, res, next) {
   try {
@@ -588,6 +689,7 @@ module.exports = {
   updateFile,
   deleteFile,
   restoreFile,
+  permanentDeleteFile,
   listTrash,
 };
 

@@ -1,13 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fileService, folderService, shareService, userService } from '../services/api';
+import { tagsService } from '../services/tagsService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuthStore } from '../services/authStore';
+import { useTheme } from '../contexts/ThemeContext';
+import { FileListSkeleton } from '../components/SkeletonLoader';
+import { VirtualList } from '../components/VirtualList';
+import { prefetchManager } from '../utils/prefetch';
 
 export default function Files() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage(); // Inclure language pour forcer le re-render
+  const { logout } = useAuthStore();
+  const { theme } = useTheme();
   const [items, setItems] = useState([]);
+  
+  // Couleurs dynamiques selon le thème - Thème clair amélioré
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f0f4f8';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
+  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
   const [currentFolder, setCurrentFolder] = useState(null);
   const [folderHistory, setFolderHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +50,18 @@ export default function Files() {
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState(null);
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [error, setError] = useState(null);
+  const [availableTags, setAvailableTags] = useState([]);
+
+  // Gérer la déconnexion automatique
+  useEffect(() => {
+    const handleLogout = async () => {
+      await logout();
+      navigate('/login', { replace: true });
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, [logout, navigate]);
 
   // Charger le dossier depuis les paramètres URL au montage
   useEffect(() => {
@@ -49,7 +80,67 @@ export default function Files() {
 
   useEffect(() => {
     loadFiles();
+    loadTags();
   }, [currentFolder]);
+
+  const loadTags = async () => {
+    try {
+      const response = await tagsService.listTags();
+      setAvailableTags(response.data?.tags || []);
+    } catch (err) {
+      console.error('Failed to load tags:', err);
+    }
+  };
+
+  const toggleSelection = (itemId) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const downloadBatch = async () => {
+    if (selectedItems.size === 0) {
+      alert('Veuillez sélectionner au moins un fichier ou dossier');
+      return;
+    }
+
+    try {
+      const fileIds = [];
+      const folderIds = [];
+
+      items.forEach(item => {
+        const itemId = item.id || item._id;
+        if (selectedItems.has(itemId)) {
+          if (item.type === 'folder' || item.parent_id !== undefined) {
+            folderIds.push(itemId);
+          } else {
+            fileIds.push(itemId);
+          }
+        }
+      });
+
+      const response = await fileService.downloadBatch(fileIds, folderIds);
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fylora_download_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setSelectedItems(new Set());
+    } catch (err) {
+      console.error('Batch download failed:', err);
+      alert(err.response?.data?.error?.message || 'Erreur lors du téléchargement');
+    }
+  };
 
   const loadFiles = async () => {
     try {
@@ -62,15 +153,16 @@ export default function Files() {
       const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur inconnue';
       const statusCode = err.response?.status;
       
+      // Si c'est une erreur 401, ne pas afficher d'erreur car la redirection est gérée par l'intercepteur
+      if (statusCode === 401) {
+        // L'intercepteur va gérer la redirection via l'événement auth:logout
+        setLoading(false);
+        return;
+      }
+      
       let userMessage = t('loadError') || 'Erreur lors du chargement des fichiers';
       
-      if (statusCode === 401) {
-        userMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
-        // Rediriger vers login après 2 secondes
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-      } else if (statusCode === 403) {
+      if (statusCode === 403) {
         userMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
       } else if (statusCode === 404) {
         userMessage = 'Dossier non trouvé.';
@@ -146,13 +238,35 @@ export default function Files() {
   const createFolder = async () => {
     if (!newFolderName.trim()) return;
     try {
-      await folderService.create(newFolderName.trim(), currentFolder?.id || null);
+      // S'assurer que parent_id est null ou une chaîne valide
+      const parentId = currentFolder?.id || currentFolder?._id || null;
+      
+      // Convertir en chaîne si c'est un ObjectId, sinon null
+      const normalizedParentId = parentId ? String(parentId) : null;
+      
+      console.log('Creating folder with:', { name: newFolderName.trim(), parent_id: normalizedParentId });
+      
+      await folderService.create(newFolderName.trim(), normalizedParentId);
       setNewFolderName('');
       setShowNewFolder(false);
       loadFiles();
     } catch (err) {
       console.error('Failed to create folder:', err);
-      alert(t('createFolderError'));
+      console.error('Error response:', err.response?.data);
+      
+      // Construire un message d'erreur détaillé
+      let errorMessage = 'Erreur inconnue';
+      if (err.response?.data?.error) {
+        if (err.response.data.error.details && Array.isArray(err.response.data.error.details)) {
+          errorMessage = err.response.data.error.details.map(d => d.message).join('\n');
+        } else if (err.response.data.error.message) {
+          errorMessage = err.response.data.error.message;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      alert(`Erreur lors de la création du dossier:\n${errorMessage}`);
     }
   };
 
@@ -212,7 +326,7 @@ export default function Files() {
     setItemToDelete(null);
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       const token = localStorage.getItem('access_token');
       
       if (!token) {
@@ -365,7 +479,7 @@ export default function Files() {
       }
       
       if (response.data && response.data.data) {
-        const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+        const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:3001';
         const shareUrl = response.data.data.share_url || `${frontendUrl}/share/${response.data.data.public_token}`;
         setShareLink(shareUrl);
         setSharePassword('');
@@ -473,15 +587,21 @@ export default function Files() {
     : [];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ 
+      padding: '24px', 
+      maxWidth: '1400px', 
+      margin: '0 auto',
+      backgroundColor: bgColor,
+      minHeight: '100vh'
+    }}>
       {/* En-tête amélioré */}
       <div style={{ 
         marginBottom: '24px',
         padding: '20px',
-        backgroundColor: '#ffffff',
+        backgroundColor: cardBg,
         borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        border: '1px solid #e0e0e0'
+        boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+        border: `1px solid ${borderColor}`
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
@@ -490,7 +610,7 @@ export default function Files() {
               marginBottom: '8px',
               fontSize: '28px',
               fontWeight: '700',
-              color: '#333'
+              color: textColor
             }}>📁 {t('myFiles')}</h1>
             {breadcrumbs.length > 0 && (
               <div style={{ 
@@ -499,30 +619,31 @@ export default function Files() {
                 gap: '8px',
                 flexWrap: 'wrap',
                 fontSize: '14px',
-                color: '#666'
+                color: textSecondary
               }}>
                 <button 
                   onClick={goBack} 
                   style={{ 
                     padding: '6px 12px',
-                    backgroundColor: '#f5f5f5',
-                    border: '1px solid #ddd',
+                    backgroundColor: secondaryBg,
+                    border: `1px solid ${borderColor}`,
                     borderRadius: '6px',
                     cursor: 'pointer',
                     fontSize: '14px',
                     fontWeight: '500',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    color: textColor
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#e0e0e0';
+                    e.target.style.backgroundColor = hoverBg;
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#f5f5f5';
+                    e.target.style.backgroundColor = secondaryBg;
                   }}
                 >
                   ← {t('back')}
                 </button>
-                <span style={{ color: '#999' }}>|</span>
+                <span style={{ color: textSecondary }}>|</span>
                 <span 
                   onClick={() => { setCurrentFolder(null); setFolderHistory([]); }} 
                   style={{ 
@@ -538,8 +659,8 @@ export default function Files() {
                 </span>
                 {breadcrumbs.map((name, idx) => (
                   <React.Fragment key={idx}>
-                    <span style={{ color: '#999' }}>/</span>
-                    <span style={{ color: '#666' }}>{name}</span>
+                    <span style={{ color: textSecondary }}>/</span>
+                    <span style={{ color: textSecondary }}>{name}</span>
                   </React.Fragment>
                 ))}
               </div>
@@ -553,55 +674,67 @@ export default function Files() {
               style={{ display: 'none' }}
               id="file-upload"
             />
+            {/* Action principale : Télécharger */}
             <label 
               htmlFor="file-upload" 
               style={{ 
-                padding: '10px 20px', 
+                padding: '12px 24px', 
                 backgroundColor: '#2196F3', 
                 color: 'white', 
-                borderRadius: '8px', 
+                borderRadius: '10px', 
                 cursor: 'pointer', 
-                display: 'inline-block',
-                fontSize: '15px',
-                fontWeight: '600',
-                boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)',
-                transition: 'all 0.2s'
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '16px',
+                fontWeight: '700',
+                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)',
+                transition: 'all 0.2s',
+                border: 'none'
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = '#1976D2';
-                e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                e.target.style.boxShadow = '0 6px 16px rgba(33, 150, 243, 0.45)';
+                e.target.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
                 e.target.style.backgroundColor = '#2196F3';
-                e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+                e.target.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.35)';
+                e.target.style.transform = 'translateY(0)';
               }}
             >
-              📤 {t('upload')}
+              <span style={{ fontSize: '18px' }}>📤</span>
+              <span>{t('upload')}</span>
             </label>
+            {/* Action secondaire : Nouveau dossier (moins voyant) */}
             <button
               onClick={() => setShowNewFolder(!showNewFolder)}
               style={{ 
-                padding: '10px 20px', 
-                backgroundColor: '#4CAF50', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '8px', 
+                padding: '10px 18px', 
+                backgroundColor: 'transparent', 
+                color: theme === 'dark' ? '#90caf9' : '#2196F3', 
+                border: `1.5px solid ${theme === 'dark' ? '#64b5f6' : '#2196F3'}`, 
+                borderRadius: '10px', 
                 cursor: 'pointer',
                 fontSize: '15px',
                 fontWeight: '600',
-                boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)',
-                transition: 'all 0.2s'
+                boxShadow: 'none',
+                transition: 'all 0.2s',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#45a049';
-                e.target.style.boxShadow = '0 4px 8px rgba(76, 175, 80, 0.4)';
+                e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#e3f2fd';
+                e.target.style.borderColor = theme === 'dark' ? '#90caf9' : '#1976D2';
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#4CAF50';
-                e.target.style.boxShadow = '0 2px 4px rgba(76, 175, 80, 0.3)';
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.borderColor = theme === 'dark' ? '#64b5f6' : '#2196F3';
               }}
             >
-              📁 {t('newFolder')}
+              <span style={{ fontSize: '16px' }}>📁</span>
+              <span>{t('newFolder')}</span>
             </button>
           </div>
         </div>
@@ -801,10 +934,17 @@ export default function Files() {
       )}
 
       {uploading && (
-        <div style={{ padding: 8, backgroundColor: '#fff3cd', marginBottom: 16, borderRadius: 4 }}>
-          <div>Upload en cours...</div>
+        <div style={{ 
+          padding: 8, 
+          backgroundColor: theme === 'dark' ? '#3d2f0f' : '#fff3cd', 
+          marginBottom: 16, 
+          borderRadius: 4,
+          border: `1px solid ${borderColor}`,
+          color: textColor
+        }}>
+          <div style={{ color: textColor }}>Upload en cours...</div>
           {Object.keys(uploadProgress).map(fileName => (
-            <div key={fileName} style={{ marginTop: 4 }}>
+            <div key={fileName} style={{ marginTop: 4, color: textColor }}>
               {fileName}: {uploadProgress[fileName]}%
             </div>
           ))}
@@ -816,37 +956,38 @@ export default function Files() {
         onDragOver={handleDragOver}
         style={{ 
           minHeight: 400, 
-          border: '2px dashed #ddd', 
+          border: `2px dashed ${borderColor}`, 
           borderRadius: '12px', 
           padding: '32px',
-          backgroundColor: '#fafafa',
+          backgroundColor: theme === 'dark' ? '#1a1a1a' : '#fafafa',
           transition: 'all 0.3s'
         }}
         onDragEnter={(e) => {
           e.currentTarget.style.borderColor = '#2196F3';
-          e.currentTarget.style.backgroundColor = '#f0f7ff';
+          e.currentTarget.style.backgroundColor = theme === 'dark' ? '#1a237e' : '#f0f7ff';
         }}
         onDragLeave={(e) => {
-          e.currentTarget.style.borderColor = '#ddd';
-          e.currentTarget.style.backgroundColor = '#fafafa';
+          e.currentTarget.style.borderColor = borderColor;
+          e.currentTarget.style.backgroundColor = theme === 'dark' ? '#1a1a1a' : '#fafafa';
         }}
       >
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: textSecondary }}>
             <div style={{ fontSize: '18px', marginBottom: '8px' }}>⏳</div>
-            <div>{t('loading') || 'Chargement...'}</div>
+            <div style={{ color: textColor }}>{t('loading') || 'Chargement...'}</div>
           </div>
         ) : error ? (
           <div style={{ 
             textAlign: 'center', 
             padding: '40px', 
             color: '#d32f2f',
-            backgroundColor: '#ffebee',
+            backgroundColor: theme === 'dark' ? '#3d1f1f' : '#ffebee',
             borderRadius: '8px',
-            margin: '20px'
+            margin: '20px',
+            border: `1px solid ${borderColor}`
           }}>
             <div style={{ fontSize: '24px', marginBottom: '12px' }}>⚠️</div>
-            <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '16px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '16px', color: '#d32f2f' }}>
               {error}
             </div>
             <button
@@ -869,10 +1010,10 @@ export default function Files() {
             </button>
           </div>
         ) : items.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: textSecondary }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📁</div>
-            <p style={{ fontSize: '16px', marginBottom: '8px' }}>{t('emptyFolder') || 'Aucun fichier ou dossier'}</p>
-            <p style={{ fontSize: '14px', color: '#bbb' }}>
+            <p style={{ fontSize: '16px', marginBottom: '8px', color: textColor }}>{t('emptyFolder') || 'Aucun fichier ou dossier'}</p>
+            <p style={{ fontSize: '14px', color: textSecondary }}>
               Glissez-déposez des fichiers ici ou cliquez sur "Uploader"
             </p>
           </div>
@@ -880,9 +1021,9 @@ export default function Files() {
           <div style={{ 
             overflowX: 'auto', 
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e0e0e0'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`
           }}>
             <table style={{ 
               width: '100%', 
@@ -892,15 +1033,15 @@ export default function Files() {
             }}>
               <thead>
                 <tr style={{ 
-                  backgroundColor: '#f8f9fa',
-                  borderBottom: '2px solid #e0e0e0'
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
+                  borderBottom: `2px solid ${borderColor}`
                 }}>
                   <th style={{ 
                     textAlign: 'left', 
                     padding: '16px',
                     fontSize: '14px',
                     fontWeight: '600',
-                    color: '#333',
+                    color: textColor,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>{t('name')}</th>
@@ -909,7 +1050,7 @@ export default function Files() {
                     padding: '16px',
                     fontSize: '14px',
                     fontWeight: '600',
-                    color: '#333',
+                    color: textColor,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>{t('size')}</th>
@@ -918,7 +1059,7 @@ export default function Files() {
                     padding: '16px',
                     fontSize: '14px',
                     fontWeight: '600',
-                    color: '#333',
+                    color: textColor,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>{t('modified')}</th>
@@ -927,7 +1068,7 @@ export default function Files() {
                     padding: '16px',
                     fontSize: '14px',
                     fontWeight: '600',
-                    color: '#333',
+                    color: textColor,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>{t('actions')}</th>
@@ -937,21 +1078,43 @@ export default function Files() {
                 {items.map((item, index) => {
                   // S'assurer que le type est bien défini
                   const itemType = item.type || (item.folder_id === null && item.parent_id === null ? 'folder' : 'file');
-                  const itemId = item.id || item._id;
+                  // S'assurer que l'ID est toujours une string, même si c'est un objet
+                  const rawId = item.id || item._id;
+                  let itemId;
+                  if (typeof rawId === 'object' && rawId !== null) {
+                    // Extraire l'ID de l'objet si possible
+                    if (rawId.id !== undefined && rawId.id !== null) {
+                      itemId = String(rawId.id);
+                    } else if (rawId._id !== undefined && rawId._id !== null) {
+                      itemId = String(rawId._id);
+                    } else {
+                      // Fallback : utiliser toString() mais logger un avertissement
+                      console.warn('Item has object ID without id/_id property:', rawId, 'item:', item);
+                      itemId = String(rawId);
+                    }
+                  } else {
+                    itemId = String(rawId || '');
+                  }
+                  
+                  // Validation finale
+                  if (!itemId || itemId === 'undefined' || itemId === 'null' || itemId === '[object Object]') {
+                    console.error('Invalid itemId after conversion:', { rawId, itemId, item });
+                    itemId = `invalid-${index}`; // Fallback pour éviter les erreurs de rendu
+                  }
                   
                   return (
                   <tr 
                     key={itemId} 
                     style={{ 
-                      borderBottom: index < items.length - 1 ? '1px solid #f0f0f0' : 'none',
-                      backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
+                      borderBottom: index < items.length - 1 ? `1px solid ${borderColor}` : 'none',
+                      backgroundColor: index % 2 === 0 ? cardBg : (theme === 'dark' ? '#252525' : '#fafafa'),
                       transition: 'background-color 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f0f7ff';
+                      e.currentTarget.style.backgroundColor = hoverBg;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#fafafa';
+                      e.currentTarget.style.backgroundColor = index % 2 === 0 ? cardBg : (theme === 'dark' ? '#252525' : '#fafafa');
                     }}
                   >
                     <td style={{ padding: '16px' }}>
@@ -982,18 +1145,18 @@ export default function Files() {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '8px',
-                            color: '#333',
+                            color: textColor,
                             transition: 'color 0.2s'
                           }}
                           onMouseEnter={(e) => e.target.style.color = '#2196F3'}
-                          onMouseLeave={(e) => e.target.style.color = '#333'}
+                          onMouseLeave={(e) => e.target.style.color = textColor}
                         >
                           <span style={{ fontSize: '18px' }}>📄</span> {item.name}
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '16px', color: '#666', fontSize: '14px' }}>{formatBytes(item.size || 0)}</td>
-                    <td style={{ padding: '16px', color: '#666', fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
+                    <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{formatBytes(item.size || 0)}</td>
+                    <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {itemType === 'file' && (
@@ -1003,7 +1166,7 @@ export default function Files() {
                               e.preventDefault();
                               e.stopPropagation();
                               try {
-                                const apiUrl = import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com';
+                                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
                                 const token = localStorage.getItem('access_token');
                                 
                                 if (!token) {
@@ -1086,7 +1249,7 @@ export default function Files() {
                               e.preventDefault();
                               e.stopPropagation();
                               try {
-                                const apiUrl = import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com';
+                                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
                                 const token = localStorage.getItem('access_token');
                                 
                                 if (!token) {

@@ -5,10 +5,10 @@ const { validate, signupSchema, loginSchema } = require('../middlewares/validati
 const { initiateOAuth, handleOAuthCallback } = require('../controllers/oauthController');
 
 // POST /api/auth/signup
-router.post('/signup', validate(signupSchema), authController.signup);
+router.post('/signup', signupSchema, validate, authController.signup);
 
 // POST /api/auth/login
-router.post('/login', validate(loginSchema), authController.login);
+router.post('/login', loginSchema, validate, authController.login);
 
 // POST /api/auth/refresh
 router.post('/refresh', authController.refresh);

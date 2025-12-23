@@ -13,7 +13,7 @@ router.use(authMiddleware);
 router.use(validateObjectId); // Valider tous les ObjectIds dans les paramètres
 
 // Créer un dossier
-router.post('/', validate(createFolderSchema), foldersController.createFolder);
+router.post('/', createFolderSchema, validate, foldersController.createFolder);
 
 // Lister les dossiers supprimés (corbeille) - DOIT être avant les autres routes /:id
 router.get('/trash', foldersController.listTrash);
@@ -22,13 +22,16 @@ router.get('/trash', foldersController.listTrash);
 router.get('/:id', foldersController.getFolder);
 
 // Mettre à jour un dossier (rename/move)
-router.patch('/:id', validate(renameSchema), foldersController.updateFolder);
+router.patch('/:id', renameSchema, validate, foldersController.updateFolder);
 
 // Supprimer un dossier
 router.delete('/:id', foldersController.deleteFolder);
 
 // Restaurer un dossier
 router.post('/:id/restore', foldersController.restoreFolder);
+
+// Supprimer définitivement un dossier
+router.delete('/:id/permanent', foldersController.permanentDeleteFolder);
 
 module.exports = router;
 

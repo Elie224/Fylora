@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 
 /// Système de logging sécurisé qui ne jamais expose de données sensibles
 class SecureLogger {
-  static const String _tag = 'SUPFile';
+  static const String _tag = 'Fylora';
   
   /// Logger sécurisé pour les informations générales
   static void info(String message, {Map<String, dynamic>? data}) {
@@ -128,6 +128,7 @@ class SecureLogger {
         .replaceAll(RegExp(r'token\s*=\s*[^\s&]+'), 'token=[REDACTED]');
   }
 }
+
 
 
 

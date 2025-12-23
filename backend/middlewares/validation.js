@@ -1,154 +1,236 @@
-// Schémas de validation Joi
-const Joi = require('joi');
+/**
+ * Middleware de validation robuste pour améliorer la solidité de l'application
+ */
 
-// Schéma pour l'inscription
-const signupSchema = Joi.object({
-  email: Joi.string()
-    .email()
-    .required()
-    .messages({
-      'string.email': 'Must be a valid email address',
-      'any.required': 'Email is required',
-    }),
-  password: Joi.string()
-    .min(8)
-    .max(128)
-    .required()
-    .pattern(/[A-Z]/)
-    .pattern(/[0-9]/)
-    .messages({
-      'string.min': 'Password must be at least 8 characters',
-      'string.max': 'Password must not exceed 128 characters',
-      'string.pattern.base': 'Password must contain uppercase letter and number',
-      'any.required': 'Password is required',
-    }),
-  passwordConfirm: Joi.string()
-    .valid(Joi.ref('password'))
-    .optional()
-    .messages({
-      'any.only': 'Passwords do not match',
-    }),
-}).unknown(true);
+const { body, param, query, validationResult } = require('express-validator');
+const logger = require('../utils/logger');
 
-// Schéma pour la connexion
-const loginSchema = Joi.object({
-  email: Joi.string()
-    .email()
-    .required()
-    .messages({
-      'string.email': 'Must be a valid email address',
-      'any.required': 'Email is required',
-    }),
-  password: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'Password is required',
-    }),
-}).unknown(true);
-
-// Schéma pour création de dossier
-const createFolderSchema = Joi.object({
-  name: Joi.string()
-    .max(255)
-    .required()
-    .trim()
-    .messages({
-      'string.max': 'Folder name must not exceed 255 characters',
-      'any.required': 'Folder name is required',
-    }),
-  parent_id: Joi.number().integer().optional(),
-}).unknown(false);
-
-// Schéma pour renommage
-const renameSchema = Joi.object({
-  name: Joi.string()
-    .max(255)
-    .required()
-    .trim()
-    .messages({
-      'string.max': 'Name must not exceed 255 characters',
-      'any.required': 'Name is required',
-    }),
-}).unknown(false);
-
-// Schéma pour partage public
-const publicShareSchema = Joi.object({
-  file_id: Joi.string().optional().allow(null, ''),
-  folder_id: Joi.string().optional().allow(null, ''),
-  password: Joi.string().min(6).optional().allow(null, '').messages({
-    'string.min': 'Password must be at least 6 characters',
-  }),
-  expires_at: Joi.alternatives().try(
-    Joi.date().iso(),
-    Joi.string().isoDate(),
-    Joi.string().allow('', null)
-  ).optional().messages({
-    'date.base': 'Must be a valid date',
-    'alternatives.match': 'Must be a valid date string',
-  }),
-})
-  .or('file_id', 'folder_id')
-  .unknown(true) // Permettre d'autres champs pour éviter les erreurs
-  .messages({
-    'alternatives.match': 'Either file_id or folder_id must be provided',
-  });
-
-// Schéma pour changement de mot de passe
-const changePasswordSchema = Joi.object({
-  current_password: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'Current password is required',
-    }),
-  new_password: Joi.string()
-    .min(8)
-    .max(128)
-    .required()
-    .pattern(/[A-Z]/)
-    .pattern(/[0-9]/)
-    .messages({
-      'string.min': 'Password must be at least 8 characters',
-      'string.pattern.base': 'Password must contain uppercase letter and number',
-      'any.required': 'New password is required',
-    }),
-}).unknown(false);
-
-// Fonction middleware pour valider avec un schéma
-function validate(schema) {
-  return (req, res, next) => {
-    const { error, value } = schema.validate(req.body, {
-      abortEarly: false, // Retourner tous les erreurs
-      stripUnknown: true, // Supprimer les propriétés inconnues
+/**
+ * Middleware pour valider les résultats de validation
+ */
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.logWarn('Validation failed', {
+      path: req.path,
+      method: req.method,
+      errors: errors.array(),
     });
+    return res.status(400).json({
+      error: {
+        message: 'Validation failed',
+        details: errors.array(),
+      },
+    });
+  }
+  next();
+};
 
-    if (error) {
-      const messages = error.details.map((detail) => ({
-        field: detail.path.join('.'),
-        message: detail.message,
-      }));
+/**
+ * Validations communes
+ */
+const commonValidations = {
+  // Validation d'ID MongoDB
+  mongoId: (field = 'id') => param(field)
+    .isMongoId()
+    .withMessage(`${field} must be a valid MongoDB ID`),
 
-      return res.status(400).json({
-        error: {
-          message: 'Validation failed',
-          details: messages,
-        },
-      });
-    }
+  // Validation de nom (fichier/dossier)
+  name: (field = 'name') => body(field)
+    .trim()
+    .notEmpty()
+    .withMessage(`${field} is required`)
+    .isLength({ min: 1, max: 255 })
+    .withMessage(`${field} must be between 1 and 255 characters`)
+    .matches(/^[^<>:"/\\|?*\x00-\x1f]+$/)
+    .withMessage(`${field} contains invalid characters`),
 
-    req.validatedBody = value;
-    next();
-  };
-}
+  // Validation d'email
+  email: (field = 'email') => body(field)
+    .trim()
+    .notEmpty()
+    .withMessage(`${field} is required`)
+    .isEmail()
+    .withMessage(`${field} must be a valid email`)
+    .normalizeEmail(),
+
+  // Validation de mot de passe
+  password: (field = 'password') => body(field)
+    .notEmpty()
+    .withMessage(`${field} is required`)
+    .isLength({ min: 8 })
+    .withMessage(`${field} must be at least 8 characters`)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage(`${field} must contain at least one uppercase letter, one lowercase letter, and one number`),
+
+  // Validation de quota
+  quota: (field = 'quota') => body(field)
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage(`${field} must be a positive integer`),
+
+  // Validation de type MIME
+  mimeType: (field = 'mimeType') => body(field)
+    .optional()
+    .matches(/^[a-z]+\/[a-z0-9][a-z0-9!#$&\-\^_.]*$/i)
+    .withMessage(`${field} must be a valid MIME type`),
+
+  // Validation de date
+  date: (field = 'date') => body(field)
+    .optional()
+    .isISO8601()
+    .withMessage(`${field} must be a valid ISO 8601 date`),
+
+  // Validation de booléen
+  boolean: (field = 'value') => body(field)
+    .optional()
+    .isBoolean()
+    .withMessage(`${field} must be a boolean`),
+
+  // Validation de nombre positif
+  positiveNumber: (field = 'number') => body(field)
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage(`${field} must be a positive number`),
+
+  // Validation de pagination
+  pagination: () => [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('page must be a positive integer')
+      .toInt(),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('limit must be between 1 and 100')
+      .toInt(),
+  ],
+
+  // Validation de recherche
+  searchQuery: (field = 'q') => query(field)
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage(`${field} must be less than 200 characters`),
+
+  // Validation de token de partage
+  shareToken: (field = 'token') => param(field)
+    .trim()
+    .notEmpty()
+    .withMessage(`${field} is required`)
+    .isLength({ min: 20, max: 100 })
+    .withMessage(`${field} must be between 20 and 100 characters`)
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage(`${field} contains invalid characters`),
+};
+
+/**
+ * Sanitisation des entrées
+ */
+const sanitize = {
+  // Sanitiser un nom de fichier/dossier
+  filename: (name) => {
+    if (!name || typeof name !== 'string') return '';
+    return name
+      .trim()
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // Supprimer les caractères invalides
+      .replace(/^\.+/, '') // Supprimer les points au début
+      .replace(/\.+$/, '') // Supprimer les points à la fin
+      .substring(0, 255); // Limiter la longueur
+  },
+
+  // Sanitiser un email
+  email: (email) => {
+    if (!email || typeof email !== 'string') return '';
+    return email.trim().toLowerCase();
+  },
+
+  // Sanitiser une chaîne de recherche
+  searchString: (str) => {
+    if (!str || typeof str !== 'string') return '';
+    return str.trim().substring(0, 200);
+  },
+};
+
+/**
+ * Schémas de validation pour l'authentification
+ */
+const loginSchema = [
+  commonValidations.email('email'),
+  body('password')
+    .notEmpty()
+    .withMessage('password is required')
+    .isLength({ min: 1 })
+    .withMessage('password is required'),
+];
+
+const signupSchema = [
+  commonValidations.email('email'),
+  commonValidations.password('password'),
+  body('username')
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage('username must be between 3 and 30 characters')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('username can only contain letters, numbers, underscores, and hyphens'),
+];
+
+const changePasswordSchema = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('currentPassword is required'),
+  commonValidations.password('newPassword'),
+];
+
+const createFolderSchema = [
+  commonValidations.name('name'),
+];
+
+const renameSchema = [
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('name cannot be empty')
+    .isLength({ min: 1, max: 255 })
+    .withMessage('name must be between 1 and 255 characters')
+    .matches(/^[^<>:"/\\|?*\x00-\x1f]+$/)
+    .withMessage('name contains invalid characters'),
+  body('parentId')
+    .optional()
+    .isMongoId()
+    .withMessage('parentId must be a valid MongoDB ID'),
+];
+
+const publicShareSchema = [
+  body('fileId')
+    .optional()
+    .isMongoId()
+    .withMessage('fileId must be a valid MongoDB ID'),
+  body('folderId')
+    .optional()
+    .isMongoId()
+    .withMessage('folderId must be a valid MongoDB ID'),
+  body('password')
+    .optional()
+    .isLength({ min: 0, max: 100 })
+    .withMessage('password must be less than 100 characters'),
+  body('expiresAt')
+    .optional()
+    .isISO8601()
+    .withMessage('expiresAt must be a valid ISO 8601 date'),
+];
 
 module.exports = {
-  // Schémas
-  signupSchema,
+  validate,
+  commonValidations,
+  sanitize,
   loginSchema,
+  signupSchema,
+  changePasswordSchema,
   createFolderSchema,
   renameSchema,
   publicShareSchema,
-  changePasswordSchema,
-
-  // Middleware
-  validate,
 };

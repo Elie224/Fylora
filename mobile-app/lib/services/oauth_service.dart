@@ -48,7 +48,7 @@ class OAuthService {
   static Future<Map<String, dynamic>?> signInWithGitHub() async {
     try {
       // URL de callback pour capturer le token
-      final callbackUrl = 'supfile://oauth/github/callback';
+      final callbackUrl = 'fylora://oauth/github/callback';
       final oauthUrl = '${AppConstants.apiBaseUrl}/api/auth/github?redirect_uri=$callbackUrl';
       
       // Écouter les deep links
@@ -56,7 +56,7 @@ class OAuthService {
       StreamSubscription? linkSubscription;
 
       linkSubscription = linkStream.listen((String link) {
-        if (link.startsWith('supfile://oauth/github/callback')) {
+        if (link.startsWith('fylora://oauth/github/callback')) {
           final uri = Uri.parse(link);
           final token = uri.queryParameters['token'];
           final refreshToken = uri.queryParameters['refresh_token'];
@@ -106,7 +106,7 @@ class OAuthService {
   /// Connexion OAuth générique (fallback vers navigateur)
   static Future<void> signInWithProvider(String provider) async {
     try {
-      final callbackUrl = 'supfile://oauth/$provider/callback';
+      final callbackUrl = 'fylora://oauth/$provider/callback';
       final oauthUrl = '${AppConstants.apiBaseUrl}/api/auth/$provider?redirect_uri=$callbackUrl';
       
       final uri = Uri.parse(oauthUrl);
@@ -133,4 +133,5 @@ class OAuthService {
     }
   }
 }
+
 

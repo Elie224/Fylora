@@ -1,4 +1,4 @@
-# ✅ Résumé des Fonctionnalités Implémentées - Application Mobile SUPFile
+# ✅ Résumé des Fonctionnalités Implémentées - Application Mobile Fylora
 
 ## 🎯 Toutes les Fonctionnalités du Projet sont Implémentées !
 
@@ -271,6 +271,7 @@ L'application mobile est **complète et prête pour la soumission du projet** ! 
 7. **Filtrage par date** : Les filtres de date permettent de rechercher des fichiers modifiés entre deux dates.
 
 Toutes les fonctionnalités sont testées et fonctionnelles ! 🚀
+
 
 
 

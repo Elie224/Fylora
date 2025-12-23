@@ -18,7 +18,7 @@ npm start
 
 Vous devriez voir :
 ```
-✓ SUPFile API listening on http://0.0.0.0:5000
+✓ Fylora API listening on http://0.0.0.0:5001
 ```
 
 ### 2. 🔥 Configurer le Pare-feu Windows
@@ -28,7 +28,7 @@ Le pare-feu Windows bloque probablement les connexions entrantes.
 **Solution rapide** :
 ```powershell
 # Ouvrir PowerShell en tant qu'administrateur
-New-NetFirewallRule -DisplayName "SUPFile Backend" -Direction Inbound -LocalPort 5000 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "Fylora Backend" -Direction Inbound -LocalPort 5001 -Protocol TCP -Action Allow
 ```
 
 **Ou manuellement** :
@@ -36,10 +36,10 @@ New-NetFirewallRule -DisplayName "SUPFile Backend" -Direction Inbound -LocalPort
 2. Cliquez sur "Paramètres avancés"
 3. Cliquez sur "Règles de trafic entrant" > "Nouvelle règle"
 4. Sélectionnez "Port" > Suivant
-5. Sélectionnez "TCP" et entrez "5000" > Suivant
+5. Sélectionnez "TCP" et entrez "5001" > Suivant
 6. Sélectionnez "Autoriser la connexion" > Suivant
 7. Cochez tous les profils > Suivant
-8. Nommez la règle "SUPFile Backend" > Terminer
+8. Nommez la règle "Fylora Backend" > Terminer
 
 ### 3. 🌐 Vérifier que le téléphone et le PC sont sur le même réseau Wi-Fi
 
@@ -51,7 +51,7 @@ New-NetFirewallRule -DisplayName "SUPFile Backend" -Direction Inbound -LocalPort
 
 **Depuis le navigateur du téléphone** :
 1. Ouvrez Chrome sur votre téléphone
-2. Allez sur : `http://192.168.1.28:5000/api/health` (ou une route simple)
+2. Allez sur : `http://192.168.1.28:5001/api/health` (ou une route simple)
 3. Si ça fonctionne, le problème vient de l'application mobile
 4. Si ça ne fonctionne pas, le problème vient du réseau/pare-feu
 
@@ -71,8 +71,8 @@ Le backend doit autoriser les requêtes depuis votre téléphone. Vérifiez que 
 
 ## Checklist de Diagnostic
 
-- [ ] Backend démarré et accessible sur `http://192.168.1.28:5000`
-- [ ] Pare-feu Windows configuré pour autoriser le port 5000
+- [ ] Backend démarré et accessible sur `http://192.168.1.28:5001`
+- [ ] Pare-feu Windows configuré pour autoriser le port 5001
 - [ ] Téléphone et PC sur le même réseau Wi-Fi
 - [ ] Test depuis le navigateur du téléphone fonctionne
 - [ ] MongoDB est démarré et accessible
@@ -81,10 +81,11 @@ Le backend doit autoriser les requêtes depuis votre téléphone. Vérifiez que 
 
 Depuis votre PC, testez si le backend répond :
 ```powershell
-curl http://192.168.1.28:5000/api/health
+curl http://192.168.1.28:5001/api/health
 ```
 
 Si ça fonctionne depuis le PC mais pas depuis le téléphone, c'est un problème de pare-feu ou de réseau.
+
 
 
 

@@ -90,7 +90,7 @@ async function validateUploadedFile(file) {
   }
   
   // Vérifier la taille du fichier (déjà fait par multer, mais double vérification)
-  const maxSize = parseInt(process.env.MAX_FILE_SIZE || 32212254720); // 30 Go
+  const maxSize = parseInt(process.env.MAX_FILE_SIZE || 1099511627776); // 1 TO
   if (file.size > maxSize) {
     await fs.unlink(file.path).catch(() => {});
     throw new AppError('File too large', 413);
@@ -130,4 +130,5 @@ module.exports = {
   ALLOWED_MIME_TYPES,
   DANGEROUS_EXTENSIONS,
 };
+
 

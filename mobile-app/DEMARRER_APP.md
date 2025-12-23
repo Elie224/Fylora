@@ -1,4 +1,4 @@
-# 🚀 Guide de Démarrage - Application Mobile SUPFile
+# 🚀 Guide de Démarrage - Application Mobile Fylora
 
 ## ✅ Vérifications préalables
 
@@ -14,7 +14,7 @@ L'application mobile utilise une variable d'environnement pour l'URL de l'API. P
 
 ```powershell
 cd mobile-app
-flutter run --dart-define=API_URL=http://10.0.2.2:5000
+flutter run --dart-define=API_URL=http://10.0.2.2:5001
 ```
 
 **Note** : `10.0.2.2` est l'adresse IP spéciale qui correspond à `localhost` de votre machine hôte depuis l'émulateur Android.
@@ -42,7 +42,7 @@ flutter run --dart-define=API_URL=http://192.168.1.100:5000
 
 ```powershell
 cd mobile-app
-flutter run -d chrome --dart-define=API_URL=http://localhost:5000
+flutter run -d chrome --dart-define=API_URL=http://localhost:5001
 ```
 
 ## 🏃 Démarrer l'application
@@ -71,17 +71,17 @@ Vous devriez voir :
 
 **Sur un émulateur Android** :
 ```powershell
-flutter run --dart-define=API_URL=http://10.0.2.2:5000
+flutter run --dart-define=API_URL=http://10.0.2.2:5001
 ```
 
 **Sur un appareil physique Android** :
 ```powershell
-flutter run --dart-define=API_URL=http://VOTRE_IP:5000
+flutter run --dart-define=API_URL=http://VOTRE_IP:5001
 ```
 
 **Sur Chrome** :
 ```powershell
-flutter run -d chrome --dart-define=API_URL=http://localhost:5000
+flutter run -d chrome --dart-define=API_URL=http://localhost:5001
 ```
 
 ## 🔧 Configuration du Backend pour l'accès mobile
@@ -89,11 +89,11 @@ flutter run -d chrome --dart-define=API_URL=http://localhost:5000
 Pour que l'application mobile puisse se connecter au backend depuis un appareil physique, vous devez :
 
 1. **Modifier le backend pour écouter sur toutes les interfaces** :
-   - Vérifiez que le backend écoute sur `0.0.0.0:5000` et non `localhost:5000`
+   - Vérifiez que le backend écoute sur `0.0.0.0:5001` et non `localhost:5001`
    - Dans `backend/app.js` ou votre fichier de démarrage, utilisez :
    ```javascript
-   app.listen(5000, '0.0.0.0', () => {
-     console.log('Server running on http://0.0.0.0:5000');
+   app.listen(5001, '0.0.0.0', () => {
+     console.log('Server running on http://0.0.0.0:5001');
    });
    ```
 
@@ -156,7 +156,7 @@ flutter build appbundle --release --dart-define=API_URL=http://votre-serveur.com
 
 - [Documentation Flutter](https://docs.flutter.dev/)
 - [Flutter pour Android](https://docs.flutter.dev/get-started/install/windows)
-- [API Backend SUPFile](../docs/API.md)
+- [API Backend Fylora](../docs/API.md)
 
 ## ⚠️ Notes importantes
 
@@ -168,6 +168,7 @@ flutter build appbundle --release --dart-define=API_URL=http://votre-serveur.com
 ---
 
 **Bon développement ! 🎉**
+
 
 
 

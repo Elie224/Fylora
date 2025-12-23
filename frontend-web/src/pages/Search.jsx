@@ -2,12 +2,24 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { dashboardService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useDebounce } from '../utils/debounce';
 
 export default function Search() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const { theme } = useTheme();
   const [query, setQuery] = useState('');
+  
+  // Couleurs dynamiques selon le thème - Thème clair amélioré
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f0f4f8';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -90,21 +102,27 @@ export default function Search() {
   }, []);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ 
+      padding: '24px', 
+      maxWidth: '1400px', 
+      margin: '0 auto',
+      backgroundColor: bgColor,
+      minHeight: '100vh'
+    }}>
       <h1 style={{ 
         fontSize: '28px', 
         marginBottom: '24px',
         fontWeight: '700',
-        color: '#333'
+        color: textColor
       }}>🔍 {t('search')}</h1>
       
       <div style={{ 
         marginBottom: 24, 
         padding: '24px', 
-        backgroundColor: '#ffffff',
-        border: '1px solid #e0e0e0', 
+        backgroundColor: cardBg,
+        border: `1px solid ${borderColor}`, 
         borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+        boxShadow: shadowColor
       }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -118,13 +136,15 @@ export default function Search() {
                 flex: 1,
                 fontSize: '16px', 
                 boxSizing: 'border-box',
-                border: '1px solid #ddd',
+                border: `1px solid ${borderColor}`,
                 borderRadius: '8px',
                 outline: 'none',
-                transition: 'border-color 0.2s'
+                transition: 'border-color 0.2s',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
               }}
               onFocus={(e) => e.target.style.borderColor = '#2196F3'}
-              onBlur={(e) => e.target.style.borderColor = '#ddd'}
+              onBlur={(e) => e.target.style.borderColor = borderColor}
             />
             <button
               onClick={() => handleSearch()}
@@ -159,9 +179,11 @@ export default function Search() {
             style={{
               padding: '12px',
               fontSize: '14px',
-              border: '1px solid #ddd',
+              border: `1px solid ${borderColor}`,
               borderRadius: '8px',
-              outline: 'none'
+              outline: 'none',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor
             }}
           >
             <option value="all">{t('allTypes') || 'Tous les types'}</option>
@@ -175,9 +197,11 @@ export default function Search() {
             style={{
               padding: '12px',
               fontSize: '14px',
-              border: '1px solid #ddd',
+              border: `1px solid ${borderColor}`,
               borderRadius: '8px',
-              outline: 'none'
+              outline: 'none',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor
             }}
           >
             <option value="">{t('allFormats') || 'Tous les formats'}</option>
@@ -195,9 +219,11 @@ export default function Search() {
             style={{
               padding: '12px',
               fontSize: '14px',
-              border: '1px solid #ddd',
+              border: `1px solid ${borderColor}`,
               borderRadius: '8px',
-              outline: 'none'
+              outline: 'none',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor
             }}
           />
 
@@ -209,9 +235,11 @@ export default function Search() {
             style={{
               padding: '12px',
               fontSize: '14px',
-              border: '1px solid #ddd',
+              border: `1px solid ${borderColor}`,
               borderRadius: '8px',
-              outline: 'none'
+              outline: 'none',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor
             }}
           />
         </div>
@@ -222,9 +250,9 @@ export default function Search() {
         <div style={{ 
           padding: '40px', 
           textAlign: 'center',
-          color: '#666'
+          color: textSecondary
         }}>
-          {t('loading') || 'Chargement...'}
+          <div style={{ color: textColor }}>{t('loading') || 'Chargement...'}</div>
         </div>
       )}
 
@@ -232,36 +260,36 @@ export default function Search() {
         <div style={{ 
           padding: '40px', 
           textAlign: 'center',
-          color: '#666'
+          color: textSecondary
         }}>
-          {t('noResults') || 'Aucun résultat trouvé'}
+          <div style={{ color: textColor }}>{t('noResults') || 'Aucun résultat trouvé'}</div>
         </div>
       )}
 
       {!loading && filteredResults.length > 0 && (
         <div style={{
-          backgroundColor: '#ffffff',
-          border: '1px solid #e0e0e0',
+          backgroundColor: cardBg,
+          border: `1px solid ${borderColor}`,
           borderRadius: '12px',
           overflow: 'hidden',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          boxShadow: shadowColor
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '2px solid #e0e0e0' }}>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#333' }}>
+              <tr style={{ backgroundColor: secondaryBg, borderBottom: `2px solid ${borderColor}` }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: textColor }}>
                   {t('name') || 'Nom'}
                 </th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#333' }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: textColor }}>
                   {t('type') || 'Type'}
                 </th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#333' }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: textColor }}>
                   {t('size') || 'Taille'}
                 </th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#333' }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: textColor }}>
                   {t('modified') || 'Modifié'}
                 </th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#333' }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: textColor }}>
                   {t('actions') || 'Actions'}
                 </th>
               </tr>
@@ -271,23 +299,24 @@ export default function Search() {
                 <tr 
                   key={item.id} 
                   style={{ 
-                    borderBottom: '1px solid #f0f0f0',
-                    transition: 'background-color 0.2s'
+                    borderBottom: `1px solid ${borderColor}`,
+                    transition: 'background-color 0.2s',
+                    backgroundColor: cardBg
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = cardBg}
                 >
-                  <td style={{ padding: '16px', color: '#333' }}>
+                  <td style={{ padding: '16px', color: textColor }}>
                     {item.item_type === 'folder' || item.type === 'folder' ? '📁 ' : ''}
                     {item.name}
                   </td>
-                  <td style={{ padding: '16px', color: '#666' }}>
+                  <td style={{ padding: '16px', color: textSecondary }}>
                     {item.item_type === 'folder' || item.type === 'folder' ? '📁 Dossier' : item.mime_type || '-'}
                   </td>
-                  <td style={{ padding: '16px', color: '#666' }}>
+                  <td style={{ padding: '16px', color: textSecondary }}>
                     {item.size ? formatBytes(item.size) : '-'}
                   </td>
-                  <td style={{ padding: '16px', color: '#666' }}>
+                  <td style={{ padding: '16px', color: textSecondary }}>
                     {item.updated_at ? new Date(item.updated_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                       year: 'numeric',
                       month: '2-digit',

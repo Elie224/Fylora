@@ -2,16 +2,25 @@
 // À utiliser dans tous les composants React
 
 import axios from 'axios';
+import { createRetryableRequest } from '../utils/smartRetry';
 import { API_URL } from '../config';
 
 // API_URL est maintenant importé depuis config.js avec la valeur par défaut pour la production
 
-// Créer une instance axios avec configuration par défaut
-const apiClient = axios.create({
+// Créer une instance axios avec configuration par défaut optimisée
+const apiClientBase = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // Timeout de 30 secondes pour améliorer la stabilité
+});
+
+// Appliquer smart retry avec backoff exponentiel
+const apiClient = createRetryableRequest(apiClientBase, {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 10000,
 });
 
 // Instance séparée pour les uploads (sans Content-Type par défaut)
@@ -25,7 +34,8 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else {
-    console.warn('No access token found in localStorage for request:', config.url);
+    // Ne pas logger pour éviter le spam, mais s'assurer que la requête peut continuer
+    // L'intercepteur de réponse gérera l'erreur 401
   }
   return config;
 }, (error) => {
@@ -44,36 +54,89 @@ uploadClient.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+// Variable pour éviter les boucles infinies de refresh
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 // Intercepteur pour gérer les erreurs (notamment 401)
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      // Token expiré - essayer de rafraîchir
+    const originalRequest = error.config;
+
+    // Si c'est une erreur 401 et qu'on n'a pas déjà tenté de rafraîchir
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Si on est déjà en train de rafraîchir, mettre en queue
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
       const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
-        try {
-          const response = await authService.refresh(refreshToken);
-          const { access_token, refresh_token } = response.data.data;
-          localStorage.setItem('access_token', access_token);
-          localStorage.setItem('refresh_token', refresh_token);
-          
-          // Réessayer la requête originale
-          error.config.headers.Authorization = `Bearer ${access_token}`;
-          return apiClient.request(error.config);
-        } catch (refreshError) {
-          // Refresh échoué - rediriger vers login
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
-        }
-      } else {
-        // Pas de refresh token - rediriger vers login
+      
+      if (!refreshToken) {
+        // Pas de refresh token - nettoyer et rediriger
+        processQueue(error, null);
+        isRefreshing = false;
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        
+        // Utiliser un événement personnalisé pour éviter les problèmes de navigation
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+        return Promise.reject(error);
+      }
+
+      try {
+        const response = await authService.refresh(refreshToken);
+        const { access_token, refresh_token } = response.data.data;
+        
+        localStorage.setItem('access_token', access_token);
+        localStorage.setItem('refresh_token', refresh_token);
+        
+        // Mettre à jour le header de la requête originale
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        
+        // Traiter la queue et réessayer la requête
+        processQueue(null, access_token);
+        isRefreshing = false;
+        
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Refresh échoué - nettoyer et rediriger
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        
+        // Utiliser un événement personnalisé pour éviter les problèmes de navigation
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+        return Promise.reject(refreshError);
       }
     }
+
     return Promise.reject(error);
   },
 );
@@ -115,6 +178,7 @@ export const fileService = {
   download: (fileId) => apiClient.get(`/files/${fileId}/download`),
   delete: (fileId) => apiClient.delete(`/files/${fileId}`),
   restore: (fileId) => apiClient.post(`/files/${fileId}/restore`),
+  permanentDelete: (fileId) => apiClient.delete(`/files/${fileId}/permanent`),
   listTrash: () => apiClient.get('/files/trash'),
   rename: (fileId, newName) =>
     apiClient.patch(`/files/${fileId}`, { name: newName }),
@@ -122,6 +186,13 @@ export const fileService = {
     apiClient.patch(`/files/${fileId}`, { folder_id: newFolderId }),
   preview: (fileId) => apiClient.get(`/files/${fileId}/preview`),
   stream: (fileId) => apiClient.get(`/files/${fileId}/stream`),
+  downloadBatch: (fileIds = [], folderIds = []) =>
+    apiClient.post('/files/download-batch', {
+      file_ids: fileIds,
+      folder_ids: folderIds,
+    }, {
+      responseType: 'blob',
+    }),
 };
 
 // Services dossiers
@@ -135,6 +206,7 @@ export const folderService = {
     apiClient.patch(`/folders/${folderId}`, { parent_id: newParentId }),
   delete: (folderId) => apiClient.delete(`/folders/${folderId}`),
   restore: (folderId) => apiClient.post(`/folders/${folderId}/restore`),
+  permanentDelete: (folderId) => apiClient.delete(`/folders/${folderId}/permanent`),
   listTrash: () => apiClient.get('/folders/trash'),
   downloadAsZip: (folderId) =>
     apiClient.get(`/folders/${folderId}/download`, { responseType: 'blob' }),
@@ -195,5 +267,17 @@ export const dashboardService = {
       params: { q: query, ...filters },
     }),
 };
+
+// Export des nouveaux services
+export { fileVersionsService } from './fileVersionsService';
+export { notificationsService } from './notificationsService';
+export { activityService } from './activityService';
+export { tagsService } from './tagsService';
+export { notesService } from './notesService';
+export { twoFactorService } from './twoFactorService';
+export { teamsService } from './teamsService';
+export { scheduledBackupsService } from './scheduledBackupsService';
+export { pluginsService } from './pluginsService';
+export { offlineSyncService } from './offlineSyncService';
 
 export default apiClient;

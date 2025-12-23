@@ -3,25 +3,61 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { dashboardService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { t, language } = useLanguage();
+  const { theme } = useTheme();
+  
+  // Couleurs dynamiques selon le thème - Thème clair amélioré
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
+  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
+
+  // Gérer la déconnexion automatique
+  useEffect(() => {
+    const handleLogout = async () => {
+      await logout();
+      navigate('/login', { replace: true });
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, [logout, navigate]);
 
   // Memoization de la fonction de chargement
   const loadDashboard = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await dashboardService.getStats();
       setStats(response.data.data);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
+      
+      // Si c'est une erreur 401, ne pas afficher d'erreur car la redirection est gérée par l'intercepteur
+      if (err.response?.status === 401) {
+        // L'intercepteur va gérer la redirection
+        return;
+      }
+      
+      // Pour les autres erreurs, afficher un message
+      setError(err.response?.data?.error?.message || err.message || t('loadError') || 'Erreur lors du chargement');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadDashboard();
@@ -55,11 +91,42 @@ export default function Dashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <div style={{ 
+        padding: '24px 16px', 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center',
+        minHeight: '200px'
+      }}>
+        <div style={{ fontSize: '18px', color: '#d32f2f', marginBottom: '16px' }}>⚠️ {error}</div>
+        <button
+          onClick={() => loadDashboard()}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#2196F3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          {t('retry') || 'Réessayer'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
       padding: '16px',
       maxWidth: '1200px',
-      margin: '0 auto'
+      margin: '0 auto',
+      backgroundColor: theme === 'dark' ? '#121212' : 'transparent',
+      minHeight: '100vh'
     }}>
       <div style={{ 
         display: 'flex', 
@@ -73,39 +140,72 @@ export default function Dashboard() {
           fontSize: '28px', 
           fontWeight: '600', 
           margin: 0,
-          color: '#333'
+          color: textColor
         }}>
           {t('dashboard')}
         </h1>
-        <button
-          onClick={() => navigate('/files')}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#2196F3',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: '600',
-            boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#1976D2';
-            e.target.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#2196F3';
-            e.target.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.3)';
-          }}
-        >
-          <span style={{ fontSize: '20px' }}>📁</span>
-          {t('myFiles')}
-        </button>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {user?.is_admin && (
+            <button
+              onClick={() => navigate('/admin')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#9C27B0',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600',
+                boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#7B1FA2';
+                e.target.style.boxShadow = '0 4px 12px rgba(156, 39, 176, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#9C27B0';
+                e.target.style.boxShadow = '0 2px 8px rgba(156, 39, 176, 0.3)';
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>⚙️</span>
+              Administration
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/files')}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '600',
+              boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#1976D2';
+              e.target.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#2196F3';
+              e.target.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.3)';
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>📁</span>
+            {t('myFiles')}
+          </button>
+        </div>
       </div>
       
       {stats && (
@@ -114,16 +214,16 @@ export default function Dashboard() {
           <div style={{ 
             marginBottom: '20px', 
             padding: '20px', 
-            backgroundColor: '#ffffff',
-            border: '1px solid #e0e0e0', 
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`, 
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
           }}>
             <h2 style={{ 
               fontSize: '18px', 
               fontWeight: '600', 
               marginBottom: '16px',
-              color: '#333'
+              color: textColor
             }}>
               {t('storageSpace')}
             </h2>
@@ -135,20 +235,20 @@ export default function Dashboard() {
                 flexWrap: 'wrap',
                 gap: '8px'
               }}>
-                <div style={{ fontSize: '14px', color: '#666' }}>
-                  <strong style={{ color: '#333' }}>{t('used')}:</strong> {formatBytes(stats.quota.used)}
+                <div style={{ fontSize: '14px', color: textSecondary }}>
+                  <strong style={{ color: textColor }}>{t('used')}:</strong> {formatBytes(stats.quota.used)}
                 </div>
-                <div style={{ fontSize: '14px', color: '#666' }}>
-                  <strong style={{ color: '#333' }}>{t('available')}:</strong> {formatBytes(stats.quota.available)}
+                <div style={{ fontSize: '14px', color: textSecondary }}>
+                  <strong style={{ color: textColor }}>{t('available')}:</strong> {formatBytes(stats.quota.available)}
                 </div>
               </div>
               <div style={{ 
                 width: '100%', 
                 height: '28px', 
-                backgroundColor: '#f5f5f5', 
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5', 
                 borderRadius: '14px', 
                 overflow: 'hidden',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
+                boxShadow: theme === 'dark' ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.08)',
                 position: 'relative'
               }}>
                 {(() => {
@@ -194,7 +294,7 @@ export default function Dashboard() {
               <div style={{ 
                 marginTop: '8px', 
                 fontSize: '13px', 
-                color: '#666',
+                color: textSecondary,
                 textAlign: 'center'
               }}>
                 {stats.quota.percentage < 1 
@@ -208,16 +308,16 @@ export default function Dashboard() {
           <div style={{ 
             marginBottom: '20px', 
             padding: '20px', 
-            backgroundColor: '#ffffff',
-            border: '1px solid #e0e0e0', 
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`, 
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
           }}>
             <h2 style={{ 
               fontSize: '18px', 
               fontWeight: '600', 
               marginBottom: '20px',
-              color: '#333'
+              color: textColor
             }}>
               {t('breakdownByType')}
             </h2>
@@ -242,14 +342,14 @@ export default function Dashboard() {
                       <span style={{ 
                         fontSize: '14px', 
                         fontWeight: '500',
-                        color: '#333',
+                        color: textColor,
                         minWidth: '80px'
                       }}>
                         {item.label}
                       </span>
                       <span style={{ 
                         fontSize: '13px', 
-                        color: '#666',
+                        color: textSecondary,
                         fontWeight: '500'
                       }}>
                         {formatBytes(item.value)}
@@ -258,11 +358,11 @@ export default function Dashboard() {
                     <div style={{ 
                       width: '100%', 
                       height: '24px', 
-                      backgroundColor: '#f5f5f5', 
+                      backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5', 
                       borderRadius: '12px', 
                       position: 'relative', 
                       overflow: 'hidden',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+                      boxShadow: theme === 'dark' ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.06)'
                     }}>
                       <div style={{
                         width: `${percentage}%`,
@@ -283,10 +383,10 @@ export default function Dashboard() {
           <div style={{ 
             marginBottom: '20px', 
             padding: '20px', 
-            backgroundColor: '#ffffff',
-            border: '1px solid #e0e0e0', 
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`, 
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
           }}>
             <div style={{ 
               display: 'flex', 
@@ -300,7 +400,7 @@ export default function Dashboard() {
                 fontSize: '18px', 
                 fontWeight: '600', 
                 margin: 0,
-                color: '#333'
+                color: textColor
               }}>
                 {t('recentFiles')}
               </h2>
@@ -350,13 +450,13 @@ export default function Dashboard() {
                     key={file.id} 
                     style={{ 
                       padding: '12px 0', 
-                      borderBottom: index < stats.recent_files.length - 1 ? '1px solid #f0f0f0' : 'none',
+                      borderBottom: index < stats.recent_files.length - 1 ? `1px solid ${borderColor}` : 'none',
                       fontSize: '14px',
-                      color: '#333'
+                      color: textColor
                     }}
                   >
                     <div style={{ fontWeight: '500', marginBottom: '4px' }}>{file.name}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ fontSize: '12px', color: textSecondary }}>
                       {formatBytes(file.size)} • {new Date(file.updated_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}
                     </div>
                   </li>
@@ -372,16 +472,16 @@ export default function Dashboard() {
           {/* Statistiques générales */}
           <div style={{ 
             padding: '20px', 
-            backgroundColor: '#ffffff',
-            border: '1px solid #e0e0e0', 
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`, 
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
           }}>
             <h2 style={{ 
               fontSize: '18px', 
               fontWeight: '600', 
               marginBottom: '16px',
-              color: '#333'
+              color: textColor
             }}>
               {t('statistics')}
             </h2>
@@ -392,25 +492,25 @@ export default function Dashboard() {
             }}>
               <div style={{
                 padding: '16px',
-                backgroundColor: '#f8f9fa',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
                 borderRadius: '8px',
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '24px', fontWeight: '600', color: '#2196F3', marginBottom: '4px' }}>
                   {stats.total_files}
                 </div>
-                <div style={{ fontSize: '13px', color: '#666' }}>{t('totalFiles')}</div>
+                <div style={{ fontSize: '13px', color: textSecondary }}>{t('totalFiles')}</div>
               </div>
               <div style={{
                 padding: '16px',
-                backgroundColor: '#f8f9fa',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
                 borderRadius: '8px',
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '24px', fontWeight: '600', color: '#4CAF50', marginBottom: '4px' }}>
                   {stats.total_folders}
                 </div>
-                <div style={{ fontSize: '13px', color: '#666' }}>{t('totalFolders')}</div>
+                <div style={{ fontSize: '13px', color: textSecondary }}>{t('totalFolders')}</div>
               </div>
             </div>
           </div>

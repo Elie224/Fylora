@@ -8,6 +8,7 @@ router.use(authMiddleware);
 
 // Rechercher
 router.get('/', searchController.search);
+router.get('/autocomplete', searchController.autocomplete);
 
 module.exports = router;
 

@@ -6,8 +6,9 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
 process.env.SESSION_SECRET = 'test-session-secret';
-process.env.MONGO_URI = 'mongodb://localhost:27017/supfile-test';
+process.env.MONGO_URI = 'mongodb://localhost:27017/fylora-test';
 
 // Augmenter le timeout pour les tests
 jest.setTimeout(10000);
+
 

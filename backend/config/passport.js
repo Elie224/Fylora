@@ -6,6 +6,22 @@ const UserModel = require('../models/userModel');
 const FolderModel = require('../models/folderModel');
 const config = require('../config');
 
+// Fonction helper pour logger les erreurs OAuth de manière détaillée
+const logOAuthError = (provider, error, context = {}) => {
+  console.error(`\n❌ [OAuth ${provider}] Error in ${context.stage || 'authentication'}:`);
+  console.error(`   Message: ${error.message}`);
+  if (error.statusCode) console.error(`   Status Code: ${error.statusCode}`);
+  if (error.data) console.error(`   Data:`, error.data);
+  if (error.response) {
+    console.error(`   Response Status: ${error.response.status}`);
+    console.error(`   Response Data:`, error.response.data);
+  }
+  if (context) {
+    console.error(`   Context:`, context);
+  }
+  console.error('');
+};
+
 // Configuration des stratégies OAuth
 const configurePassport = () => {
   console.log('🔧 Configuring OAuth strategies...');
@@ -82,6 +98,10 @@ const configurePassport = () => {
   // Stratégie GitHub
   if (config.oauth.github?.clientId && config.oauth.github?.clientSecret) {
     console.log('✅ GitHub OAuth configured');
+    console.log('📋 GitHub OAuth config:', {
+      clientID: config.oauth.github.clientId.substring(0, 15) + '...',
+      callbackURL: config.oauth.github.redirectUri
+    });
     passport.use('github', new GitHubStrategy({
       clientID: config.oauth.github.clientId,
       clientSecret: config.oauth.github.clientSecret,
@@ -102,7 +122,7 @@ const configurePassport = () => {
                 hostname: 'api.github.com',
                 path: '/user/emails',
                 headers: {
-                  'User-Agent': 'SUPFile',
+                  'User-Agent': 'Fylora',
                   'Authorization': `token ${accessToken}`,
                   'Accept': 'application/vnd.github.v3+json'
                 }
@@ -176,7 +196,7 @@ const configurePassport = () => {
           return done(null, user);
         }
       } catch (error) {
-        console.error('GitHub OAuth error:', error);
+        logOAuthError('github', error, { stage: 'callback processing' });
         return done(error, null);
       }
     }));

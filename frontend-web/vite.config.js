@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 3001, // Changé pour éviter conflit avec d'autres services
     host: '0.0.0.0',
   },
   build: {
@@ -17,13 +17,33 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
-    // Code splitting automatique
+    // Code splitting automatique optimisé
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          auth: ['./src/services/authStore'],
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('react-router')) {
+              return 'router-vendor';
+            }
+            if (id.includes('axios')) {
+              return 'http-vendor';
+            }
+            return 'vendor';
+          }
+          // Feature chunks
+          if (id.includes('/pages/')) {
+            const pageName = id.split('/pages/')[1].split('/')[0];
+            return `page-${pageName}`;
+          }
         },
+        // Optimiser les noms de chunks
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
     // Augmenter la limite de taille pour les warnings

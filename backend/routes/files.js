@@ -4,13 +4,14 @@ const filesController = require('../controllers/filesController');
 const { authMiddleware, optionalAuthMiddleware } = require('../middlewares/authMiddleware');
 const { validateObjectId, validateFilePath } = require('../middlewares/security');
 const { validateFileUpload } = require('../middlewares/fileValidation');
-const { uploadLimiter } = require('../middlewares/rateLimiter');
+const { uploadLimiter, generalLimiter } = require('../middlewares/rateLimiter');
 
 // Télécharger un fichier (peut être public avec token de partage - DOIT être avant authMiddleware)
 router.get('/:id/download', optionalAuthMiddleware, filesController.downloadFile);
 
 // Routes protégées (toutes les autres routes nécessitent une authentification)
 router.use(authMiddleware);
+router.use(generalLimiter); // Rate limiting pour toutes les routes fichiers
 router.use(validateObjectId); // Valider tous les ObjectIds dans les paramètres
 
 // Lister les fichiers
@@ -36,6 +37,13 @@ router.delete('/:id', filesController.deleteFile);
 
 // Restaurer un fichier
 router.post('/:id/restore', filesController.restoreFile);
+
+// Supprimer définitivement un fichier
+router.delete('/:id/permanent', filesController.permanentDeleteFile);
+
+// Téléchargement en lot (ZIP)
+const batchDownloadController = require('../controllers/batchDownloadController');
+router.post('/download-batch', batchDownloadController.downloadBatch);
 
 module.exports = router;
 

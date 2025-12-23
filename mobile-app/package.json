@@ -1,7 +1,7 @@
 {
-  "name": "supfile-mobile",
+  "name": "fylora-mobile",
   "version": "1.0.0",
-  "description": "SUPFile - Mobile Client (Expo/React Native)",
+  "description": "Fylora - Mobile Client (Expo/React Native)",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",

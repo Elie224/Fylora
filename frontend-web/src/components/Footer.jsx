@@ -1,12 +1,18 @@
 import React from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { theme } = useTheme();
+  
+  const footerBg = theme === 'dark' ? '#1e1e1e' : '#f8f9fa';
+  const footerBorder = theme === 'dark' ? '#333333' : '#e0e0e0';
+  const footerText = theme === 'dark' ? '#b0b0b0' : '#999';
 
   return (
     <footer style={{
-      backgroundColor: '#f8f9fa',
-      borderTop: '1px solid #e0e0e0',
+      backgroundColor: footerBg,
+      borderTop: `1px solid ${footerBorder}`,
       padding: '20px',
       marginTop: 'auto',
       width: '100%',
@@ -16,9 +22,9 @@ export default function Footer() {
         maxWidth: '1200px',
         margin: '0 auto',
         fontSize: '14px',
-        color: '#999'
+        color: footerText
       }}>
-        © {currentYear} SUPFile. Tous droits réservés.
+        © {currentYear} Fylora. Tous droits réservés.
       </div>
     </footer>
   );

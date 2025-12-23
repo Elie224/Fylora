@@ -1,28 +1,42 @@
-/* Variables CSS pour les thèmes */
+/* Variables CSS pour les thèmes - Thème clair amélioré */
 :root {
-  --bg-color: #ffffff;
-  --text-color: #333333;
-  --border-color: #e0e0e0;
-  --nav-bg: #f5f5f5;
+  --bg-color: #fafbfc;
+  --text-color: #1a202c;
+  --border-color: #e2e8f0;
+  --nav-bg: #ffffff;
   --card-bg: #ffffff;
   --input-bg: #ffffff;
-  --input-border: #ddd;
-  --hover-bg: #f5f5f5;
+  --input-border: #cbd5e0;
+  --hover-bg: #f7fafc;
   --link-color: #2196F3;
   --link-hover: #1976D2;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --shadow-hover: rgba(0, 0, 0, 0.12);
+  --secondary-bg: #f7fafc;
+  --text-secondary: #4a5568;
+  --accent-color: #2196F3;
+  --accent-light: #e3f2fd;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-accent: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
 }
 
 [data-theme="dark"] {
-  --bg-color: #1e1e1e;
+  --bg-color: #121212;
   --text-color: #e0e0e0;
-  --border-color: #404040;
-  --nav-bg: #2d2d2d;
-  --card-bg: #2d2d2d;
-  --input-bg: #3d3d3d;
-  --input-border: #555;
-  --hover-bg: #3d3d3d;
+  --border-color: #333333;
+  --nav-bg: #1e1e1e;
+  --card-bg: #1e1e1e;
+  --input-bg: #2d2d2d;
+  --input-border: #404040;
+  --hover-bg: #2d2d2d;
   --link-color: #64b5f6;
   --link-hover: #90caf9;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --secondary-bg: #2d2d2d;
+  --text-secondary: #b0b0b0;
 }
 
 /* Application globale */
@@ -125,7 +139,8 @@ body {
   font-size: 14px;
   line-height: 1.6;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  background-color: #f5f5f5;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 /* Navigation responsive */
@@ -245,6 +260,130 @@ h2 {
 
   h2 {
     font-size: 24px !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   Mobile: < 768px
+   Tablet: 768px - 1023px
+   Desktop: >= 1024px
+   ============================================ */
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+  /* Navigation mobile */
+  .nav-links-desktop {
+    display: none !important;
+  }
+  
+  .desktop-user-button {
+    display: none !important;
+  }
+  
+  .mobile-menu-toggle,
+  .mobile-logo,
+  .mobile-user-button {
+    display: block !important;
+  }
+
+  /* Containers */
+  [style*="maxWidth"] {
+    max-width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Tables - scroll horizontal */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Cards en colonne unique */
+  [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Modals et popups */
+  [style*="maxWidth: 500"],
+  [style*="maxWidth: 600"],
+  [style*="maxWidth: 400"] {
+    max-width: 95vw !important;
+    margin: 10px !important;
+  }
+
+  /* Padding réduit */
+  section, div[style*="padding: 24"] {
+    padding: 16px !important;
+  }
+}
+
+/* Tablet (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Navigation tablette */
+  .nav-links-desktop {
+    display: flex !important;
+    gap: 4px !important;
+  }
+  
+  .mobile-menu-toggle,
+  .mobile-logo {
+    display: none !important;
+  }
+  
+  .desktop-user-button {
+    display: flex !important;
+  }
+  
+  .mobile-user-button {
+    display: none !important;
+  }
+
+  /* Containers tablette */
+  [style*="maxWidth: 1400"] {
+    max-width: 95% !important;
+  }
+
+  /* Grid 2 colonnes */
+  [style*="gridTemplateColumns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Tables responsive */
+  table {
+    font-size: 14px;
+  }
+}
+
+/* Desktop (>= 1024px) */
+@media (min-width: 1024px) {
+  /* Navigation desktop complète */
+  .nav-links-desktop {
+    display: flex !important;
+    gap: 8px !important;
+  }
+  
+  .mobile-menu-toggle,
+  .mobile-logo,
+  .mobile-user-button {
+    display: none !important;
+  }
+  
+  .desktop-user-button {
+    display: flex !important;
+  }
+
+  /* Containers desktop */
+  [style*="maxWidth: 1400"] {
+    max-width: 1400px !important;
+  }
+
+  /* Grid multi-colonnes */
+  [style*="gridTemplateColumns"] {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
   }
 }
 

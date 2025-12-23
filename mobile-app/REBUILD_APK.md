@@ -9,17 +9,17 @@ L'application mobile ne peut pas se connecter car l'APK installé a été build�
 
 Sur votre téléphone Android :
 1. Allez dans Paramètres > Applications
-2. Trouvez "SUPFile" ou "supfile_mobile"
+2. Trouvez "Fylora" ou "fylora_mobile"
 3. Appuyez sur "Désinstaller"
 
 ### Étape 2 : Rebuild l'APK avec la bonne URL
 
 Dans PowerShell :
 ```powershell
-cd C:\Users\PC\OneDrive\Bureau\SUPFile\mobile-app
+cd C:\Users\PC\OneDrive\Bureau\Fylora\mobile-app
 flutter clean
 flutter pub get
-flutter build apk --release --dart-define=API_URL=http://192.168.1.28:5000
+flutter build apk --release --dart-define=API_URL=http://192.168.1.28:5001
 ```
 
 ### Étape 3 : Installer le nouvel APK
@@ -33,12 +33,13 @@ flutter build apk --release --dart-define=API_URL=http://192.168.1.28:5000
 Si votre téléphone est connecté en USB avec débogage activé :
 
 ```powershell
-cd C:\Users\PC\OneDrive\Bureau\SUPFile\mobile-app
-flutter build apk --release --dart-define=API_URL=http://192.168.1.28:5000
+cd C:\Users\PC\OneDrive\Bureau\Fylora\mobile-app
+flutter build apk --release --dart-define=API_URL=http://192.168.1.28:5001
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
 Le flag `-r` remplace l'ancienne installation.
+
 
 
 

@@ -49,8 +49,8 @@ class User {
     final quotaUsed = json['quota_used'] is int ? json['quota_used'] as int :
                       json['quota_used'] is String ? int.tryParse(json['quota_used']) ?? 0 : 0;
     final quotaLimit = json['quota_limit'] is int ? json['quota_limit'] as int :
-                        json['quota_limit'] is String ? int.tryParse(json['quota_limit']) ?? 32212254720 :
-                        32212254720;
+                        json['quota_limit'] is String ? int.tryParse(json['quota_limit']) ?? 1099511627776 :
+                        1099511627776;
     
     if (quotaUsed < 0 || quotaLimit < 0) {
       throw FormatException('User quotas must be >= 0');

@@ -13,7 +13,10 @@ async function setAdmin() {
     await db.connectionPromise;
     console.log('✅ Connexion MongoDB établie');
 
-    const User = mongoose.models.User || mongoose.model('User');
+    // Charger le modèle User - UserModel exporte le modèle Mongoose directement
+    require('../models/userModel');
+    const User = mongoose.models.User;
+
     const adminEmail = 'kouroumaelisee@gmail.com';
 
     // Trouver l'utilisateur
@@ -38,4 +41,5 @@ async function setAdmin() {
 }
 
 setAdmin();
+
 

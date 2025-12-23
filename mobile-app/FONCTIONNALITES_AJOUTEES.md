@@ -1,4 +1,4 @@
-# Fonctionnalités Ajoutées à l'Application Mobile SUPFile
+# Fonctionnalités Ajoutées à l'Application Mobile Fylora
 
 ## 📋 Résumé des Ajouts
 
@@ -99,7 +99,7 @@ Pour que les deep links OAuth fonctionnent sur Android, ajoutez dans `android/ap
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="supfile" android:host="oauth" />
+    <data android:scheme="fylora" android:host="oauth" />
 </intent-filter>
 ```
 
@@ -127,4 +127,5 @@ Pour utiliser Google Sign-In natif, configurez votre projet dans Google Cloud Co
 ## ✅ Conclusion
 
 Toutes les fonctionnalités manquantes identifiées ont été implémentées avec succès. L'application mobile est maintenant complète et conforme à toutes les exigences du cahier des charges.
+
 

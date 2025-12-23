@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
-import '../../widgets/supfile_logo.dart';
+import '../../widgets/fylora_logo.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -91,8 +91,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
-                  // Logo personnalisé SUPFile
-                  const SupFileLogo(
+                  // Logo personnalisé Fylora
+                  const FyloraLogo(
                     size: 100,
                     showIcon: true,
                     useGradient: true,
@@ -110,7 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Rejoignez SUPFile dès aujourd\'hui',
+                    'Rejoignez Fylora dès aujourd\'hui',
                     style: TextStyle(
                       fontSize: 15,
                       color: isDark ? Colors.grey[300] : Colors.grey[600],
@@ -289,6 +289,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
+
 
 
 

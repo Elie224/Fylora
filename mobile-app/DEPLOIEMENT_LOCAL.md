@@ -1,4 +1,4 @@
-# 🚀 Guide de Déploiement Local - Application Mobile SUPFile
+# 🚀 Guide de Déploiement Local - Application Mobile Fylora
 
 Ce guide explique comment créer et déployer l'application mobile en local pour Android et Web.
 
@@ -16,13 +16,13 @@ Ce guide explique comment créer et déployer l'application mobile en local pour
 L'URL de l'API est définie via `--dart-define=API_URL=...` lors du build.
 
 **Pour localhost (développement)** :
-- Web : `http://localhost:5000`
-- Android Emulator : `http://10.0.2.2:5000`
-- Android Physique : `http://VOTRE_IP_LOCALE:5000` (ex: `http://192.168.1.100:5000`)
+- Web : `http://localhost:5001`
+- Android Emulator : `http://10.0.2.2:5001`
+- Android Physique : `http://VOTRE_IP_LOCALE:5001` (ex: `http://192.168.1.100:5001`)
 
 **Pour production locale** :
 - Utilisez l'IP de votre machine sur le réseau local
-- Exemple : `http://192.168.1.100:5000`
+- Exemple : `http://192.168.1.100:5001`
 
 ### 2. Trouver votre IP locale
 
@@ -45,7 +45,7 @@ ip addr show
 
 ```powershell
 cd mobile-app
-flutter build apk --release --dart-define=API_URL=http://VOTRE_IP:5000
+flutter build apk --release --dart-define=API_URL=http://VOTRE_IP:5001
 ```
 
 **Fichier généré** :
@@ -74,7 +74,7 @@ flutter build apk --split-per-abi --release --dart-define=API_URL=http://VOTRE_I
 
 ```powershell
 cd mobile-app
-flutter build web --release --dart-define=API_URL=http://VOTRE_IP:5000
+flutter build web --release --dart-define=API_URL=http://VOTRE_IP:5001
 ```
 
 **Fichiers générés** :
@@ -97,7 +97,7 @@ http-server -p 8080
 
 **Option 3 : Avec Flutter** :
 ```powershell
-flutter run -d chrome --release --dart-define=API_URL=http://localhost:5000
+flutter run -d chrome --release --dart-define=API_URL=http://localhost:5001
 ```
 
 **Accès** :
@@ -109,13 +109,13 @@ flutter run -d chrome --release --dart-define=API_URL=http://localhost:5000
 
 ```powershell
 cd mobile-app
-docker build -t supfile-mobile:latest .
+docker build -t fylora-mobile:latest .
 ```
 
 ### Lancer le conteneur
 
 ```powershell
-docker run -d -p 8080:8080 --name supfile-mobile supfile-mobile:latest
+docker run -d -p 8080:8080 --name fylora-mobile fylora-mobile:latest
 ```
 
 **Accès** :
@@ -129,7 +129,7 @@ Créez un fichier `build-all.ps1` dans `mobile-app/` :
 
 ```powershell
 # Configuration
-$API_URL = "http://192.168.1.100:5000"  # Remplacez par votre IP
+$API_URL = "http://192.168.1.100:5001"  # Remplacez par votre IP
 $BUILD_DIR = "build"
 
 Write-Host "🚀 Démarrage du build de production..." -ForegroundColor Green
@@ -216,7 +216,7 @@ flutter build apk --analyze-size --dart-define=API_URL=...
 ### Commande unique pour tout builder
 
 ```powershell
-cd mobile-app; flutter clean; flutter pub get; flutter build apk --release --dart-define=API_URL=http://192.168.1.100:5000; flutter build web --release --dart-define=API_URL=http://192.168.1.100:5000
+cd mobile-app; flutter clean; flutter pub get; flutter build apk --release --dart-define=API_URL=http://192.168.1.100:5001; flutter build web --release --dart-define=API_URL=http://192.168.1.100:5001
 ```
 
 **Remplacez `192.168.1.100` par votre IP locale !**
@@ -256,6 +256,7 @@ flutter doctor
 ---
 
 **Bon déploiement ! 🎉**
+
 
 
 

@@ -2,7 +2,7 @@ services:
   # Base de données MongoDB
   db:
     image: mongo:6.0
-    container_name: supfile-db
+    container_name: fylora-db
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
@@ -12,19 +12,19 @@ services:
     volumes:
       - db_data:/data/db
     networks:
-      - supfile-network
+      - fylora-network
 
   # Serveur API Node.js/Express
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: supfile-backend
+    container_name: fylora-backend
     depends_on:
       - db
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      SERVER_PORT: 5000
+      SERVER_PORT: 5001
       SERVER_HOST: 0.0.0.0
       MONGO_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@db:27017/${MONGO_INITDB_DATABASE}?authSource=admin
       JWT_SECRET: ${JWT_SECRET}
@@ -34,18 +34,18 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/auth/callback/google}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3001/auth/callback/google}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:3000/auth/callback/github}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:3001/auth/callback/github}
     ports:
-      - "5000:5000"
+      - "5001:5001"
     volumes:
       - backend_data:/usr/src/app/uploads
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
     networks:
-      - supfile-network
+      - fylora-network
     restart: unless-stopped
 
   # Client Web React
@@ -53,18 +53,18 @@ services:
     build:
       context: ./frontend-web
       dockerfile: Dockerfile.dev
-    container_name: supfile-frontend
+    container_name: fylora-frontend
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5001}
       VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       VITE_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       - ./frontend-web/src:/app/src
       - /app/node_modules
     networks:
-      - supfile-network
+      - fylora-network
     restart: unless-stopped
     depends_on:
       - backend
@@ -74,15 +74,15 @@ services:
     build:
       context: ./mobile-app
       dockerfile: Dockerfile
-    container_name: supfile-mobile
+    container_name: fylora-mobile
     environment:
-      API_URL: ${VITE_API_URL:-http://localhost:5000}
+      API_URL: ${VITE_API_URL:-http://localhost:5001}
     ports:
       - "8080:8080"
     volumes:
       - ./mobile-app/lib:/app/lib
     networks:
-      - supfile-network
+      - fylora-network
     restart: unless-stopped
 
 volumes:
@@ -92,5 +92,5 @@ volumes:
     driver: local
 
 networks:
-  supfile-network:
+  fylora-network:
     driver: bridge

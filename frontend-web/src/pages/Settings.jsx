@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../services/authStore';
 import { userService, dashboardService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Settings() {
   const { user, logout, setUser } = useAuthStore();
-  const { t, setLanguage: setLang } = useLanguage();
+  const { t, setLanguage: setLang, language, supportedLanguages } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -45,8 +47,7 @@ export default function Settings() {
       setEmail(userData.email || '');
       setDisplayName(userData.display_name || '');
       setAvatarUrl(userData.avatar_url || '');
-      // Forcer le français
-      setLang('fr');
+      // Ne pas forcer la langue - utiliser celle de l'utilisateur
       setQuotaUsed(stats.quota?.used || 0);
       setQuotaLimit(stats.quota?.limit || 32212254720);
       // Formater la date de création en français
@@ -134,7 +135,7 @@ export default function Settings() {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const API_URL = import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com';
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       const token = localStorage.getItem('access_token');
       
       const response = await fetch(`${API_URL}/api/users/me/avatar`, {
@@ -206,32 +207,58 @@ export default function Settings() {
     );
   }
 
+  // Couleurs dynamiques selon le thème - Thème clair amélioré
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f0f4f8';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
+  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
+
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 32, fontSize: '2em', color: '#333' }}>⚙️ {t('settings')}</h1>
+    <div style={{ 
+      padding: 24, 
+      maxWidth: 900, 
+      margin: '0 auto',
+      backgroundColor: bgColor,
+      minHeight: '100vh'
+    }}>
+      <h1 style={{ marginBottom: 32, fontSize: '2em', color: textColor }}>⚙️ {t('settings')}</h1>
 
       {message.text && (
         <div style={{
           padding: 12,
           marginBottom: 24,
-          backgroundColor: message.type === 'error' ? '#ffebee' : '#e8f5e9',
-          color: message.type === 'error' ? '#c62828' : '#2e7d32',
+          backgroundColor: message.type === 'error' 
+            ? (theme === 'dark' ? '#3d1f1f' : '#ffebee') 
+            : (theme === 'dark' ? '#1f3d1f' : '#e8f5e9'),
+          color: message.type === 'error' ? '#f44336' : '#4caf50',
           borderRadius: 8,
-          border: `1px solid ${message.type === 'error' ? '#ef5350' : '#66bb6a'}`
+          border: `1px solid ${message.type === 'error' ? '#f44336' : '#4caf50'}`
         }}>
           {message.text}
         </div>
       )}
 
       {/* Informations du compte */}
-      <section style={{ marginBottom: 32, padding: 24, backgroundColor: '#f5f5f5', borderRadius: 12, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: '#333' }}>📊 {t('accountInfo')}</h2>
+      <section style={{ 
+        marginBottom: 32, 
+        padding: 24, 
+        backgroundColor: cardBg, 
+        borderRadius: 12, 
+        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        border: `1px solid ${borderColor}`
+      }}>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>📊 {t('accountInfo')}</h2>
         
         <div style={{ display: 'flex', gap: 24, alignItems: 'center', marginBottom: 20 }}>
           <div style={{ position: 'relative' }}>
             {avatarUrl ? (
               <img
-                src={avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com'}${avatarUrl}`}
+                src={avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${avatarUrl}`}
                 alt="Avatar"
                 style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid #2196F3' }}
                 onError={(e) => {
@@ -283,13 +310,13 @@ export default function Settings() {
           
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: 8 }}>
-              <strong style={{ color: '#666', fontSize: '0.9em' }}>{t('spaceUsed')}</strong>
+              <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('spaceUsed')}</strong>
               <div style={{ marginTop: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>
+                  <span style={{ fontSize: '1.2em', fontWeight: 'bold', color: textColor }}>
                     {formatBytes(quotaUsed)} / {formatBytes(quotaLimit)}
                   </span>
-                  <span style={{ color: '#666' }}>
+                  <span style={{ color: textSecondary }}>
                     {quotaPercentageRaw < 1 
                       ? quotaPercentageRaw.toFixed(2) 
                       : quotaPercentage}%
@@ -298,7 +325,7 @@ export default function Settings() {
                 <div style={{
                   width: '100%',
                   height: 12,
-                  backgroundColor: '#e0e0e0',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e0e0e0',
                   borderRadius: 6,
                   overflow: 'hidden',
                   position: 'relative'
@@ -318,22 +345,29 @@ export default function Settings() {
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
           <div>
-            <strong style={{ color: '#666', fontSize: '0.9em' }}>{t('accountCreated')}</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em' }}>{accountCreated || 'N/A'}</p>
+            <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('accountCreated')}</strong>
+            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{accountCreated || 'N/A'}</p>
           </div>
           <div>
-            <strong style={{ color: '#666', fontSize: '0.9em' }}>{t('lastLogin')}</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em' }}>{lastLogin}</p>
+            <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('lastLogin')}</strong>
+            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{lastLogin}</p>
           </div>
         </div>
       </section>
 
       {/* Profil */}
-      <section style={{ marginBottom: 32, padding: 24, backgroundColor: 'white', borderRadius: 12, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: '#333' }}>👤 {t('profile')}</h2>
+      <section style={{ 
+        marginBottom: 32, 
+        padding: 24, 
+        backgroundColor: cardBg, 
+        borderRadius: 12, 
+        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        border: `1px solid ${borderColor}`
+      }}>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>👤 {t('profile')}</h2>
         <form onSubmit={handleUpdateProfile}>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: '#555' }}>{t('email')}</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('email')}</label>
             <input
               type="email"
               value={email}
@@ -342,15 +376,17 @@ export default function Settings() {
                 padding: 12,
                 width: '100%',
                 maxWidth: 400,
-                border: '1px solid #ddd',
+                border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                fontSize: '1em'
+                fontSize: '1em',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
               }}
               required
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: '#555' }}>{t('displayName')}</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('displayName')}</label>
             <input
               type="text"
               value={displayName}
@@ -360,9 +396,11 @@ export default function Settings() {
                 padding: 12,
                 width: '100%',
                 maxWidth: 400,
-                border: '1px solid #ddd',
+                border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                fontSize: '1em'
+                fontSize: '1em',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
               }}
             />
           </div>
@@ -387,11 +425,18 @@ export default function Settings() {
       </section>
 
       {/* Mot de passe */}
-      <section style={{ marginBottom: 32, padding: 24, backgroundColor: 'white', borderRadius: 12, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: '#333' }}>🔒 {t('security')}</h2>
+      <section style={{ 
+        marginBottom: 32, 
+        padding: 24, 
+        backgroundColor: cardBg, 
+        borderRadius: 12, 
+        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        border: `1px solid ${borderColor}`
+      }}>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🔒 {t('security')}</h2>
         <form onSubmit={handleChangePassword}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: '#555' }}>{t('currentPassword')}</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('currentPassword')}</label>
             <input
               type="password"
               value={currentPassword}
@@ -400,15 +445,17 @@ export default function Settings() {
                 padding: 12,
                 width: '100%',
                 maxWidth: 400,
-                border: '1px solid #ddd',
+                border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                fontSize: '1em'
+                fontSize: '1em',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
               }}
               required
             />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: '#555' }}>{t('newPassword')}</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('newPassword')}</label>
             <input
               type="password"
               value={newPassword}
@@ -417,9 +464,11 @@ export default function Settings() {
                 padding: 12,
                 width: '100%',
                 maxWidth: 400,
-                border: '1px solid #ddd',
+                border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                fontSize: '1em'
+                fontSize: '1em',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
               }}
               required
               minLength={8}
@@ -427,7 +476,7 @@ export default function Settings() {
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: '#555' }}>{t('confirmPassword')}</label>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('confirmPassword')}</label>
             <input
               type="password"
               value={confirmPassword}
@@ -436,9 +485,11 @@ export default function Settings() {
                 padding: 12,
                 width: '100%',
                 maxWidth: 400,
-                border: '1px solid #ddd',
+                border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                fontSize: '1em'
+                fontSize: '1em',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
               }}
               required
               minLength={8}
@@ -464,11 +515,124 @@ export default function Settings() {
         </form>
       </section>
 
+      {/* Préférences d'interface */}
+      <section style={{ 
+        marginBottom: 32, 
+        padding: 24, 
+        backgroundColor: cardBg, 
+        borderRadius: 12, 
+        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        border: `1px solid ${borderColor}`
+      }}>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🎨 {t('interfacePreferences') || 'Préférences d\'interface'}</h2>
+        
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            padding: '16px',
+            backgroundColor: secondaryBg,
+            borderRadius: 8,
+            border: `1px solid ${borderColor}`
+          }}>
+            <div>
+              <div style={{ fontWeight: 'bold', marginBottom: 4, color: textColor }}>
+                {t('theme') || 'Thème'}
+              </div>
+              <div style={{ fontSize: '0.9em', color: textSecondary }}>
+                {theme === 'dark' ? (t('darkTheme') || 'Thème sombre') : (t('lightTheme') || 'Thème clair')}
+              </div>
+            </div>
+            <button
+              onClick={toggleTheme}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: theme === 'dark' ? '#424242' : '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = theme === 'dark' ? '#616161' : '#1976D2';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = theme === 'dark' ? '#424242' : '#2196F3';
+              }}
+            >
+              {theme === 'dark' ? '🌙' : '☀️'}
+              {theme === 'dark' ? (t('switchToLight') || 'Passer au thème clair') : (t('switchToDark') || 'Passer au thème sombre')}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            padding: '16px',
+            backgroundColor: secondaryBg,
+            borderRadius: 8,
+            border: `1px solid ${borderColor}`
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 'bold', marginBottom: 8, color: textColor }}>
+                {t('language') || 'Langue'}
+              </div>
+              <select
+                value={language}
+                onChange={(e) => setLang(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  width: '100%',
+                  maxWidth: 300,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 8,
+                  fontSize: '1em',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                  color: textColor,
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#2196F3';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(33, 150, 243, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = borderColor;
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                {Object.values(supportedLanguages).map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.nativeName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Déconnexion */}
-      <section style={{ padding: 24, backgroundColor: '#fff3e0', borderRadius: 12, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: '#333' }}>🚪 {t('logout')}</h2>
-        <p style={{ marginBottom: 16, color: '#666' }}>
+      <section style={{ 
+        padding: 24, 
+        backgroundColor: theme === 'dark' ? '#2d1f0f' : '#fff3e0', 
+        borderRadius: 12, 
+        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        border: `1px solid ${borderColor}`
+      }}>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🚪 {t('logout')}</h2>
+        <p style={{ marginBottom: 16, color: textSecondary }}>
           Vous pouvez vous déconnecter de votre compte à tout moment.
         </p>
         <button

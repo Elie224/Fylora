@@ -6,25 +6,45 @@ import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
 import 'providers/files_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notes_provider.dart';
 import 'routes/app_router.dart';
 import 'utils/constants.dart';
 import 'utils/http_cache.dart';
 import 'utils/performance_optimizer.dart';
+import 'utils/advanced_cache.dart';
+import 'utils/offline_first.dart';
+import 'utils/performance_monitor.dart';
+import 'utils/view_preloader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialiser le monitoring de performance
+  PerformanceMonitor().init();
+  
   // Initialiser le cache HTTP de manière asynchrone
   HttpCache.initialize();
+  
+  // Initialiser le cache avancé
+  await AdvancedCache().cleanExpired();
+  
+  // Initialiser offline-first
+  OfflineFirst();
   
   // Nettoyer le cache expiré au démarrage
   PerformanceOptimizer.cleanExpiredCache();
   
-  runApp(const SUPFileApp());
+  runApp(const FyloraApp());
+  
+  // Marquer le premier frame rendu
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    PerformanceMonitor().markFirstFrame();
+    PerformanceMonitor().markTimeToInteractive();
+  });
 }
 
-class SUPFileApp extends StatelessWidget {
-  const SUPFileApp({super.key});
+class FyloraApp extends StatelessWidget {
+  const FyloraApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,43 +53,44 @@ class SUPFileApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => FilesProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotesProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp.router(
-            title: 'SUPFile',
+            title: 'Fylora',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
               useMaterial3: true,
               colorScheme: ColorScheme.light(
-                primary: AppConstants.supinfoPurple,
-                secondary: AppConstants.supinfoPurpleLight,
-                surface: AppConstants.supinfoWhite,
-                background: AppConstants.supinfoGrey,
+                primary: AppConstants.fyloraBlue,
+                secondary: AppConstants.fyloraDarkBlue,
+                surface: AppConstants.fyloraWhite,
+                background: AppConstants.fyloraGrey,
                 error: AppConstants.errorColor,
-                onPrimary: AppConstants.supinfoWhite,
-                onSecondary: AppConstants.supinfoWhite,
-                onSurface: AppConstants.supinfoPurpleDark,
-                onBackground: AppConstants.supinfoPurpleDark,
-                onError: AppConstants.supinfoWhite,
+                onPrimary: AppConstants.fyloraWhite,
+                onSecondary: AppConstants.fyloraWhite,
+                onSurface: AppConstants.fyloraDarkBlue,
+                onBackground: AppConstants.fyloraDarkBlue,
+                onError: AppConstants.fyloraWhite,
                 brightness: Brightness.light,
               ),
-              scaffoldBackgroundColor: AppConstants.supinfoGrey,
+              scaffoldBackgroundColor: AppConstants.fyloraGrey,
               appBarTheme: AppBarTheme(
-                backgroundColor: AppConstants.supinfoPurple,
-                foregroundColor: AppConstants.supinfoWhite,
+                backgroundColor: AppConstants.fyloraBlue,
+                foregroundColor: AppConstants.fyloraWhite,
                 elevation: 0,
                 centerTitle: true,
                 titleTextStyle: const TextStyle(
-                  color: AppConstants.supinfoWhite,
+                  color: AppConstants.fyloraWhite,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.supinfoPurple,
-                  foregroundColor: AppConstants.supinfoWhite,
+                  backgroundColor: AppConstants.fyloraBlue,
+                  foregroundColor: AppConstants.fyloraWhite,
                   elevation: 2,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -83,7 +104,7 @@ class SUPFileApp extends StatelessWidget {
               ),
               inputDecorationTheme: InputDecorationTheme(
                 filled: true,
-                fillColor: AppConstants.supinfoWhite,
+                fillColor: AppConstants.fyloraWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -94,7 +115,7 @@ class SUPFileApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppConstants.supinfoPurple, width: 2),
+                  borderSide: const BorderSide(color: AppConstants.fyloraBlue, width: 2),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -107,40 +128,40 @@ class SUPFileApp extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                color: AppConstants.supinfoWhite,
+                color: AppConstants.fyloraWhite,
               ),
             ),
             darkTheme: ThemeData(
               useMaterial3: true,
               colorScheme: ColorScheme.dark(
-                primary: AppConstants.supinfoPurpleLight,
-                secondary: AppConstants.supinfoPurple,
+                primary: AppConstants.fyloraBlue,
+                secondary: AppConstants.fyloraDarkBlue,
                 surface: const Color(0xFF1E1E1E),
                 background: const Color(0xFF121212),
                 error: AppConstants.errorColor,
-                onPrimary: AppConstants.supinfoWhite,
-                onSecondary: AppConstants.supinfoWhite,
-                onSurface: AppConstants.supinfoWhite,
-                onBackground: AppConstants.supinfoWhite,
-                onError: AppConstants.supinfoWhite,
+                onPrimary: AppConstants.fyloraWhite,
+                onSecondary: AppConstants.fyloraWhite,
+                onSurface: AppConstants.fyloraWhite,
+                onBackground: AppConstants.fyloraWhite,
+                onError: AppConstants.fyloraWhite,
                 brightness: Brightness.dark,
               ),
               scaffoldBackgroundColor: const Color(0xFF121212),
               appBarTheme: AppBarTheme(
-                backgroundColor: AppConstants.supinfoPurpleDark,
-                foregroundColor: AppConstants.supinfoWhite,
+                backgroundColor: AppConstants.fyloraDarkBlue,
+                foregroundColor: AppConstants.fyloraWhite,
                 elevation: 0,
                 centerTitle: true,
                 titleTextStyle: const TextStyle(
-                  color: AppConstants.supinfoWhite,
+                  color: AppConstants.fyloraWhite,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.supinfoPurpleLight,
-                  foregroundColor: AppConstants.supinfoWhite,
+                  backgroundColor: AppConstants.fyloraBlue,
+                  foregroundColor: AppConstants.fyloraWhite,
                   elevation: 2,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -165,7 +186,7 @@ class SUPFileApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppConstants.supinfoPurpleLight, width: 2),
+                  borderSide: const BorderSide(color: AppConstants.fyloraBlue, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),

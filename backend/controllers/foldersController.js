@@ -9,13 +9,15 @@ const { calculateRealQuotaUsed, syncQuotaUsed } = require('../utils/quota');
 async function createFolder(req, res, next) {
   try {
     const userId = req.user.id;
-    const { name, parent_id } = req.body;
+    // Utiliser les données validées si disponibles, sinon req.body
+    const { name, parent_id } = req.validatedBody || req.body;
 
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ error: { message: 'Folder name is required' } });
     }
 
-    let parentId = parent_id || null;
+    // Normaliser parent_id : convertir chaîne vide en null
+    let parentId = (parent_id && parent_id.trim && parent_id.trim() !== '') ? parent_id.trim() : null;
 
     // Vérifier le dossier parent s'il est spécifié
     if (parentId) {
@@ -273,6 +275,74 @@ async function restoreFolder(req, res, next) {
   }
 }
 
+// Supprimer définitivement un dossier
+async function permanentDeleteFolder(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const folder = await FolderModel.findById(id);
+    if (!folder) {
+      return res.status(404).json({ error: { message: 'Folder not found' } });
+    }
+
+    // Comparer les ObjectId correctement
+    const folderOwnerId = folder.owner_id?.toString ? folder.owner_id.toString() : folder.owner_id;
+    const userOwnerId = userId?.toString ? userId.toString() : userId;
+    
+    if (folderOwnerId !== userOwnerId) {
+      return res.status(403).json({ error: { message: 'Access denied' } });
+    }
+
+    // Vérifier que le dossier est bien dans la corbeille
+    if (!folder.is_deleted) {
+      return res.status(400).json({ error: { message: 'Folder is not in trash. Use delete endpoint instead.' } });
+    }
+
+    // Récupérer tous les fichiers du dossier pour les supprimer définitivement
+    const mongoose = require('mongoose');
+    const File = mongoose.models.File;
+    const files = await File.find({ 
+      owner_id: new mongoose.Types.ObjectId(userId),
+      folder_id: new mongoose.Types.ObjectId(id),
+      is_deleted: true 
+    }).lean();
+    
+    // Supprimer définitivement tous les fichiers du dossier
+    const fs = require('fs').promises;
+    let totalSize = 0;
+    for (const file of files) {
+      if (file.file_path) {
+        try {
+          await fs.unlink(file.file_path);
+        } catch (err) {
+          console.warn(`Could not delete physical file: ${file.file_path}`, err);
+        }
+      }
+      totalSize += file.size || 0;
+      await FileModel.delete(file._id.toString());
+    }
+    
+    // Supprimer définitivement le dossier de la base de données
+    await FolderModel.delete(id);
+    
+    // Mettre à jour le quota utilisé (soustraire la taille totale des fichiers)
+    if (totalSize > 0) {
+      const { updateQuotaAfterOperation } = require('../utils/quota');
+      await updateQuotaAfterOperation(userId, -totalSize);
+    }
+    
+    // Invalider le cache du dashboard
+    const { invalidateUserCache } = require('../utils/cache');
+    invalidateUserCache(userId);
+    
+    res.status(200).json({ message: 'Folder permanently deleted' });
+  } catch (err) {
+    console.error('Error permanently deleting folder:', err);
+    next(err);
+  }
+}
+
 // Lister les dossiers supprimés (corbeille)
 async function listTrash(req, res, next) {
   try {
@@ -335,6 +405,7 @@ module.exports = {
   updateFolder,
   deleteFolder,
   restoreFolder,
+  permanentDeleteFolder,
   downloadFolder,
   listTrash,
 };

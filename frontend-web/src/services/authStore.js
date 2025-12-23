@@ -114,15 +114,51 @@ const useAuthStore = create(
         }
       },
 
-      // Initialiser depuis localStorage
-      initialize: () => {
+      // Initialiser depuis localStorage et vérifier la validité du token
+      initialize: async () => {
         const accessToken = localStorage.getItem('access_token');
         const refreshToken = localStorage.getItem('refresh_token');
         
         if (accessToken && refreshToken) {
-          // Les tokens sont déjà dans le state grâce à persist
-          // On peut essayer de récupérer les infos utilisateur
           set({ accessToken, refreshToken });
+          
+          // Vérifier si le token est toujours valide en récupérant les infos utilisateur
+          try {
+            const response = await userService.getMe();
+            set({ user: response.data.data });
+          } catch (err) {
+            // Si l'erreur est 401, le token a expiré
+            if (err.response?.status === 401) {
+              // Essayer de rafraîchir le token
+              try {
+                const refreshResponse = await authService.refresh(refreshToken);
+                const { access_token, refresh_token } = refreshResponse.data.data;
+                
+                localStorage.setItem('access_token', access_token);
+                localStorage.setItem('refresh_token', refresh_token);
+                set({ accessToken: access_token, refreshToken: refresh_token });
+                
+                // Réessayer de récupérer les infos utilisateur
+                const userResponse = await userService.getMe();
+                set({ user: userResponse.data.data });
+              } catch (refreshErr) {
+                // Refresh échoué - nettoyer
+                console.error('Token refresh failed:', refreshErr);
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                set({ user: null, accessToken: null, refreshToken: null });
+              }
+            } else {
+              // Autre erreur - nettoyer
+              console.error('Failed to fetch user info:', err);
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              set({ user: null, accessToken: null, refreshToken: null });
+            }
+          }
+        } else {
+          // Pas de tokens - nettoyer le state
+          set({ user: null, accessToken: null, refreshToken: null });
         }
       },
     }),

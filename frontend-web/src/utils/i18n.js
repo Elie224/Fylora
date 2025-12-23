@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Système de traduction pour l'application
+// Système de traduction amélioré pour l'application
 const translations = {
   fr: {
     // Navigation
@@ -10,6 +10,12 @@ const translations = {
     trash: 'Corbeille',
     settings: 'Paramètres',
     logout: 'Déconnexion',
+    notes: 'Notes',
+    favorites: 'Favoris',
+    favorite: 'Favoris',
+    addToFavorites: 'Ajouter aux favoris',
+    removeFromFavorites: 'Retirer des favoris',
+    activity: 'Activité',
     
     // Auth
     login: 'Connexion',
@@ -35,6 +41,7 @@ const translations = {
     signupFailed: 'L\'inscription a échoué',
     continueWith: 'Continuer avec',
     or: 'ou',
+    backToHome: 'Retour à l\'accueil',
     
     // Pages
     myFiles: 'Mes fichiers',
@@ -111,23 +118,38 @@ const translations = {
     noResults: 'Aucun résultat trouvé',
     type: 'Type',
     all: 'Tous',
+    allTypes: 'Tous les types',
     file: 'Fichier',
     folder: 'Dossier',
+    folders: 'Dossiers',
     mimeType: 'Type MIME',
+    allFormats: 'Tous les formats',
     startDate: 'Date de début',
     endDate: 'Date de fin',
+    dateFrom: 'Date de début',
+    dateTo: 'Date de fin',
     
     // Trash
     trashEmpty: 'La corbeille est vide',
+    items: 'éléments',
     itemsInTrash: 'élément dans la corbeille',
     itemsInTrashPlural: 'éléments dans la corbeille',
     deletedOn: 'Supprimé le',
     restore: 'Restaurer',
     restoreSuccess: 'restauré avec succès',
     restoreError: 'Erreur lors de la restauration',
+    permanentDelete: 'Supprimer définitivement',
+    permanentDeleteConfirm: 'Êtes-vous sûr de vouloir supprimer définitivement ce fichier ? Cette action est irréversible.',
+    permanentDeleteFolderConfirm: 'Êtes-vous sûr de vouloir supprimer définitivement ce dossier et tous ses fichiers ? Cette action est irréversible.',
+    permanentDeleteSuccess: 'Supprimé définitivement',
+    permanentDeleteError: 'Erreur lors de la suppression définitive',
     
     // Settings
     accountInfo: 'Informations du compte',
+    lightTheme: 'Thème clair',
+    darkTheme: 'Thème sombre',
+    switchToDark: 'Passer au thème sombre',
+    switchToLight: 'Passer au thème clair',
     profile: 'Profil',
     security: 'Sécurité',
     preferences: 'Préférences',
@@ -137,6 +159,8 @@ const translations = {
     changePassword: 'Changer le mot de passe',
     language: 'Langue',
     languageLabel: 'Langue / Language',
+    theme: 'Thème',
+    interfacePreferences: 'Préférences d\'interface',
     notifications: 'Activer les notifications',
     spaceUsed: 'Espace utilisé',
     accountCreated: 'Compte créé le',
@@ -161,6 +185,61 @@ const translations = {
     renameError: 'Erreur lors du renommage',
     createFolderError: 'Erreur lors de la création du dossier',
     loadError: 'Erreur lors du chargement',
+    
+    // Home page
+    tagline: 'Vos fichiers, votre liberté, votre cloud.',
+    nav: {
+      login: 'Connexion',
+      skip: 'Passer'
+    },
+    freeFeatures: {
+      title: 'Gratuit pour toujours',
+      subtitle: 'Découvrez ce qui est inclus dans votre compte gratuit',
+      items: {
+        storage: '1 To de stockage gratuit',
+        folders: 'Dossiers illimités',
+        sharing: 'Partage de fichiers illimité',
+        encryption: 'Chiffrement de bout en bout',
+        devices: 'Accès multi-appareils',
+        sync: 'Synchronisation en temps réel'
+      }
+    },
+    slides: {
+      welcome: {
+        title: 'Bienvenue sur Fylora',
+        description: 'Votre espace de stockage cloud sécurisé et moderne pour tous vos fichiers'
+      },
+      security: {
+        title: 'Sécurité maximale',
+        description: 'Vos fichiers sont chiffrés et protégés avec les dernières technologies de sécurité'
+      },
+      sync: {
+        title: 'Synchronisation rapide',
+        description: 'Accédez à vos fichiers instantanément depuis n\'importe où dans le monde'
+      },
+      platform: {
+        title: 'Multi-plateforme',
+        description: 'Disponible sur tous vos appareils : web, mobile et desktop'
+      },
+      sharing: {
+        title: 'Partage facile',
+        description: 'Partagez vos fichiers avec un simple lien sécurisé en quelques clics'
+      }
+    },
+    buttons: {
+      next: 'Suivant',
+      previous: 'Précédent',
+      start: 'Commencer'
+    },
+    copyright: '© 2025 Fylora. Tous droits réservés.',
+    
+    // Preview
+    technicalDetails: 'Détails techniques',
+    fileId: 'ID du fichier',
+    fileType: 'Type de fichier',
+    fileSize: 'Taille du fichier',
+    createdAt: 'Créé le',
+    updatedAt: 'Modifié le'
   },
   en: {
     // Navigation
@@ -170,6 +249,12 @@ const translations = {
     trash: 'Trash',
     settings: 'Settings',
     logout: 'Logout',
+    notes: 'Notes',
+    favorites: 'Favorites',
+    favorite: 'Favorites',
+    addToFavorites: 'Add to favorites',
+    removeFromFavorites: 'Remove from favorites',
+    activity: 'Activity',
     
     // Auth
     login: 'Login',
@@ -195,6 +280,7 @@ const translations = {
     signupFailed: 'Sign up failed',
     continueWith: 'Continue with',
     or: 'or',
+    backToHome: 'Back to home',
     
     // Pages
     myFiles: 'My files',
@@ -271,20 +357,31 @@ const translations = {
     noResults: 'No results found',
     type: 'Type',
     all: 'All',
+    allTypes: 'All types',
     file: 'File',
     folder: 'Folder',
+    folders: 'Folders',
     mimeType: 'MIME type',
+    allFormats: 'All formats',
     startDate: 'Start date',
     endDate: 'End date',
+    dateFrom: 'Date from',
+    dateTo: 'Date to',
     
     // Trash
     trashEmpty: 'Trash is empty',
+    items: 'items',
     itemsInTrash: 'item in trash',
     itemsInTrashPlural: 'items in trash',
     deletedOn: 'Deleted on',
     restore: 'Restore',
     restoreSuccess: 'restored successfully',
     restoreError: 'Error during restoration',
+    permanentDelete: 'Permanently delete',
+    permanentDeleteConfirm: 'Are you sure you want to permanently delete this file? This action is irreversible.',
+    permanentDeleteFolderConfirm: 'Are you sure you want to permanently delete this folder and all its files? This action is irreversible.',
+    permanentDeleteSuccess: 'Permanently deleted',
+    permanentDeleteError: 'Error during permanent deletion',
     
     // Settings
     accountInfo: 'Account Information',
@@ -297,6 +394,12 @@ const translations = {
     changePassword: 'Change password',
     language: 'Language',
     languageLabel: 'Language / Langue',
+    theme: 'Theme',
+    lightTheme: 'Light theme',
+    darkTheme: 'Dark theme',
+    switchToDark: 'Switch to dark theme',
+    switchToLight: 'Switch to light theme',
+    interfacePreferences: 'Interface preferences',
     notifications: 'Enable notifications',
     spaceUsed: 'Space used',
     accountCreated: 'Account created on',
@@ -321,28 +424,140 @@ const translations = {
     renameError: 'Error during rename',
     createFolderError: 'Error creating folder',
     loadError: 'Error loading',
+    
+    // Home page
+    tagline: 'Your files, your freedom, your cloud.',
+    nav: {
+      login: 'Login',
+      skip: 'Skip'
+    },
+    freeFeatures: {
+      title: 'Free forever',
+      subtitle: 'Discover what\'s included in your free account',
+      items: {
+        storage: '1 TB free storage',
+        folders: 'Unlimited folders',
+        sharing: 'Unlimited file sharing',
+        encryption: 'End-to-end encryption',
+        devices: 'Multi-device access',
+        sync: 'Real-time sync'
+      }
+    },
+    slides: {
+      welcome: {
+        title: 'Welcome to Fylora',
+        description: 'Your secure and modern cloud storage space for all your files'
+      },
+      security: {
+        title: 'Maximum security',
+        description: 'Your files are encrypted and protected with the latest security technologies'
+      },
+      sync: {
+        title: 'Fast synchronization',
+        description: 'Access your files instantly from anywhere in the world'
+      },
+      platform: {
+        title: 'Multi-platform',
+        description: 'Available on all your devices: web, mobile and desktop'
+      },
+      sharing: {
+        title: 'Easy sharing',
+        description: 'Share your files with a simple secure link in just a few clicks'
+      }
+    },
+    buttons: {
+      next: 'Next',
+      previous: 'Previous',
+      start: 'Get Started'
+    },
+    copyright: '© 2025 Fylora. All rights reserved.',
+    
+    // Preview
+    technicalDetails: 'Technical details',
+    fileId: 'File ID',
+    fileType: 'File type',
+    fileSize: 'File size',
+    createdAt: 'Created at',
+    updatedAt: 'Updated at'
   }
+};
+
+// Langues supportées avec métadonnées
+export const supportedLanguages = {
+  fr: {
+    code: 'fr',
+    name: 'Français',
+    nativeName: 'Français',
+    flag: '🇫🇷',
+    locale: 'fr-FR'
+  },
+  en: {
+    code: 'en',
+    name: 'English',
+    nativeName: 'English',
+    flag: '🇬🇧',
+    locale: 'en-US'
+  }
+};
+
+// Détection automatique de la langue du navigateur
+export const detectBrowserLanguage = () => {
+  if (typeof window === 'undefined') return 'fr';
+  
+  const browserLang = navigator.language || navigator.userLanguage;
+  const langCode = browserLang.split('-')[0].toLowerCase();
+  
+  // Si la langue du navigateur est supportée, l'utiliser
+  if (supportedLanguages[langCode]) {
+    return langCode;
+  }
+  
+  // Sinon, vérifier les langues préférées
+  if (navigator.languages) {
+    for (const lang of navigator.languages) {
+      const code = lang.split('-')[0].toLowerCase();
+      if (supportedLanguages[code]) {
+        return code;
+      }
+    }
+  }
+  
+  // Par défaut, français
+  return 'fr';
 };
 
 // Fonction pour obtenir la langue actuelle
 export const getCurrentLanguage = () => {
-  return localStorage.getItem('language') || 'fr';
+  if (typeof window === 'undefined') return 'fr';
+  
+  const stored = localStorage.getItem('language');
+  if (stored && supportedLanguages[stored]) {
+    return stored;
+  }
+  
+  // Si aucune langue stockée, retourner 'fr' par défaut
+  // AUCUNE détection automatique - seul l'utilisateur peut changer la langue
+  return 'fr';
 };
 
 // Fonction pour définir la langue
 export const setLanguage = (lang) => {
-  if (lang === 'fr' || lang === 'en') {
+  if (typeof window === 'undefined') return;
+  
+  if (lang && supportedLanguages[lang]) {
     localStorage.setItem('language', lang);
     document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr'); // Support futur RTL
   }
 };
 
-// Fonction de traduction
+// Fonction de traduction améliorée avec support des clés imbriquées
 export const t = (key, lang = null) => {
   const currentLang = lang || getCurrentLanguage();
   const keys = key.split('.');
   let value = translations[currentLang] || translations.fr;
   
+  // Parcourir les clés imbriquées
   for (const k of keys) {
     value = value?.[k];
     if (value === undefined) {
@@ -355,7 +570,59 @@ export const t = (key, lang = null) => {
     }
   }
   
-  return value !== undefined ? value : key;
+  // Si toujours undefined, essayer avec la clé complète comme fallback
+  if (value === undefined) {
+    console.warn(`Translation missing for key: ${key} in language: ${currentLang}`);
+    return key;
+  }
+  
+  return value;
+};
+
+// Formatage des nombres selon la locale
+export const formatNumber = (number, lang = null) => {
+  const currentLang = lang || getCurrentLanguage();
+  const locale = supportedLanguages[currentLang]?.locale || 'fr-FR';
+  
+  try {
+    return new Intl.NumberFormat(locale).format(number);
+  } catch (e) {
+    return number.toString();
+  }
+};
+
+// Formatage des dates selon la locale
+export const formatDate = (date, options = {}, lang = null) => {
+  const currentLang = lang || getCurrentLanguage();
+  const locale = supportedLanguages[currentLang]?.locale || 'fr-FR';
+  
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      ...options
+    }).format(dateObj);
+  } catch (e) {
+    return date.toString();
+  }
+};
+
+// Formatage de la taille des fichiers
+export const formatFileSize = (bytes, lang = null) => {
+  if (!bytes || bytes === 0) return '0 B';
+  
+  const currentLang = lang || getCurrentLanguage();
+  const k = 1024;
+  const sizes = currentLang === 'fr' 
+    ? ['B', 'Ko', 'Mo', 'Go', 'To']
+    : ['B', 'KB', 'MB', 'GB', 'TB'];
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const size = (bytes / Math.pow(k, i)).toFixed(2);
+  
+  return `${size} ${sizes[i]}`;
 };
 
 // Hook React pour les traductions
@@ -377,8 +644,21 @@ export const useTranslation = () => {
     setLanguage: (newLang) => {
       setLanguage(newLang);
       setLangState(newLang);
-    }
+    },
+    formatNumber: (number) => formatNumber(number, lang),
+    formatDate: (date, options) => formatDate(date, options, lang),
+    formatFileSize: (bytes) => formatFileSize(bytes, lang)
   };
 };
 
-export default { t, getCurrentLanguage, setLanguage, useTranslation };
+export default { 
+  t, 
+  getCurrentLanguage, 
+  setLanguage, 
+  useTranslation,
+  detectBrowserLanguage,
+  supportedLanguages,
+  formatNumber,
+  formatDate,
+  formatFileSize
+};

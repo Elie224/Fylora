@@ -17,8 +17,17 @@ function performanceMiddleware(req, res, next) {
       console.warn(`⚠️ Slow request: ${req.method} ${req.originalUrl} took ${duration.toFixed(2)}ms`);
     }
     
-    // Ajouter le header X-Response-Time
-    res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
+    // Ajouter le header X-Response-Time seulement si les en-têtes n'ont pas encore été envoyés
+    // Cela évite l'erreur "Cannot set headers after they are sent to the client"
+    if (!res.headersSent) {
+      try {
+        res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
+      } catch (err) {
+        // Ignorer silencieusement l'erreur si les en-têtes ont déjà été envoyés
+        // Cela peut arriver avec les streams (comme les uploads de fichiers) 
+        // ou lorsque express-session a déjà envoyé la réponse
+      }
+    }
     
     return originalEnd(...args);
   };
@@ -45,4 +54,5 @@ module.exports = {
   performanceMiddleware,
   optimizeQuery,
 };
+
 

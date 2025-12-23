@@ -1,80 +1,61 @@
-// Composant de virtual scrolling pour les longues listes
-// Améliore les performances en ne rendant que les éléments visibles
-
+/**
+ * Virtual scrolling pour grandes listes
+ * Rend seulement les éléments visibles pour meilleure performance
+ */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-function VirtualList({ 
-  items = [], 
-  itemHeight = 50, 
-  containerHeight = 400,
-  renderItem,
-  overscan = 5, // Nombre d'éléments à rendre en dehors de la zone visible
-  ...props 
-}) {
+export function VirtualList({ items, itemHeight = 60, renderItem, containerHeight = 600 }) {
   const [scrollTop, setScrollTop] = useState(0);
   const containerRef = useRef(null);
 
-  // Calculer les indices visibles
-  const visibleRange = useMemo(() => {
-    const start = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-    const end = Math.min(
-      items.length - 1,
-      Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
-    );
-    return { start, end };
-  }, [scrollTop, itemHeight, containerHeight, items.length, overscan]);
-
-  // Éléments à rendre
+  // Calculer les éléments visibles
   const visibleItems = useMemo(() => {
-    return items.slice(visibleRange.start, visibleRange.end + 1).map((item, index) => ({
-      ...item,
-      index: visibleRange.start + index,
-    }));
-  }, [items, visibleRange.start, visibleRange.end]);
+    const startIndex = Math.floor(scrollTop / itemHeight);
+    const endIndex = Math.min(
+      startIndex + Math.ceil(containerHeight / itemHeight) + 1,
+      items.length
+    );
 
-  // Hauteur totale de la liste
-  const totalHeight = items.length * itemHeight;
-
-  // Offset pour le conteneur interne
-  const offsetY = visibleRange.start * itemHeight;
+    return {
+      startIndex,
+      endIndex,
+      items: items.slice(startIndex, endIndex),
+      offsetY: startIndex * itemHeight,
+    };
+  }, [scrollTop, itemHeight, containerHeight, items]);
 
   const handleScroll = (e) => {
     setScrollTop(e.target.scrollTop);
   };
 
+  const totalHeight = items.length * itemHeight;
+
   return (
     <div
       ref={containerRef}
-      onScroll={handleScroll}
       style={{
         height: containerHeight,
         overflow: 'auto',
-        ...props.style,
+        position: 'relative',
       }}
+      onScroll={handleScroll}
     >
-      <div
-        style={{
-          height: totalHeight,
-          position: 'relative',
-        }}
-      >
+      <div style={{ height: totalHeight, position: 'relative' }}>
         <div
           style={{
-            transform: `translateY(${offsetY}px)`,
+            transform: `translateY(${visibleItems.offsetY}px)`,
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
           }}
         >
-          {visibleItems.map((item) => (
+          {visibleItems.items.map((item, index) => (
             <div
-              key={item.id || item.index}
-              style={{
-                height: itemHeight,
-              }}
+              key={visibleItems.startIndex + index}
+              style={{ height: itemHeight }}
             >
-              {renderItem(item, item.index)}
+              {renderItem(item, visibleItems.startIndex + index)}
             </div>
           ))}
         </div>
@@ -82,6 +63,3 @@ function VirtualList({
     </div>
   );
 }
-
-export default VirtualList;
-

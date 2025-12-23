@@ -1,4 +1,4 @@
-# SUPFile - Cloud Storage Platform
+# Fylora - Cloud Storage Platform
 
 Une plateforme de stockage cloud distribuée, moderne et sécurisée, concurrente de Dropbox et Google Drive.
 
@@ -16,10 +16,10 @@ Une plateforme de stockage cloud distribuée, moderne et sécurisée, concurrent
 ## 📁 Structure du projet
 
 ```
-SUPFile/
+Fylora/
 ├─ backend/                 # API serveur (Node.js/Express)
 │  ├─ controllers/          # Logique métier des endpoints
-│  ├─ models/               # Schémas BDD (PostgreSQL)
+│  ├─ models/               # Modèles BDD (MongoDB/Mongoose)
 │  ├─ routes/               # Définition des routes API
 │  ├─ middlewares/          # Auth, validation, gestion d'erreurs
 │  ├─ utils/                # Utilitaires (ZIP, prévisualisation, etc.)
@@ -38,12 +38,14 @@ SUPFile/
 │  ├─ package.json
 │  └─ Dockerfile
 │
-├─ mobile-app/              # Client mobile (React Native/Expo)
-│  ├─ src/
+├─ mobile-app/              # Client mobile (Flutter/Dart)
+│  ├─ lib/                  # Code source Dart
 │  │  ├─ screens/           # Écrans de navigation
-│  │  ├─ components/        # Composants réutilisables
-│  │  └─ services/          # Appels API
-│  ├─ package.json
+│  │  ├─ components/         # Widgets réutilisables
+│  │  ├─ services/          # Appels API
+│  │  └─ models/            # Modèles de données
+│  ├─ android/              # Configuration Android
+│  ├─ pubspec.yaml          # Dépendances Flutter
 │  └─ Dockerfile
 │
 ├─ docker-compose.yml       # Orchestration des services
@@ -67,7 +69,7 @@ SUPFile/
 1. **Cloner le dépôt**
    ```bash
    git clone <url-du-depot>
-   cd SUPFile
+   cd Fylora
    ```
 
 2. **Configurer les variables d'environnement**
@@ -75,7 +77,9 @@ SUPFile/
    cp .env.example .env
    ```
    ⚠️ **IMPORTANT** : Éditer le fichier `.env` et changer les valeurs par défaut, notamment :
-   - `POSTGRES_PASSWORD`
+   - `MONGO_INITDB_ROOT_PASSWORD` (mot de passe MongoDB)
+   - `MONGO_INITDB_DATABASE` (nom de la base de données, par défaut "Fylora")
+   - `MONGO_URI` (URI de connexion MongoDB complète)
    - `JWT_SECRET`
    - `JWT_REFRESH_SECRET`
 
@@ -96,10 +100,10 @@ docker compose up -d
 ```
 
 Cela va :
-- ✓ Créer et démarrer la base de données PostgreSQL
+- ✓ Créer et démarrer la base de données MongoDB
 - ✓ Compiler et démarrer le serveur API (backend)
 - ✓ Compiler et démarrer le client web (frontend)
-- ✓ Compiler et démarrer le client mobile (Expo)
+- ✓ Compiler et démarrer le client mobile (Flutter)
 
 ### Vérifier le statut des services
 
@@ -111,10 +115,10 @@ docker compose ps
 
 | Service | URL | Statut |
 |---------|-----|--------|
-| API Backend | http://localhost:5000/health | [Vérifier](http://localhost:5000/health) |
-| Web Frontend | http://localhost:3000 | [Ouvrir](http://localhost:3000) |
-| Mobile (Expo) | http://localhost:19000 | [Ouvrir](http://localhost:19000) |
-| PostgreSQL | localhost:5432 | - |
+| API Backend | http://localhost:5001/health | [Vérifier](http://localhost:5001/health) |
+| Web Frontend | http://localhost:3001 | [Ouvrir](http://localhost:3001) |
+| Mobile (Flutter) | Voir documentation mobile | - |
+| MongoDB | localhost:27017 | - |
 
 ### Arrêter l'application
 
@@ -137,7 +141,7 @@ docker compose down -v
 ```
 ┌─────────────────┐         ┌──────────────────┐
 │  Frontend Web   │         │ Mobile App       │
-│  (React/Vite)   │         │ (React Native)   │
+│  (React/Vite)   │         │ (Flutter/Dart)   │
 └────────┬────────┘         └────────┬─────────┘
          │                           │
          └───────────┬───────────────┘
@@ -154,7 +158,7 @@ docker compose down -v
          │                         │
          ▼                         ▼
     ┌──────────┐         ┌──────────────────┐
-    │PostgreSQL│         │ Volume Docker    │
+    │ MongoDB  │         │ Volume Docker    │
     │   BDD    │         │ (Fichiers)       │
     └──────────┘         └──────────────────┘
 ```
@@ -165,9 +169,9 @@ docker compose down -v
 |-----------|-------------|------|
 | **Backend** | Node.js + Express | API REST, logique métier, authentification |
 | **Frontend Web** | React + Vite | Interface utilisateur web |
-| **Mobile** | React Native + Expo | Application mobile (iOS/Android) |
-| **BDD** | PostgreSQL | Stockage des métadonnées |
-| **Stockage** | Volume Docker | Fichiers utilisateurs |
+| **Mobile** | Flutter/Dart | Application mobile (iOS/Android) |
+| **BDD** | MongoDB | Stockage des métadonnées (utilisateurs, fichiers, dossiers) |
+| **Stockage** | Volume Docker | Fichiers utilisateurs (physiques) |
 
 ---
 
@@ -269,8 +273,13 @@ npm run dev
 
 # Mobile (nouveau terminal)
 cd mobile-app
-npm install
-npm start
+flutter pub get
+# Pour Android
+flutter run -d android
+# Pour iOS (sur macOS uniquement)
+flutter run -d ios
+# Pour Chrome (développement web)
+flutter run -d chrome
 ```
 
 ### Logs et débogage
@@ -282,8 +291,13 @@ docker compose logs -f db
 docker compose logs -f frontend
 
 # Accéder au shell d'un conteneur
-docker exec -it supfile-backend sh
-docker exec -it supfile-db psql -U supfile_user -d supfile
+docker exec -it fylora-backend sh
+
+# Accéder à MongoDB (mongosh)
+docker exec -it fylora-db mongosh -u ${MONGO_INITDB_ROOT_USERNAME} -p ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin Fylora
+
+# Ou simplement (si pas d'authentification configurée)
+docker exec -it fylora-db mongosh Fylora
 ```
 
 ### Tests
@@ -297,9 +311,9 @@ npm test
 cd frontend-web
 npm test
 
-# Tests mobile
+# Tests mobile (Flutter)
 cd mobile-app
-npm test
+flutter test
 ```
 
 ---
@@ -325,7 +339,7 @@ Pour toute question :
 
 ## 📄 Licence
 
-Ce projet est développé pour SUPFile.
+Ce projet est développé pour Fylora.
 
 **Date de création** : Décembre 2025
 **Dernière mise à jour** : Décembre 2025
@@ -338,6 +352,6 @@ Ce projet est développé pour SUPFile.
 - [ ] Copier `.env.example` → `.env` et configurer
 - [ ] Exécuter `docker compose up -d`
 - [ ] Vérifier que tous les services sont UP (`docker compose ps`)
-- [ ] Accéder à http://localhost:3000 (frontend web)
-- [ ] Accéder à http://localhost:5000/health (API)
+- [ ] Accéder à http://localhost:3001 (frontend web)
+- [ ] Accéder à http://localhost:5001/health (API)
 - [ ] Lire la documentation complète dans `docs/`

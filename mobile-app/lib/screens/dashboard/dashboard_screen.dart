@@ -59,6 +59,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Tableau de bord'),
         actions: [
+          if (authProvider.user?['is_admin'] == true)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              tooltip: 'Administration',
+              onPressed: () => context.go('/admin'),
+            ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Paramètres',
@@ -183,6 +189,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.history, color: AppConstants.supinfoWhite),
+              title: const Text(
+                'Activité',
+                style: TextStyle(color: AppConstants.supinfoWhite),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/activity');
+              },
+            ),
+            ListTile(
+              leading: Stack(
+                children: [
+                  const Icon(Icons.notifications, color: AppConstants.supinfoWhite),
+                  // Badge pour notifications non lues (à implémenter avec un provider)
+                ],
+              ),
+              title: const Text(
+                'Notifications',
+                style: TextStyle(color: AppConstants.supinfoWhite),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/notifications');
+              },
+            ),
+            if (authProvider.user?['is_admin'] == true)
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings, color: AppConstants.supinfoWhite),
+                title: const Text(
+                  'Administration',
+                  style: TextStyle(color: AppConstants.supinfoWhite),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/admin');
+                },
+              ),
+            ListTile(
               leading: const Icon(Icons.delete, color: AppConstants.supinfoWhite),
               title: const Text(
                 'Corbeille',
@@ -230,6 +275,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Bouton Admin si admin
+                      if (authProvider.user?['is_admin'] == true)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: InkWell(
+                              onTap: () => context.go('/admin'),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.purple.shade600,
+                                      Colors.purple.shade400,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.admin_panel_settings,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    const Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Administration',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'Gérer les utilisateurs et le système',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       // Quota - Carte moderne avec gradient
                       Container(
                         decoration: BoxDecoration(

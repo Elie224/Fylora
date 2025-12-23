@@ -24,7 +24,7 @@ const initiateOAuth = (provider) => {
       console.error(`  Provider config exists: ${!!providerConfig}`);
       console.error(`  Client ID present: ${!!providerConfig?.clientId}`);
       console.error(`  Client Secret present: ${!!providerConfig?.clientSecret}`);
-      const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       return res.redirect(`${frontendUrl}/login?error=oauth_not_configured&message=${encodeURIComponent(`OAuth ${provider} is not configured. Please contact the administrator.`)}`);
     }
     
@@ -32,7 +32,7 @@ const initiateOAuth = (provider) => {
     if (!passport._strategies || !passport._strategies[provider]) {
       console.error(`OAuth ${provider} strategy not found in Passport`);
       console.error(`Available strategies:`, Object.keys(passport._strategies || {}));
-      const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       return res.redirect(`${frontendUrl}/login?error=oauth_not_configured&message=${encodeURIComponent(`OAuth ${provider} strategy is not registered. Please check server configuration.`)}`);
     }
     
@@ -47,7 +47,7 @@ const initiateOAuth = (provider) => {
       passport.authenticate(provider, { scope: provider === 'google' ? ['profile', 'email'] : ['user:email'] })(req, res, next);
     } catch (error) {
       console.error(`Error initiating OAuth ${provider}:`, error);
-      const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       res.redirect(`${frontendUrl}/login?error=oauth_init_failed&message=${encodeURIComponent(error.message || 'Failed to initiate OAuth')}`);
     }
   };
@@ -57,16 +57,69 @@ const initiateOAuth = (provider) => {
 const handleOAuthCallback = (provider) => {
   return async (req, res, next) => {
     passport.authenticate(provider, { session: false }, async (err, user, info) => {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      
       if (err) {
-        console.error(`OAuth ${provider} error:`, err);
-        const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
-        const errorMessage = err.message || 'Erreur lors de l\'authentification OAuth';
-        return res.redirect(`${frontendUrl}/login?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`);
+        logOAuthError(provider, err, {
+          stage: 'callback',
+          queryParams: req.query,
+          callbackURL: config.oauth[provider]?.redirectUri
+        });
+        
+        // Log supplémentaire pour GitHub
+        if (provider === 'github') {
+          console.error('🔍 GitHub OAuth debug info:');
+          console.error('   Callback URL configuré:', config.oauth.github?.redirectUri);
+          console.error('   Client ID:', config.oauth.github?.clientId ? config.oauth.github.clientId.substring(0, 15) + '...' : 'missing');
+          console.error('   Client Secret présent:', !!config.oauth.github?.clientSecret);
+          console.error('   Query params:', req.query);
+          console.error('   Code présent:', !!req.query.code);
+          console.error('');
+          
+          // Vérifier si c'est un problème de Client Secret
+          if (err.message.includes('Failed to obtain access token')) {
+            console.error('💡 SOLUTION PROBABLE:');
+            console.error('   Le Client Secret GitHub est probablement incorrect ou a été régénéré.');
+            console.error('   1. Allez sur https://github.com/settings/developers');
+            console.error('   2. Cliquez sur votre application OAuth');
+            console.error('   3. Régénérez le Client Secret');
+            console.error('   4. Mettez à jour le .env avec le nouveau secret');
+            console.error('   5. Redémarrez le serveur');
+            console.error('');
+          }
+        }
+        
+        // Messages d'erreur spécifiques selon le type d'erreur
+        let errorMessage = 'Erreur lors de l\'authentification OAuth';
+        let errorCode = 'oauth_failed';
+        
+        if (err.message) {
+          if (err.message.includes('deleted_client')) {
+            errorMessage = `Le client OAuth ${provider} a été supprimé. Veuillez créer un nouveau client OAuth dans ${provider === 'google' ? 'Google Cloud Console' : 'GitHub Settings'}.`;
+            errorCode = 'oauth_client_deleted';
+          } else if (err.message.includes('redirect_uri_mismatch') || err.message.includes('redirect_uri')) {
+            errorMessage = `L'URI de redirection n'est pas configurée correctement. Vérifiez que l'URI exacte est configurée dans les paramètres OAuth de ${provider}.`;
+            errorCode = 'oauth_redirect_mismatch';
+          } else if (err.message.includes('invalid_client') || err.message.includes('incorrect_client_credentials') || err.message.includes('bad_verification_code')) {
+            errorMessage = `Les identifiants OAuth ${provider} sont incorrects ou le Client Secret a été régénéré. Vérifiez votre fichier .env et régénérez le Client Secret si nécessaire.`;
+            errorCode = 'oauth_invalid_credentials';
+          } else if (err.message.includes('Failed to obtain access token')) {
+            errorMessage = `Échec de l'obtention du token d'accès ${provider}. Vérifiez que le Client Secret est correct et que l'URI de redirection correspond exactement dans ${provider === 'google' ? 'Google Cloud Console' : 'GitHub Settings'}.`;
+            errorCode = 'oauth_token_failed';
+          } else if (err.message.includes('access_denied')) {
+            errorMessage = 'Vous avez annulé l\'autorisation. Veuillez réessayer.';
+            errorCode = 'oauth_access_denied';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        return res.redirect(`${frontendUrl}/login?error=${errorCode}&message=${encodeURIComponent(errorMessage)}`);
       }
 
       if (!user) {
         console.error(`OAuth ${provider}: No user returned from authentication`);
-        const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+        console.error(`Info:`, info);
         const errorMessage = info?.message || 'Échec de l\'authentification. Veuillez réessayer.';
         return res.redirect(`${frontendUrl}/login?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`);
       }
@@ -103,7 +156,7 @@ const handleOAuthCallback = (provider) => {
         }
 
         // Rediriger vers le frontend avec les tokens dans l'URL
-        const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
         const redirectUrl = req.session?.oauthRedirect || '/dashboard';
         
         // Encoder les tokens pour les passer dans l'URL
@@ -112,7 +165,7 @@ const handleOAuthCallback = (provider) => {
         res.redirect(`${frontendUrl}/auth/callback?tokens=${tokens}&redirect=${encodeURIComponent(redirectUrl)}`);
       } catch (error) {
         console.error(`OAuth ${provider} callback error:`, error);
-        const frontendUrl = process.env.FRONTEND_URL || 'https://supfile-frontend.onrender.com';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
         const errorMessage = error.message || 'Erreur lors du traitement de l\'authentification OAuth';
         res.redirect(`${frontendUrl}/login?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`);
       }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Footer from './Footer';
 
 export default function Layout({ children }) {
@@ -9,8 +10,20 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language } = useLanguage();
+  const { theme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  
+  // Couleurs dynamiques selon le thème - Thème clair amélioré
+  const navBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const navBorder = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
+  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
 
   // Fermer les menus quand on change de page
   useEffect(() => {
@@ -42,12 +55,14 @@ export default function Layout({ children }) {
   }
 
   const navLinks = [
-    { path: '/dashboard', label: t('dashboard') },
-    { path: '/files', label: t('files') },
-    { path: '/search', label: t('search') },
-    { path: '/trash', label: t('trash') },
-    { path: '/settings', label: t('settings') },
-    ...(user?.is_admin ? [{ path: '/admin', label: '⚙️ Administration' }] : []),
+    { path: '/files', label: t('files'), icon: '📁' },
+    { path: '/dashboard', label: t('dashboard'), icon: '📊' },
+    { path: '/notes', label: t('notes') || 'Notes', icon: '📝' },
+    { path: '/search', label: t('search'), icon: '🔍' },
+    { path: '/trash', label: t('trash'), icon: '🗑️' },
+    { path: '/activity', label: t('activity') || 'Activité', icon: '📋' },
+    { path: '/settings', label: t('settings'), icon: '⚙️' },
+    ...(user?.is_admin ? [{ path: '/admin', label: '⚙️ Administration', icon: '🔐' }] : []),
   ];
 
   return (
@@ -59,12 +74,12 @@ export default function Layout({ children }) {
       {/* En-tête principal */}
       <nav style={{ 
         padding: '0',
-        borderBottom: '1px solid #e0e0e0', 
-        backgroundColor: '#ffffff',
+        borderBottom: `1px solid ${navBorder}`, 
+        backgroundColor: navBg,
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)'
       }}>
         <div style={{ 
           display: 'flex', 
@@ -116,7 +131,7 @@ export default function Layout({ children }) {
             }}
             className="mobile-logo"
             >
-              SUPFile
+              Fylora
             </span>
           </div>
 
@@ -135,7 +150,7 @@ export default function Layout({ children }) {
                 style={{
                   padding: '10px 16px',
                   textDecoration: 'none',
-                  color: location.pathname === link.path ? '#2196F3' : '#666',
+                  color: location.pathname === link.path ? '#2196F3' : (theme === 'dark' ? '#b0b0b0' : '#666'),
                   fontWeight: location.pathname === link.path ? '600' : '400',
                   borderRadius: '8px',
                   transition: 'all 0.2s',
@@ -147,14 +162,14 @@ export default function Layout({ children }) {
                 }}
                 onMouseEnter={(e) => {
                   if (location.pathname !== link.path) {
-                    e.target.style.backgroundColor = '#f5f5f5';
-                    e.target.style.color = '#333';
+                    e.target.style.backgroundColor = hoverBg;
+                    e.target.style.color = textColor;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (location.pathname !== link.path) {
                     e.target.style.backgroundColor = 'transparent';
-                    e.target.style.color = '#666';
+                    e.target.style.color = theme === 'dark' ? '#b0b0b0' : '#666';
                   }
                 }}
               >
@@ -190,20 +205,38 @@ export default function Layout({ children }) {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: secondaryBg,
                 border: 'none',
                 borderRadius: '24px',
                 cursor: 'pointer',
                 fontSize: '14px',
-                color: '#333',
+                color: textColor,
                 fontWeight: '500',
                 minHeight: '40px',
                 transition: 'background-color 0.2s'
               }}
               className="mobile-user-button user-menu-button"
             >
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${user.avatar_url}`}
+                  alt="Avatar"
+                  style={{ 
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    marginRight: '8px',
+                    flexShrink: 0
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'inline-block';
+                  }}
+                />
+              ) : null}
               <span style={{ 
-                display: 'inline-block',
+                display: user.avatar_url ? 'none' : 'inline-block',
                 width: '28px',
                 height: '28px',
                 borderRadius: '50%',
@@ -213,9 +246,10 @@ export default function Layout({ children }) {
                 textAlign: 'center',
                 fontSize: '13px',
                 fontWeight: '600',
-                marginRight: '8px'
+                marginRight: '8px',
+                flexShrink: 0
               }}>
-                {user.email.charAt(0).toUpperCase()}
+                {(user.display_name || user.email || 'U').charAt(0).toUpperCase()}
               </span>
               <span style={{ 
                 maxWidth: '100px',
@@ -223,7 +257,7 @@ export default function Layout({ children }) {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}>
-                {user.email.split('@')[0]}
+                {user.display_name || user.email.split('@')[0]}
               </span>
             </button>
 
@@ -235,21 +269,38 @@ export default function Layout({ children }) {
                 alignItems: 'center',
                 gap: '10px',
                 padding: '8px 14px',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: secondaryBg,
                 border: 'none',
                 borderRadius: '24px',
                 cursor: 'pointer',
                 fontSize: '14px',
-                color: '#333',
+                color: textColor,
                 fontWeight: '500',
                 transition: 'background-color 0.2s'
               }}
               className="desktop-user-button user-menu-button"
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#eeeeee'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+              onMouseEnter={(e) => e.target.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.target.style.backgroundColor = secondaryBg}
             >
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${user.avatar_url}`}
+                  alt="Avatar"
+                  style={{ 
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    flexShrink: 0
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'inline-block';
+                  }}
+                />
+              ) : null}
               <span style={{ 
-                display: 'inline-block',
+                display: user.avatar_url ? 'none' : 'inline-block',
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
@@ -261,7 +312,7 @@ export default function Layout({ children }) {
                 fontWeight: '600',
                 flexShrink: 0
               }}>
-                {user.email.charAt(0).toUpperCase()}
+                {(user.display_name || user.email || 'U').charAt(0).toUpperCase()}
               </span>
               <span style={{ 
                 maxWidth: '200px',
@@ -269,7 +320,7 @@ export default function Layout({ children }) {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}>
-                {user.email}
+                {user.display_name || user.email}
               </span>
             </button>
             
@@ -280,10 +331,10 @@ export default function Layout({ children }) {
                 top: '100%',
                 right: 0,
                 marginTop: '8px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #e0e0e0',
+                backgroundColor: cardBg,
+                border: `1px solid ${navBorder}`,
                 borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                boxShadow: theme === 'dark' ? '0 4px 12px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.15)',
                 minWidth: '240px',
                 zIndex: 1001,
                 overflow: 'hidden'
@@ -292,11 +343,16 @@ export default function Layout({ children }) {
               >
                 <div style={{
                   padding: '16px',
-                  borderBottom: '1px solid #f0f0f0'
+                  borderBottom: `1px solid ${navBorder}`
                 }}>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                    {user.email}
+                  <div style={{ fontSize: '15px', fontWeight: '600', color: textColor, marginBottom: '4px' }}>
+                    {user.display_name || user.email}
                   </div>
+                  {user.email && user.display_name && (
+                    <div style={{ fontSize: '13px', color: textSecondary }}>
+                      {user.email}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => {
@@ -306,17 +362,29 @@ export default function Layout({ children }) {
                   style={{
                     width: '100%',
                     padding: '14px 16px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    textAlign: 'left',
+                    backgroundColor: theme === 'dark' ? 'transparent' : '#dc2626',
+                    border: theme === 'dark' ? 'none' : `2px solid #dc2626`,
+                    borderRadius: '10px',
+                    textAlign: 'center',
                     cursor: 'pointer',
-                    fontSize: '14px',
-                    color: '#f44336',
-                    fontWeight: '500',
-                    transition: 'background-color 0.2s'
+                    fontSize: '15px',
+                    color: theme === 'dark' ? '#f44336' : '#ffffff',
+                    fontWeight: '700',
+                    transition: 'all 0.2s',
+                    boxShadow: theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)'
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#fff5f5'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = theme === 'dark' ? '#3d1f1f' : '#b91c1c';
+                    e.target.style.borderColor = theme === 'dark' ? 'transparent' : '#b91c1c';
+                    e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.4)';
+                    e.target.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = theme === 'dark' ? 'transparent' : '#dc2626';
+                    e.target.style.borderColor = theme === 'dark' ? 'transparent' : '#dc2626';
+                    e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)';
+                    e.target.style.transform = 'translateY(0)';
+                  }}
                 >
                   {t('logout')}
                 </button>
@@ -335,8 +403,8 @@ export default function Layout({ children }) {
           left: mobileMenuOpen ? '0' : '-280px',
           width: '280px',
           height: '100vh',
-          backgroundColor: '#ffffff',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+          backgroundColor: cardBg,
+          boxShadow: theme === 'dark' ? '2px 0 8px rgba(0,0,0,0.5)' : '2px 0 8px rgba(0,0,0,0.15)',
           zIndex: 1002,
           transition: 'left 0.3s ease-out',
           overflowY: 'auto',
@@ -347,25 +415,98 @@ export default function Layout({ children }) {
         {/* Header du drawer */}
         <div style={{
           padding: '20px 16px',
-          borderBottom: '1px solid #e0e0e0',
+          borderBottom: `1px solid ${navBorder}`,
           marginBottom: '8px'
         }}>
           <div style={{
-            fontSize: '20px',
-            fontWeight: '700',
-            color: '#2196F3',
-            marginBottom: '8px'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '12px'
           }}>
-            SUPFile
-          </div>
-          <div style={{
-            fontSize: '13px',
-            color: '#666',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>
-            {user.email}
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${user.avatar_url}`}
+                alt="Avatar"
+                style={{ 
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid #2196F3',
+                  flexShrink: 0
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallback = e.target.nextElementSibling;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div style={{
+              display: user.avatar_url ? 'none' : 'flex',
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#2196F3',
+              color: 'white',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              flexShrink: 0
+            }}>
+              {(user.display_name || user.email || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: '700',
+                color: '#2196F3',
+                marginBottom: '4px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                Fylora
+              </div>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: textColor,
+                marginBottom: '2px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {user.display_name || user.email.split('@')[0]}
+              </div>
+              {user.email && (
+                <div style={{
+                  fontSize: '12px',
+                  color: theme === 'dark' ? '#b0b0b0' : '#666',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  marginBottom: '8px'
+                }}>
+                  {user.email}
+                </div>
+              )}
+              {/* Informations utilisateur améliorées */}
+              <div style={{
+                fontSize: '11px',
+                color: theme === 'dark' ? '#90caf9' : '#2196F3',
+                fontWeight: '600',
+                marginTop: '4px',
+                padding: '4px 8px',
+                backgroundColor: theme === 'dark' ? '#1a237e' : '#e3f2fd',
+                borderRadius: '6px',
+                display: 'inline-block'
+              }}>
+                💾 {user.is_premium ? '⭐ Premium' : '🆓 Gratuit'}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -379,13 +520,13 @@ export default function Layout({ children }) {
               style={{
                 padding: '16px 20px',
                 textDecoration: 'none',
-                color: location.pathname === link.path ? '#2196F3' : '#333',
+                color: location.pathname === link.path ? '#2196F3' : textColor,
                 fontWeight: location.pathname === link.path ? '600' : '400',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 minHeight: '52px',
-                backgroundColor: location.pathname === link.path ? '#e3f2fd' : 'transparent',
+                backgroundColor: location.pathname === link.path ? (theme === 'dark' ? '#1a237e' : '#e3f2fd') : 'transparent',
                 transition: 'all 0.2s ease',
                 borderLeft: location.pathname === link.path ? '4px solid #2196F3' : '4px solid transparent',
                 fontSize: '16px',
@@ -395,7 +536,7 @@ export default function Layout({ children }) {
               }}
               onTouchStart={(e) => {
                 if (location.pathname !== link.path) {
-                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  e.currentTarget.style.backgroundColor = hoverBg;
                 }
               }}
               onTouchEnd={(e) => {
@@ -407,7 +548,7 @@ export default function Layout({ children }) {
               }}
               onMouseEnter={(e) => {
                 if (location.pathname !== link.path) {
-                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  e.currentTarget.style.backgroundColor = hoverBg;
                 }
               }}
               onMouseLeave={(e) => {
@@ -417,14 +558,14 @@ export default function Layout({ children }) {
               }}
             >
               <span style={{ 
-                display: 'inline-block',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: location.pathname === link.path ? '#2196F3' : '#ddd',
+                fontSize: '20px',
                 marginRight: '16px',
-                flexShrink: 0
-              }}></span>
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px'
+              }}>{link.icon || '📄'}</span>
               <span style={{ flex: 1 }}>{link.label}</span>
             </Link>
           ))}
@@ -433,7 +574,7 @@ export default function Layout({ children }) {
         {/* Bouton Déconnexion dans le drawer */}
         <div style={{
           padding: '16px',
-          borderTop: '1px solid #e0e0e0',
+          borderTop: `1px solid ${navBorder}`,
           marginTop: 'auto'
         }}>
           <button
@@ -444,17 +585,26 @@ export default function Layout({ children }) {
             style={{
               width: '100%',
               padding: '14px',
-              backgroundColor: '#f44336',
+              backgroundColor: '#dc2626',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '10px',
               cursor: 'pointer',
               fontSize: '15px',
-              fontWeight: '600',
-              transition: 'background-color 0.2s'
+              fontWeight: '700',
+              transition: 'all 0.2s',
+              boxShadow: theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#d32f2f'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#f44336'}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#b91c1c';
+              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.4)';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#dc2626';
+              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)';
+              e.target.style.transform = 'translateY(0)';
+            }}
           >
             {t('logout')}
           </button>
@@ -488,7 +638,7 @@ export default function Layout({ children }) {
       <Footer />
 
       <style>{`
-        /* Mobile styles */
+        /* Mobile styles (< 768px) */
         @media (max-width: 767px) {
           .mobile-menu-toggle {
             display: flex !important;
@@ -512,8 +662,8 @@ export default function Layout({ children }) {
             display: block !important;
           }
         }
-        /* Desktop styles */
-        @media (min-width: 768px) {
+        /* Tablet styles (768px - 1023px) */
+        @media (min-width: 768px) and (max-width: 1023px) {
           .mobile-menu-toggle {
             display: none !important;
           }
@@ -525,6 +675,35 @@ export default function Layout({ children }) {
           }
           .mobile-menu-drawer {
             display: none !important;
+          }
+          .nav-links-desktop {
+            display: flex !important;
+            gap: 4px !important;
+          }
+          .desktop-user-button {
+            display: flex !important;
+          }
+        }
+        /* Desktop styles (>= 1024px) */
+        @media (min-width: 1024px) {
+          .mobile-menu-toggle {
+            display: none !important;
+          }
+          .mobile-logo {
+            display: none !important;
+          }
+          .mobile-user-button {
+            display: none !important;
+          }
+          .mobile-menu-drawer {
+            display: none !important;
+          }
+          .nav-links-desktop {
+            display: flex !important;
+            gap: 8px !important;
+          }
+          .desktop-user-button {
+            display: flex !important;
           }
         }
       `}</style>

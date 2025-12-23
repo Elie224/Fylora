@@ -1,11 +1,11 @@
 {
-    "name": "supfile_mobile",
-    "short_name": "supfile_mobile",
+    "name": "Fylora",
+    "short_name": "Fylora",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#4A90E2",
+    "theme_color": "#4A90E2",
+    "description": "Fylora – Vos fichiers en sécurité, où que vous soyez.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -71,8 +71,8 @@ class MemoryCache {
   }
 }
 
-// Instance globale du cache
-const cache = new MemoryCache(300000); // 5 minutes TTL par défaut
+// Instance globale du cache avec TTL plus court pour éviter les données obsolètes
+const cache = new MemoryCache(60000); // 1 minute TTL par défaut (peut être surchargé par route)
 
 /**
  * Middleware de cache pour les routes GET
@@ -100,9 +100,13 @@ function cacheMiddleware(ttl = 300000, keyGenerator = null) {
 
     // Intercepter res.json pour mettre en cache
     res.json = function(data) {
-      // Ne cacher que les réponses 200
-      if (res.statusCode === 200) {
-        cache.set(cacheKey, data, ttl);
+      // Ne cacher que les réponses 200 et si les données sont valides
+      if (res.statusCode === 200 && data && !res.headersSent) {
+        try {
+          cache.set(cacheKey, data, ttl);
+        } catch (err) {
+          // Ignorer les erreurs de cache silencieusement
+        }
       }
       return originalJson(data);
     };
@@ -136,4 +140,5 @@ module.exports = {
   invalidateUserCache,
   invalidateAllCache,
 };
+
 

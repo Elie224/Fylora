@@ -1,4 +1,4 @@
-# 📱 Fonctionnalités de l'Application Mobile SUPFile
+# 📱 Fonctionnalités de l'Application Mobile Fylora
 
 ## ✅ Fonctionnalités Implémentées
 
@@ -251,6 +251,7 @@
 **Toutes les fonctionnalités requises par le projet sont implémentées dans l'application mobile**, à l'exception de la connexion OAuth fonctionnelle qui nécessite la configuration des endpoints backend. L'interface OAuth est prête et n'attend que la connexion aux endpoints.
 
 L'application mobile est complète et prête pour la soumission du projet ! 🎉
+
 
 
 

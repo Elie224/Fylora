@@ -12,6 +12,11 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/share/share_screen.dart';
 import '../screens/share/public_share_screen.dart';
 import '../screens/trash/trash_screen.dart';
+import '../screens/notes/notes_list_screen.dart';
+import '../screens/notes/note_edit_screen.dart';
+import '../screens/activity/activity_screen.dart';
+import '../screens/admin/admin_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../providers/auth_provider.dart';
 
 class AppRouter {
@@ -90,6 +95,29 @@ class AppRouter {
             final token = state.pathParameters['token']!;
             return PublicShareScreen(token: token);
           },
+        ),
+        GoRoute(
+          path: '/notes',
+          builder: (context, state) => const NotesListScreen(),
+        ),
+        GoRoute(
+          path: '/notes/:id',
+          builder: (context, state) {
+            final noteId = state.pathParameters['id']!;
+            return NoteEditScreen(noteId: noteId);
+          },
+        ),
+        GoRoute(
+          path: '/activity',
+          builder: (context, state) => const ActivityScreen(),
+        ),
+        GoRoute(
+          path: '/admin',
+          builder: (context, state) => const AdminScreen(),
+        ),
+        GoRoute(
+          path: '/notifications',
+          builder: (context, state) => const NotificationsScreen(),
         ),
       ],
       redirect: (context, state) {

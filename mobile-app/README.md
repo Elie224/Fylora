@@ -1,6 +1,6 @@
-# SUPFile Mobile Application (Flutter)
+# Fylora Mobile Application (Flutter)
 
-Application mobile développée avec Flutter pour SUPFile.
+Application mobile développée avec Flutter pour Fylora.
 
 ## 📋 Prérequis
 
@@ -131,4 +131,4 @@ lib/
 ## 🔗 Liens utiles
 
 - [Documentation Flutter](https://docs.flutter.dev/)
-- [API Backend SUPFile](../docs/API.md)
+- [API Backend Fylora](../docs/API.md)

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -12,7 +13,22 @@ export default function Signup() {
   
   const { signup } = useAuthStore();
   const navigate = useNavigate();
-  const { t, language } = useLanguage(); // Inclure language pour forcer le re-render
+  const { t, language } = useLanguage();
+  const { theme } = useTheme();
+
+  // Couleurs dynamiques selon le thème - Thème clair amélioré
+  const bgColor = theme === 'dark' ? '#0a0a0a' : '#fafbfc';
+  const cardBg = theme === 'dark' ? '#1a1a1a' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const borderColor = theme === 'dark' ? '#2d2d2d' : '#e2e8f0';
+  const inputBg = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+  const inputBorder = theme === 'dark' ? '#404040' : '#cbd5e0';
+  const errorBg = theme === 'dark' ? '#3d1f1f' : '#fef2f2';
+  const errorText = theme === 'dark' ? '#ff6b6b' : '#dc2626';
+  const primaryColor = '#2196F3';
+  const separatorColor = theme === 'dark' ? '#2d2d2d' : '#e2e8f0';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
 
   const validatePassword = (pwd) => {
     if (pwd.length < 8) return t('passwordMinLength');
@@ -61,17 +77,38 @@ export default function Signup() {
       justifyContent: 'center', 
       alignItems: 'center', 
       minHeight: '100vh',
-      backgroundColor: '#f5f5f5'
+      backgroundColor: bgColor,
+      transition: 'background-color 0.3s ease'
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: cardBg,
         padding: '32px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        borderRadius: '12px',
+              boxShadow: theme === 'dark' ? '0 4px 20px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)',
         width: '100%',
-        maxWidth: '400px'
+        maxWidth: '400px',
+        border: `1px solid ${borderColor}`,
+        transition: 'all 0.3s ease'
       }}>
-        <h1 style={{ marginBottom: '24px', textAlign: 'center', color: '#333' }}>
+        <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+          <Link 
+            to="/" 
+            style={{ 
+              color: primaryColor, 
+              textDecoration: 'none',
+              fontSize: '14px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'opacity 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+            onMouseLeave={(e) => e.target.style.opacity = '1'}
+          >
+            ← {language === 'fr' ? 'Retour à l\'accueil' : 'Back to home'}
+          </Link>
+        </div>
+        <h1 style={{ marginBottom: '24px', textAlign: 'center', color: textColor }}>
           {t('signup')}
         </h1>
 
@@ -79,10 +116,11 @@ export default function Signup() {
           <div style={{
             padding: '12px',
             marginBottom: '16px',
-            backgroundColor: '#ffebee',
-            color: '#c62828',
-            borderRadius: '4px',
-            fontSize: '14px'
+            backgroundColor: errorBg,
+            color: errorText,
+            borderRadius: '8px',
+            fontSize: '14px',
+            border: `1px solid ${theme === 'dark' ? '#5d2f2f' : '#ffcdd2'}`
           }}>
             {error}
           </div>
@@ -90,20 +128,32 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#333', fontWeight: '500' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('email')}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               style={{
                 width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
                 fontSize: '16px',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
               }}
               required
               disabled={loading}
@@ -111,44 +161,68 @@ export default function Signup() {
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#333', fontWeight: '500' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('password')}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
               style={{
                 width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
                 fontSize: '16px',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
               }}
               required
               disabled={loading}
             />
-            <div style={{ marginTop: '4px', fontSize: '12px', color: '#666' }}>
+            <div style={{ marginTop: '4px', fontSize: '12px', color: textSecondary }}>
               {t('passwordRequirements')}
             </div>
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#333', fontWeight: '500' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('confirmPassword')}
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
               style={{
                 width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
                 fontSize: '16px',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
               }}
               required
               disabled={loading}
@@ -160,15 +234,29 @@ export default function Signup() {
             disabled={loading}
             style={{
               width: '100%',
-              padding: '12px',
-              backgroundColor: loading ? '#ccc' : '#2196F3',
+              padding: '14px',
+              backgroundColor: loading ? (theme === 'dark' ? '#444' : '#ccc') : primaryColor,
               color: 'white',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '8px',
               fontSize: '16px',
-              fontWeight: '500',
+              fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              transition: 'all 0.2s',
+              boxShadow: loading ? 'none' : `0 4px 12px ${primaryColor}40`
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = `0 6px 16px ${primaryColor}50`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = `0 4px 12px ${primaryColor}40`;
+              }
             }}
           >
             {loading ? t('signupLoading') : t('signupButton')}
@@ -176,10 +264,10 @@ export default function Signup() {
         </form>
 
         {/* Séparateur */}
-        <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', color: '#999' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#ddd' }}></div>
+        <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', color: textSecondary }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: separatorColor }}></div>
           <span style={{ padding: '0 16px', fontSize: '14px' }}>{t('or')}</span>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#ddd' }}></div>
+          <div style={{ flex: 1, height: '1px', backgroundColor: separatorColor }}></div>
         </div>
 
         {/* Boutons OAuth */}
@@ -187,16 +275,16 @@ export default function Signup() {
           <button
             type="button"
             onClick={() => {
-              const apiUrl = import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com';
+              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
               window.location.href = `${apiUrl}/api/auth/google`;
             }}
             style={{
               width: '100%',
               padding: '12px 16px',
-              backgroundColor: '#fff',
-              color: '#333',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#fff',
+              color: theme === 'dark' ? '#e0e0e0' : '#333',
               border: '2px solid #4285f4',
-              borderRadius: '6px',
+              borderRadius: '8px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
@@ -205,17 +293,17 @@ export default function Signup() {
               justifyContent: 'center',
               gap: '10px',
               transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#f8f9fa';
+              e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f8f9fa';
               e.target.style.borderColor = '#1a73e8';
-              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+              e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(0,0,0,0.5)' : '0 4px 8px rgba(0,0,0,0.15)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#fff';
+              e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#fff';
               e.target.style.borderColor = '#4285f4';
-              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)';
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
@@ -230,7 +318,7 @@ export default function Signup() {
           <button
             type="button"
             onClick={() => {
-              const apiUrl = import.meta.env.VITE_API_URL || 'https://supfile-1.onrender.com';
+              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
               window.location.href = `${apiUrl}/api/auth/github`;
             }}
             style={{
@@ -269,9 +357,19 @@ export default function Signup() {
           </button>
         </div>
 
-        <div style={{ textAlign: 'center', color: '#666', fontSize: '14px' }}>
+        <div style={{ textAlign: 'center', color: textSecondary, fontSize: '14px' }}>
           {t('hasAccount')}{' '}
-          <Link to="/login" style={{ color: '#2196F3', textDecoration: 'none' }}>
+          <Link 
+            to="/login" 
+            style={{ 
+              color: primaryColor, 
+              textDecoration: 'none',
+              fontWeight: '500',
+              transition: 'opacity 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+            onMouseLeave={(e) => e.target.style.opacity = '1'}
+          >
             {t('loginLink')}
           </Link>
         </div>

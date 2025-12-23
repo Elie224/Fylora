@@ -54,12 +54,14 @@ const avatarUpload = multer({
 async function getMe(req, res, next) {
   try {
     const userId = req.user.id;
+    // Utiliser UserModel.findById() qui est la méthode disponible dans UserModel
     const user = await UserModel.findById(userId);
     
     if (!user) {
       return res.status(404).json({ error: { message: 'User not found' } });
     }
 
+    // UserModel.findById() retourne déjà un objet formaté avec id au lieu de _id
     // Retirer les informations sensibles
     const safeUser = {
       id: user.id,

@@ -1,0 +1,12 @@
+{
+  "name": "fylora",
+  "version": "1.0.0",
+  "description": "Fylora - Cloud Storage Application",
+  "scripts": {
+    "check-oauth": "cd backend && npm run check-oauth",
+    "backend:check-oauth": "cd backend && npm run check-oauth"
+  },
+  "dependencies": {
+    "redis": "^5.10.0"
+  }
+}
