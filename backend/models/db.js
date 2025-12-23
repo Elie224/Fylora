@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const config = require('../config');
 
-let mongoUri = config.database.mongoUri || process.env.MONGO_URI;
+let mongoUri = config.database.mongoUri || process.env.MONGODB_URI || process.env.MONGO_URI;
 
 // ⚠️ PROTECTION STRICTE : Garantir que l'application se connecte toujours à "Fylora"
 function garantirBaseFylora(uri) {

@@ -10,7 +10,7 @@ module.exports = {
   },
   database: {
     // MongoDB connection string (mongodb://user:pass@host:port/db)
-    mongoUri: process.env.MONGO_URI || process.env.DB_URI,
+    mongoUri: process.env.MONGODB_URI || process.env.MONGO_URI || process.env.DB_URI,
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 27017,
     user: process.env.MONGO_INITDB_ROOT_USERNAME,
@@ -45,9 +45,10 @@ module.exports = {
       
       // En production, utiliser la liste des origines autorisées
       const defaultOrigins = process.env.NODE_ENV === 'production' 
-        ? [] 
+        ? '' 
         : 'http://localhost:3001,http://127.0.0.1:3001,http://localhost:19000,exp://localhost:19000';
-      const allowedOrigins = (process.env.CORS_ORIGIN || defaultOrigins)
+      const corsOriginValue = process.env.CORS_ORIGIN || defaultOrigins;
+      const allowedOrigins = (typeof corsOriginValue === 'string' ? corsOriginValue : String(corsOriginValue))
         .split(',')
         .map(origin => origin.trim())
         .filter(origin => origin.length > 0);
