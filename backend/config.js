@@ -55,8 +55,7 @@ module.exports = {
       
       // Autoriser les requêtes sans origine (health checks Render, Postman, curl, applications mobiles)
       if (!origin) {
-        // En production, autoriser les health checks et requêtes système
-        return callback(null, true);
+        // Autoriser les health checks et requêtes système même en production
         return callback(null, true);
       }
       
