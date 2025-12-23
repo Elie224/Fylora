@@ -49,8 +49,8 @@ Ce guide vous explique comment déployer l'application Fylora (backend + fronten
 Dans la section "Environment Variables" de Render, ajoutez :
 
 ```env
-# MongoDB
-MONGODB_URI=mongodb+srv://fylora_admin:<VOTRE_MOT_DE_PASSE>@cluster0.xxxxx.mongodb.net/Fylora?retryWrites=true&w=majority
+# MongoDB - Utilisez votre connection string MongoDB Atlas
+MONGODB_URI=mongodb+srv://nema_fylora:huEtXacXPwGZFMmz@cluster0.u3cxqhm.mongodb.net/Fylora?retryWrites=true&w=majority
 
 # JWT
 JWT_SECRET=<GÉNÉREZ_UN_SECRET_ALÉATOIRE_FORT>
