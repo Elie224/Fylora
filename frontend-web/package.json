@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run copy-redirects",
-    "copy-redirects": "node scripts/copy-redirects.js",
+    "copy-redirects": "node scripts/copy-redirects.cjs",
     "build:render": "VITE_API_URL=${VITE_API_URL:-http://localhost:5001} vite build && npm run copy-redirects",
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx"
