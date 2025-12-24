@@ -22,31 +22,11 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
-    // Code splitting automatique optimisé
+    // Code splitting désactivé temporairement pour résoudre l'erreur React
+    // Tous les vendors seront dans un seul chunk pour éviter les problèmes d'ordre de chargement
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks - React doit être dans le premier chunk
-          if (id.includes('node_modules')) {
-            // React et React-DOM doivent être ensemble et chargés en premier
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime') || id.includes('scheduler')) {
-              return 'react-vendor';
-            }
-            if (id.includes('react-router')) {
-              return 'router-vendor';
-            }
-            if (id.includes('axios')) {
-              return 'http-vendor';
-            }
-            // Tout le reste dans vendor
-            return 'vendor';
-          }
-          // Feature chunks
-          if (id.includes('/pages/')) {
-            const pageName = id.split('/pages/')[1].split('/')[0];
-            return `page-${pageName}`;
-          }
-        },
+        manualChunks: undefined, // Désactiver le code splitting pour tester
         // Optimiser les noms de chunks
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
