@@ -2,7 +2,7 @@
  * Script pour mettre à jour les identifiants GitHub OAuth dans le .env
  * Usage: node scripts/update-github-oauth.js <CLIENT_ID> <CLIENT_SECRET>
  * 
- * Exemple: node scripts/update-github-oauth.js Ov23ligHjSabcdef GOCSPX-abcdefghijklmnop
+ * Exemple: node scripts/update-github-oauth.js votre_client_id votre_client_secret
  */
 
 const fs = require('fs');
@@ -14,7 +14,7 @@ if (args.length < 2) {
   console.log('❌ Usage: node scripts/update-github-oauth.js <CLIENT_ID> <CLIENT_SECRET>');
   console.log('');
   console.log('Exemple:');
-  console.log('  node scripts/update-github-oauth.js Ov23ligHjSabcdef GOCSPX-abcdefghijklmnop');
+  console.log('  node scripts/update-github-oauth.js votre_client_id votre_client_secret');
   process.exit(1);
 }
 

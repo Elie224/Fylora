@@ -79,8 +79,8 @@ GITHUB_REDIRECT_URI=http://localhost:5001/api/auth/github/callback
 
 **Exemple** :
 ```env
-GITHUB_CLIENT_ID=Ov23ligHjSabcdefghijklmnop
-GITHUB_CLIENT_SECRET=abcdefghijklmnopqrstuvwxyz1234567890
+GITHUB_CLIENT_ID=votre_client_id_github_ici
+GITHUB_CLIENT_SECRET=votre_client_secret_github_ici
 GITHUB_REDIRECT_URI=http://localhost:5001/api/auth/github/callback
 ```
 
@@ -95,7 +95,7 @@ npm run diagnose-oauth
 Vous devriez voir :
 ```
 📋 GitHub OAuth:
-  Client ID: Ov23ligHjS...
+  Client ID: votre_client_id...
   Client Secret: ✅ Présent
   Redirect URI configuré: http://localhost:5001/api/auth/github/callback
   Redirect URI attendu: http://localhost:5001/api/auth/github/callback
