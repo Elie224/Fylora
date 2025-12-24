@@ -418,6 +418,18 @@ startServer().then(() => {
       environment: config.server.nodeEnv,
       port: PORT,
     });
+    // Afficher le port pour que Render le détecte
+    console.log(`Port ${PORT} is now listening`);
+  });
+  
+  // Gestion des erreurs du serveur
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      logger.logError(err, { context: 'port already in use', port: PORT });
+      process.exit(1);
+    } else {
+      logger.logError(err, { context: 'server error' });
+    }
   });
 }).catch((err) => {
   logger.logError(err, { context: 'server startup' });

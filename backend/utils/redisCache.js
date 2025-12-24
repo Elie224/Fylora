@@ -21,17 +21,31 @@ class RedisCache {
     }
     this.connectionAttempted = true;
 
+    // Si REDIS_URL n'est pas défini, utiliser directement le cache mémoire sans essayer Redis
+    if (!process.env.REDIS_URL) {
+      this.useRedis = false;
+      // En production, ne pas afficher de message si Redis n'est pas configuré (c'est normal)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('ℹ️  Redis not configured (REDIS_URL not set), using memory cache');
+      }
+      return;
+    }
+
     try {
-      // Essayer de se connecter à Redis si disponible
+      // Essayer de se connecter à Redis si REDIS_URL est défini
       const redis = require('redis');
       const client = redis.createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        url: process.env.REDIS_URL,
         socket: {
           reconnectStrategy: (retries) => {
             // Arrêter les tentatives après 3 essais
             if (retries > 3) {
               if (!this.connectionFailed) {
-                console.warn('⚠️  Redis connection failed after 3 attempts, using memory cache');
+                // En production, message plus discret
+                const message = process.env.NODE_ENV === 'production'
+                  ? 'Redis unavailable, using memory cache'
+                  : '⚠️  Redis connection failed after 3 attempts, using memory cache';
+                console.warn(message);
                 this.connectionFailed = true;
               }
               return false;
@@ -48,7 +62,9 @@ class RedisCache {
         if (!errorLogged && !this.connectionFailed) {
           // Ne logger que les erreurs importantes, pas les ECONNRESET répétés
           if (!err.message.includes('ECONNRESET') && !err.message.includes('Socket closed')) {
-            console.warn('Redis error:', err.message);
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('Redis error:', err.message);
+            }
           }
           errorLogged = true;
         }
@@ -68,7 +84,11 @@ class RedisCache {
       console.log('✅ Redis cache connected');
     } catch (error) {
       if (!this.connectionFailed) {
-        console.warn('⚠️  Redis not available, using memory cache');
+        // En production, message plus discret
+        const message = process.env.NODE_ENV === 'production'
+          ? 'Redis unavailable, using memory cache'
+          : '⚠️  Redis not available, using memory cache';
+        console.warn(message);
         this.connectionFailed = true;
       }
       this.useRedis = false;
