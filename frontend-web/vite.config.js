@@ -29,7 +29,7 @@ export default defineConfig({
           // Vendor chunks - React doit être dans le premier chunk
           if (id.includes('node_modules')) {
             // React et React-DOM doivent être ensemble et chargés en premier
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime') || id.includes('scheduler')) {
               return 'react-vendor';
             }
             if (id.includes('react-router')) {
@@ -38,6 +38,7 @@ export default defineConfig({
             if (id.includes('axios')) {
               return 'http-vendor';
             }
+            // Tout le reste dans vendor
             return 'vendor';
           }
           // Feature chunks
