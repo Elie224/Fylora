@@ -42,6 +42,11 @@ const initiateOAuth = (provider) => {
     if (req.query.redirect) {
       req.session.oauthRedirect = req.query.redirect;
     }
+    
+    // Stocker le redirect_uri pour mobile (deep link)
+    if (req.query.redirect_uri) {
+      req.session.oauthRedirectUri = req.query.redirect_uri;
+    }
 
     try {
       passport.authenticate(provider, { scope: provider === 'google' ? ['profile', 'email'] : ['user:email'] })(req, res, next);
@@ -155,7 +160,18 @@ const handleOAuthCallback = (provider) => {
           // Ne pas bloquer la connexion si la session échoue
         }
 
-        // Rediriger vers le frontend avec les tokens dans l'URL
+        // Vérifier si c'est une requête mobile (deep link)
+        const redirectUri = req.query.redirect_uri || req.session?.oauthRedirectUri;
+        const isMobile = redirectUri && redirectUri.startsWith('fylora://');
+        
+        if (isMobile) {
+          // Rediriger vers le deep link mobile avec les tokens
+          const mobileRedirect = `${redirectUri}?token=${encodeURIComponent(access_token)}&refresh_token=${encodeURIComponent(refresh_token)}`;
+          console.log(`OAuth ${provider} success (mobile): User ${user.email} authenticated`);
+          return res.redirect(mobileRedirect);
+        }
+        
+        // Rediriger vers le frontend web avec les tokens dans l'URL
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
         const redirectUrl = req.session?.oauthRedirect || '/dashboard';
         
@@ -165,6 +181,17 @@ const handleOAuthCallback = (provider) => {
         res.redirect(`${frontendUrl}/auth/callback?tokens=${tokens}&redirect=${encodeURIComponent(redirectUrl)}`);
       } catch (error) {
         console.error(`OAuth ${provider} callback error:`, error);
+        
+        // Vérifier si c'est une requête mobile
+        const redirectUri = req.query.redirect_uri || req.session?.oauthRedirectUri;
+        const isMobile = redirectUri && redirectUri.startsWith('fylora://');
+        
+        if (isMobile) {
+          const errorMessage = error.message || 'Erreur lors de l\'authentification OAuth';
+          const mobileErrorRedirect = `${redirectUri}?error=${encodeURIComponent(errorMessage)}`;
+          return res.redirect(mobileErrorRedirect);
+        }
+        
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
         const errorMessage = error.message || 'Erreur lors du traitement de l\'authentification OAuth';
         res.redirect(`${frontendUrl}/login?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`);
