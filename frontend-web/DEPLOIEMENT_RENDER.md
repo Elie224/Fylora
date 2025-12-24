@@ -18,7 +18,7 @@ Le fichier `render.yaml` contient :
 ```yaml
   # Frontend Static Site
   - type: web
-    name: fylora-frontend
+    name: fylor-frontend
     env: static
     region: frankfurt
     plan: free
@@ -51,7 +51,7 @@ Le fichier `render.yaml` contient :
    - Branche : `main`
 
 2. **Configuration de base** :
-   - **Name** : `fylora-frontend`
+   - **Name** : `fylor-frontend`
    - **Root Directory** : `frontend-web`
    - **Build Command** : `npm install && npm run build`
    - **Publish Directory** : `dist`
@@ -73,7 +73,7 @@ Le fichier `render.yaml` contient :
 ## ✅ Vérification
 
 Après le déploiement, vous devriez avoir :
-- URL du frontend : `https://fylora-frontend.onrender.com`
+- URL du frontend : `https://fylor-frontend.onrender.com`
 - Le frontend pointe vers le backend : `https://fylora-1.onrender.com`
 
 ## 🔧 Configuration des variables d'environnement
@@ -112,7 +112,7 @@ Le dossier `dist` sera créé avec les fichiers compilés.
 
 Si vous voyez des erreurs CORS :
 1. Vérifiez que `CORS_ORIGIN` dans le backend inclut l'URL du frontend
-2. Ajoutez `https://fylora-frontend.onrender.com` dans `CORS_ORIGIN` du backend
+2. Ajoutez `https://fylor-frontend.onrender.com` dans `CORS_ORIGIN` du backend
 
 ### Le build échoue
 
@@ -129,7 +129,7 @@ Si vous voyez des erreurs CORS :
 ## 🎯 Résultat attendu
 
 Une fois déployé, vous devriez avoir :
-- ✅ Frontend accessible sur `https://fylora-frontend.onrender.com`
+- ✅ Frontend accessible sur `https://fylor-frontend.onrender.com`
 - ✅ Frontend connecté au backend `https://fylora-1.onrender.com`
 - ✅ Authentification fonctionnelle
 - ✅ Toutes les fonctionnalités opérationnelles

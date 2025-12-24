@@ -20,7 +20,7 @@ services:
 
   # Frontend Static Site
   - type: web
-    name: fylora-frontend
+    name: fylor-frontend
     env: static
     region: frankfurt
     plan: free
@@ -28,7 +28,7 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
-      # URL du backend API (corrigée avec l'URL réelle)
+      # URL du backend API
       - key: VITE_API_URL
         value: https://fylora-1.onrender.com
 
