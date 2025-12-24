@@ -24,11 +24,6 @@ const logOAuthError = (provider, error, context = {}) => {
 // Configuration des stratégies OAuth
 const configurePassport = () => {
   console.log('🔧 Configuring OAuth strategies...');
-  console.log('📋 GitHub config check:', {
-    clientId: config.oauth.github?.clientId ? 'present' : 'missing',
-    clientSecret: config.oauth.github?.clientSecret ? 'present' : 'missing',
-    redirectUri: config.oauth.github?.redirectUri || 'not set'
-  });
   
   // Stratégie Google
   if (config.oauth.google?.clientId && config.oauth.google?.clientSecret) {
