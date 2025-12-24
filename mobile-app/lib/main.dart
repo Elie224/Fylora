@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/files_provider.dart';
@@ -16,7 +15,6 @@ import 'utils/performance_optimizer.dart';
 import 'utils/advanced_cache.dart';
 import 'utils/offline_first.dart';
 import 'utils/performance_monitor.dart';
-import 'utils/view_preloader.dart';
 
 void main() async {
   // S'assurer que Flutter est initialisé

@@ -1,7 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:app_links/app_links.dart';
 import 'dart:async';
 import '../utils/constants.dart';
 import '../utils/secure_logger.dart';

@@ -213,3 +213,5 @@ Si vous rencontrez des problèmes :
 2. Vérifiez que les URLs de callback sont exactement identiques
 3. Assurez-vous que les secrets ne contiennent pas d'espaces supplémentaires
 
+
+

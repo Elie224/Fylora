@@ -1,6 +1,5 @@
 /// Utilitaires pour optimiser les performances de l'application mobile
 import 'dart:async';
-import 'dart:collection';
 
 /// Cache simple en mémoire avec TTL
 class MemoryCache<K, V> {

@@ -156,3 +156,5 @@ Le script affichera les URIs configurées et vérifiera qu'elles correspondent.
 - [Documentation GitHub OAuth](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)
 
 
+
+

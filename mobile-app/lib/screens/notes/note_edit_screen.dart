@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import '../../providers/notes_provider.dart';
-import '../../models/note.dart';
 
 class NoteEditScreen extends StatefulWidget {
   final String noteId;

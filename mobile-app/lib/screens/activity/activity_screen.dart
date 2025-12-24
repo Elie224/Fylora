@@ -1,7 +1,6 @@
 /// Écran de l'activité
 import 'package:flutter/material.dart';
 import '../../services/activity_service.dart';
-import '../../utils/constants.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});

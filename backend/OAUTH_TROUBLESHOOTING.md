@@ -89,3 +89,5 @@ Si l'authentification ne fonctionne PAS (pas seulement des avertissements), vér
 - [CORS Explained](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
 
 
+
+

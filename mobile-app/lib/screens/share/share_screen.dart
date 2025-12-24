@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
-import '../../providers/files_provider.dart';
-import '../../models/file.dart';
-import '../../models/folder.dart';
 import '../../utils/constants.dart';
 
 class ShareScreen extends StatefulWidget {

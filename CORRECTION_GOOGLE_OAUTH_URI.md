@@ -63,3 +63,5 @@ Une fois l'URI corrigée et sauvegardée :
 2. Testez la connexion Google depuis votre application
 3. Vérifiez les logs Render pour confirmer que OAuth fonctionne
 
+
+

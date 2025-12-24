@@ -193,46 +193,6 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  Future<void> _deleteUser(dynamic user) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer l\'utilisateur'),
-        content: Text('Êtes-vous sûr de vouloir supprimer ${user['email']} ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await _adminService.deleteUser(user['id']);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Utilisateur supprimé avec succès')),
-          );
-          _loadUsers();
-          _loadStats();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
-        }
-      }
-    }
-  }
-
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
@@ -492,5 +452,7 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+
+
 
 

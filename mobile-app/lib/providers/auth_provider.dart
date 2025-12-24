@@ -197,9 +197,9 @@ class AuthProvider with ChangeNotifier {
         }
       }
       
-      // Pour GitHub, utiliser le flux deep link existant
+      // Seul Google OAuth est supporté
       _isLoading = false;
-      _error = 'Méthode OAuth non supportée pour $provider';
+      _error = 'Seule la connexion Google est disponible';
       notifyListeners();
       return false;
     } catch (e) {

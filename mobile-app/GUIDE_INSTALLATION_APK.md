@@ -171,3 +171,5 @@ Si vous rencontrez des problèmes, vérifiez :
 2. Que l'installation depuis des sources inconnues est activée
 3. Que vous avez assez d'espace de stockage sur votre téléphone
 
+
+

@@ -2,7 +2,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../utils/performance.dart';
 import '../utils/security.dart' show isValidEmail, isValidPassword;
 import 'secure_storage.dart' show SecureStorage;
 import '../utils/constants.dart';
@@ -261,55 +260,55 @@ class ApiService {
     if (folderId != null) queryParams['folder'] = folderId;
     if (skip != null) queryParams['skip'] = skip;
     if (limit != null) queryParams['limit'] = limit;
-    return await get('/api/files', queryParameters: queryParams.isEmpty ? null : queryParams);
+    return await get('/files', queryParameters: queryParams.isEmpty ? null : queryParams);
   }
 
   /// Obtenir un dossier
   Future<Response> getFolder(String folderId) async {
-    return await get('/api/folders/$folderId');
+    return await get('/folders/$folderId');
   }
 
   /// Obtenir tous les dossiers
   Future<Response> getAllFolders() async {
-    return await get('/api/folders');
+    return await get('/folders');
   }
 
   /// Télécharger un fichier
   Future<Response> downloadFile(String fileId) async {
     return await _dio.get(
-      '/api/files/$fileId/download',
+      '/files/$fileId/download',
       options: Options(responseType: ResponseType.bytes),
     );
   }
 
   /// Prévisualiser un fichier
   Future<Response> previewFile(String fileId) async {
-    return await get('/api/files/$fileId/preview');
+    return await get('/files/$fileId/preview');
   }
 
   /// Supprimer un fichier
   Future<Response> deleteFile(String fileId) async {
-    return await delete('/api/files/$fileId');
+    return await delete('/files/$fileId');
   }
 
   /// Supprimer un dossier
   Future<Response> deleteFolder(String folderId) async {
-    return await delete('/api/folders/$folderId');
+    return await delete('/folders/$folderId');
   }
 
   /// Renommer un fichier
   Future<Response> renameFile(String fileId, String newName) async {
-    return await patch('/api/files/$fileId', data: {'name': newName});
+    return await patch('/files/$fileId', data: {'name': newName});
   }
 
   /// Renommer un dossier
   Future<Response> renameFolder(String folderId, String newName) async {
-    return await patch('/api/folders/$folderId', data: {'name': newName});
+    return await patch('/folders/$folderId', data: {'name': newName});
   }
 
   /// Créer un dossier
   Future<Response> createFolder(String name, {String? parentId}) async {
-    return await post('/api/folders', data: {
+    return await post('/folders', data: {
       'name': name,
       if (parentId != null) 'parent_id': parentId,
     });
@@ -317,14 +316,14 @@ class ApiService {
 
   /// Déplacer un fichier
   Future<Response> moveFile(String fileId, String? folderId) async {
-    return await patch('/api/files/$fileId', data: {
+    return await patch('/files/$fileId', data: {
       'folder_id': folderId,
     });
   }
 
   /// Déplacer un dossier
   Future<Response> moveFolder(String folderId, String? parentId) async {
-    return await patch('/api/folders/$folderId', data: {
+    return await patch('/folders/$folderId', data: {
       'parent_id': parentId,
     });
   }
@@ -332,7 +331,7 @@ class ApiService {
   /// Télécharger un dossier (ZIP)
   Future<Response> downloadFolder(String folderId) async {
     return await _dio.get(
-      '/api/folders/$folderId/download',
+      '/folders/$folderId/download',
       options: Options(responseType: ResponseType.bytes),
     );
   }
@@ -343,7 +342,7 @@ class ApiService {
 
   /// Obtenir les statistiques du dashboard
   Future<Response> getDashboard() async {
-    return await get('/api/dashboard', useCache: true);
+    return await get('/dashboard', useCache: true);
   }
 
   // ============================================
@@ -363,7 +362,7 @@ class ApiService {
     if (mimeType != null) queryParams['mime_type'] = mimeType;
     if (dateFrom != null) queryParams['date_from'] = dateFrom;
     if (dateTo != null) queryParams['date_to'] = dateTo;
-    return await get('/api/search', queryParameters: queryParams);
+    return await get('/search', queryParameters: queryParams);
   }
 
   // ============================================
@@ -378,12 +377,12 @@ class ApiService {
     final data = <String, dynamic>{};
     if (email != null) data['email'] = email;
     if (displayName != null) data['display_name'] = displayName;
-    return await patch('/api/users/me', data: data);
+    return await patch('/users/me', data: data);
   }
 
   /// Changer le mot de passe
   Future<Response> changePassword(String currentPassword, String newPassword) async {
-    return await post('/api/users/me/change-password', data: {
+    return await post('/users/me/change-password', data: {
       'current_password': currentPassword,
       'new_password': newPassword,
     });
@@ -391,12 +390,12 @@ class ApiService {
 
   /// Uploader un avatar
   Future<Response> uploadAvatar(File file) async {
-    return await uploadFile('/api/users/me/avatar', file, fieldName: 'avatar');
+    return await uploadFile('/users/me/avatar', file, fieldName: 'avatar');
   }
 
   /// Lister les utilisateurs (pour le partage)
   Future<Response> listUsers(String query) async {
-    return await get('/api/users', queryParameters: {'search': query});
+    return await get('/users', queryParameters: {'search': query});
   }
 
   // ============================================
@@ -410,7 +409,7 @@ class ApiService {
     required List<String> userIds,
     String? permission,
   }) async {
-    return await post('/api/shares', data: {
+    return await post('/shares', data: {
       'resource_id': resourceId,
       'resource_type': resourceType,
       'user_ids': userIds,
@@ -425,7 +424,7 @@ class ApiService {
     String? password,
     DateTime? expiresAt,
   }) async {
-    return await post('/api/shares/public', data: {
+    return await post('/shares/public', data: {
       'resource_id': resourceId,
       'resource_type': resourceType,
       if (password != null) 'password': password,
@@ -436,7 +435,7 @@ class ApiService {
   /// Obtenir un partage public
   Future<Response> getPublicShare(String shareId, {String? password}) async {
     final queryParams = password != null ? {'password': password} : null;
-    return await get('/api/shares/public/$shareId', queryParameters: queryParams);
+    return await get('/shares/public/$shareId', queryParameters: queryParams);
   }
 
   // ============================================
@@ -445,21 +444,21 @@ class ApiService {
 
   /// Lister les fichiers de la corbeille
   Future<Response> listTrashFiles() async {
-    return await get('/api/trash/files');
+    return await get('/trash/files');
   }
 
   /// Lister les dossiers de la corbeille
   Future<Response> listTrashFolders() async {
-    return await get('/api/trash/folders');
+    return await get('/trash/folders');
   }
 
   /// Restaurer un fichier
   Future<Response> restoreFile(String fileId) async {
-    return await post('/api/trash/files/$fileId/restore');
+    return await post('/trash/files/$fileId/restore');
   }
 
   /// Restaurer un dossier
   Future<Response> restoreFolder(String folderId) async {
-    return await post('/api/trash/folders/$folderId/restore');
+    return await post('/trash/folders/$folderId/restore');
   }
 }

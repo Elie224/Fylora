@@ -11,7 +11,6 @@ import '../../services/tags_service.dart';
 import '../../models/file.dart';
 import '../../models/folder.dart';
 import '../../utils/constants.dart';
-import 'image_gallery_screen.dart';
 
 class FilesScreen extends StatefulWidget {
   final String? folderId;

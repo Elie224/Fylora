@@ -119,17 +119,5 @@ class OptimizedBuilder extends StatelessWidget {
   Widget build(BuildContext context) {
     return builder(context);
   }
-  
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is OptimizedBuilder &&
-        keys.length == other.keys.length &&
-        keys.length == other.keys.length &&
-        keys.every((key) => other.keys.contains(key));
-  }
-  
-  @override
-  int get hashCode => Object.hashAll(keys);
 }
 

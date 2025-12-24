@@ -37,7 +37,6 @@ class FileService {
     Function(int sent, int total)? onProgress,
   }) async {
     try {
-      final sanitizedName = sanitizeFileName(file.path.split('/').last);
       final response = await _api.uploadFile(
         '/files/upload',
         file,

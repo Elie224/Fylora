@@ -1,11 +1,9 @@
 /// Écran de gestion des fichiers
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/file_model.dart';
 import '../models/folder_model.dart';
 import '../services/file_service.dart';
 import '../services/folder_service.dart';
-import '../providers/auth_provider.dart';
 
 class FilesScreen extends StatefulWidget {
   final String? folderId;
