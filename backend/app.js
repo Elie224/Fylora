@@ -147,8 +147,45 @@ if (process.env.NODE_ENV === 'production') {
 // Nettoyage des requêtes contre les injections NoSQL
 app.use(sanitizeQuery);
 
+// Configuration du store de sessions (Redis si disponible, sinon mémoire)
+let sessionStore;
+if (process.env.REDIS_URL) {
+  try {
+    const RedisStore = require('connect-redis').default;
+    const redis = require('redis');
+    const redisClient = redis.createClient({
+      url: process.env.REDIS_URL,
+      socket: {
+        reconnectStrategy: (retries) => {
+          if (retries > 3) return false;
+          return Math.min(retries * 50, 500);
+        },
+        connectTimeout: 2000,
+      }
+    });
+    redisClient.on('error', (err) => {
+      // Erreur silencieuse, on utilisera MemoryStore en fallback
+    });
+    redisClient.connect().catch(() => {
+      // Connexion échouée, MemoryStore sera utilisé
+    });
+    sessionStore = new RedisStore({ client: redisClient });
+    console.log('✅ Redis session store configured');
+  } catch (error) {
+    // Si connect-redis n'est pas installé ou erreur, utiliser MemoryStore
+    console.warn('⚠️  Redis session store not available, using MemoryStore');
+    sessionStore = undefined; // Utilisera MemoryStore par défaut
+  }
+} else {
+  // Pas de Redis configuré, utiliser MemoryStore (avertissement en production)
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  Using MemoryStore for sessions (not recommended for production). Configure REDIS_URL to use Redis.');
+  }
+}
+
 // Session middleware pour OAuth (doit être avant Passport)
 app.use(session({
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || config.jwt.secret || 'fylora-session-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
