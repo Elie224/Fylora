@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:render": "VITE_API_URL=${VITE_API_URL:-http://localhost:5001} vite build",
+    "build": "vite build && npm run copy-redirects",
+    "copy-redirects": "node scripts/copy-redirects.js",
+    "build:render": "VITE_API_URL=${VITE_API_URL:-http://localhost:5001} vite build && npm run copy-redirects",
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx"
   },
