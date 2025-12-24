@@ -12,18 +12,24 @@ Redis améliore les performances de l'application en fournissant :
 
 ## 🚀 Étape 1 : Créer un service Redis sur Render
 
+### Lien direct pour créer Redis :
+👉 **[Créer un service Redis sur Render](https://dashboard.render.com/new/redis)**
+
+### Ou suivez ces étapes :
+
 1. Connectez-vous à votre [dashboard Render](https://dashboard.render.com)
 
-2. Cliquez sur **"New +"** puis sélectionnez **"Redis"**
+2. Cliquez sur **"New +"** en haut à droite, puis sélectionnez **"Key Value"** (c'est le service Redis)
 
 3. Configurez le service Redis :
    - **Name** : `fylora-redis` (ou un nom de votre choix)
    - **Plan** : 
-     - **Free** : Pour le développement/test (limité)
-     - **Starter** ($7/mois) : Recommandé pour la production
-   - **Region** : Choisissez la même région que votre backend
+     - **Free** : Pour le développement/test (limité à 25 MB)
+     - **Starter** ($7/mois) : Recommandé pour la production (100 MB)
+   - **Region** : Choisissez la même région que votre backend (ex: `Frankfurt`, `Oregon`)
+   - **Maxmemory Policy** : `noeviction` (recommandé pour les queues et la persistance)
 
-4. Cliquez sur **"Create Redis"**
+4. Cliquez sur **"Create Key Value"**
 
 5. Attendez que le service soit créé (quelques secondes)
 
