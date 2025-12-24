@@ -82,7 +82,7 @@ module.exports = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       redirectUri: process.env.GOOGLE_REDIRECT_URI || (process.env.NODE_ENV === 'production' 
-        ? 'https://fylora-api.onrender.com/api/auth/google/callback'
+        ? 'https://fylora-1.onrender.com/api/auth/google/callback'
         : 'http://localhost:5001/api/auth/google/callback'),
     },
     // GitHub OAuth désactivé - Google uniquement
