@@ -2,7 +2,12 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      // S'assurer que React est correctement transformé
+      jsxRuntime: 'automatic',
+    }),
+  ],
   server: {
     port: 3001, // Changé pour éviter conflit avec d'autres services
     host: '0.0.0.0',
@@ -21,9 +26,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Vendor chunks
+          // Vendor chunks - React doit être dans le premier chunk
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+            // React et React-DOM doivent être ensemble et chargés en premier
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime')) {
               return 'react-vendor';
             }
             if (id.includes('react-router')) {
@@ -48,6 +54,10 @@ export default defineConfig({
     },
     // Augmenter la limite de taille pour les warnings
     chunkSizeWarningLimit: 1000,
+    // S'assurer que React est correctement externalisé
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
   },
   // Optimisations de développement
   optimizeDeps: {
