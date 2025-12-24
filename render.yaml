@@ -28,7 +28,7 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
-      # Cette variable sera remplacée par l'URL réelle du backend après déploiement
+      # URL du backend API (corrigée avec l'URL réelle)
       - key: VITE_API_URL
-        value: https://fylora-backend.onrender.com
+        value: https://fylora-1.onrender.com
 
