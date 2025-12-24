@@ -8,6 +8,9 @@ const config = require('../config');
  * @returns {string} Token JWT
  */
 function generateAccessToken(payload) {
+  if (!config.jwt.secret) {
+    throw new Error('JWT_SECRET is not configured. Please set JWT_SECRET in your environment variables.');
+  }
   return jwt.sign(payload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
     algorithm: 'HS256', // Spécifier explicitement l'algorithme pour la sécurité
@@ -20,6 +23,9 @@ function generateAccessToken(payload) {
  * @returns {string} Refresh token
  */
 function generateRefreshToken(payload) {
+  if (!config.jwt.refreshSecret) {
+    throw new Error('JWT_REFRESH_SECRET is not configured. Please set JWT_REFRESH_SECRET in your environment variables.');
+  }
   return jwt.sign(payload, config.jwt.refreshSecret, {
     expiresIn: config.jwt.refreshExpiresIn,
     algorithm: 'HS256', // Spécifier explicitement l'algorithme pour la sécurité

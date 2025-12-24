@@ -87,6 +87,10 @@ async function startServer() {
 
 const app = express();
 
+// Trust proxy pour Render (nécessaire pour express-rate-limit et les IPs)
+// Render utilise un reverse proxy, donc on doit faire confiance aux headers X-Forwarded-*
+app.set('trust proxy', 1);
+
 // Compression HTTP optimisée pour améliorer les performances (DOIT être avant les routes)
 const { optimizedCompression, cacheHeaders, optimizeJsonResponse } = require('./middlewares/performanceOptimized');
 app.use(optimizedCompression);

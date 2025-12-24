@@ -18,8 +18,8 @@ module.exports = {
     database: process.env.POSTGRES_DB || process.env.MONGO_INITDB_DATABASE,
   },
   jwt: {
-    secret: process.env.JWT_SECRET,
-    refreshSecret: process.env.JWT_REFRESH_SECRET,
+    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'dev-secret-change-in-production'),
+    refreshSecret: process.env.JWT_REFRESH_SECRET || (process.env.NODE_ENV === 'production' ? null : 'dev-refresh-secret-change-in-production'),
     expiresIn: '1h',
     refreshExpiresIn: '7d',
   },
