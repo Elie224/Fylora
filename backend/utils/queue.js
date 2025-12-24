@@ -113,6 +113,15 @@ class QueueManager {
   }
 
   async init() {
+    // Vérifier si Redis est configuré
+    if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
+      this.useRedis = false;
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('ℹ️  Redis not configured for queues, using memory queues');
+      }
+      return;
+    }
+
     // Essayer Redis Bull si disponible
     try {
       const Bull = require('bull');
