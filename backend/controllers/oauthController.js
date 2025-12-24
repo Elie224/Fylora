@@ -71,28 +71,7 @@ const handleOAuthCallback = (provider) => {
           callbackURL: config.oauth[provider]?.redirectUri
         });
         
-        // Log supplémentaire pour GitHub
-        if (provider === 'github') {
-          console.error('🔍 GitHub OAuth debug info:');
-          console.error('   Callback URL configuré:', config.oauth.github?.redirectUri);
-          console.error('   Client ID:', config.oauth.github?.clientId ? config.oauth.github.clientId.substring(0, 15) + '...' : 'missing');
-          console.error('   Client Secret présent:', !!config.oauth.github?.clientSecret);
-          console.error('   Query params:', req.query);
-          console.error('   Code présent:', !!req.query.code);
-          console.error('');
-          
-          // Vérifier si c'est un problème de Client Secret
-          if (err.message.includes('Failed to obtain access token')) {
-            console.error('💡 SOLUTION PROBABLE:');
-            console.error('   Le Client Secret GitHub est probablement incorrect ou a été régénéré.');
-            console.error('   1. Allez sur https://github.com/settings/developers');
-            console.error('   2. Cliquez sur votre application OAuth');
-            console.error('   3. Régénérez le Client Secret');
-            console.error('   4. Mettez à jour le .env avec le nouveau secret');
-            console.error('   5. Redémarrez le serveur');
-            console.error('');
-          }
-        }
+        // GitHub OAuth désactivé - Google uniquement
         
         // Messages d'erreur spécifiques selon le type d'erreur
         let errorMessage = 'Erreur lors de l\'authentification OAuth';
@@ -100,7 +79,7 @@ const handleOAuthCallback = (provider) => {
         
         if (err.message) {
           if (err.message.includes('deleted_client')) {
-            errorMessage = `Le client OAuth ${provider} a été supprimé. Veuillez créer un nouveau client OAuth dans ${provider === 'google' ? 'Google Cloud Console' : 'GitHub Settings'}.`;
+            errorMessage = `Le client OAuth ${provider} a été supprimé. Veuillez créer un nouveau client OAuth dans Google Cloud Console.`;
             errorCode = 'oauth_client_deleted';
           } else if (err.message.includes('redirect_uri_mismatch') || err.message.includes('redirect_uri')) {
             errorMessage = `L'URI de redirection n'est pas configurée correctement. Vérifiez que l'URI exacte est configurée dans les paramètres OAuth de ${provider}.`;
@@ -109,7 +88,7 @@ const handleOAuthCallback = (provider) => {
             errorMessage = `Les identifiants OAuth ${provider} sont incorrects ou le Client Secret a été régénéré. Vérifiez votre fichier .env et régénérez le Client Secret si nécessaire.`;
             errorCode = 'oauth_invalid_credentials';
           } else if (err.message.includes('Failed to obtain access token')) {
-            errorMessage = `Échec de l'obtention du token d'accès ${provider}. Vérifiez que le Client Secret est correct et que l'URI de redirection correspond exactement dans ${provider === 'google' ? 'Google Cloud Console' : 'GitHub Settings'}.`;
+            errorMessage = `Échec de l'obtention du token d'accès ${provider}. Vérifiez que le Client Secret est correct et que l'URI de redirection correspond exactement dans Google Cloud Console.`;
             errorCode = 'oauth_token_failed';
           } else if (err.message.includes('access_denied')) {
             errorMessage = 'Vous avez annulé l\'autorisation. Veuillez réessayer.';

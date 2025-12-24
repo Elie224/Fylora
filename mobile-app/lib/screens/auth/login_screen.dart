@@ -44,12 +44,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (provider == 'google') {
         // Utiliser Google Sign-In natif
         oauthData = await OAuthService.signInWithGoogle();
-      } else if (provider == 'github') {
-        // Utiliser GitHub avec deep link
-        oauthData = await OAuthService.signInWithGitHub();
       } else {
-        // Fallback vers navigateur pour autres providers
-        await OAuthService.signInWithProvider(provider);
+        // Seul Google OAuth est supporté
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Seule la connexion Google est disponible'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return;
       }
       
@@ -325,16 +329,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       backgroundColor: Colors.white,
                       textColor: Colors.black87,
                       iconColor: Colors.blue,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildOAuthButton(
-                      context: context,
-                      icon: Icons.code,
-                      label: 'Continuer avec GitHub',
-                      onPressed: () => _handleOAuthLogin('github'),
-                      backgroundColor: Colors.black87,
-                      textColor: Colors.white,
-                      iconColor: Colors.white,
                     ),
                     const SizedBox(height: 40),
                 ],

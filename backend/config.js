@@ -85,12 +85,6 @@ module.exports = {
         ? 'https://fylora-api.onrender.com/api/auth/google/callback'
         : 'http://localhost:5001/api/auth/google/callback'),
     },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      redirectUri: process.env.GITHUB_REDIRECT_URI || (process.env.NODE_ENV === 'production'
-        ? 'https://fylora-api.onrender.com/api/auth/github/callback'
-        : 'http://localhost:5001/api/auth/github/callback'),
-    },
+    // GitHub OAuth désactivé - Google uniquement
   },
 };

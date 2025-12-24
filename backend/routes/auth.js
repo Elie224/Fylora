@@ -16,13 +16,11 @@ router.post('/refresh', authController.refresh);
 // POST /api/auth/logout
 router.post('/logout', authController.logout);
 
-// Routes OAuth - Initiation
+// Routes OAuth - Initiation (Google uniquement)
 router.get('/google', initiateOAuth('google'));
-router.get('/github', initiateOAuth('github'));
 
-// Routes OAuth - Callbacks
+// Routes OAuth - Callbacks (Google uniquement)
 router.get('/google/callback', handleOAuthCallback('google'));
-router.get('/github/callback', handleOAuthCallback('github'));
 
 // Route pour vérifier les tokens Google natifs (mobile)
 router.post('/google/verify', authController.verifyGoogleToken);

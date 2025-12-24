@@ -11,7 +11,7 @@ class TimeoutException implements Exception {
   TimeoutException(this.message);
 }
 
-/// Service pour gérer l'authentification OAuth avec Google et GitHub
+/// Service pour gérer l'authentification OAuth avec Google uniquement
 class OAuthService {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
@@ -44,66 +44,7 @@ class OAuthService {
     }
   }
 
-  /// Connexion avec GitHub (via navigateur avec deep link)
-  static Future<Map<String, dynamic>?> signInWithGitHub() async {
-    try {
-      // URL de callback pour capturer le token
-      final callbackUrl = 'fylora://oauth/github/callback';
-      final oauthUrl = '${AppConstants.apiBaseUrl}/api/auth/github?redirect_uri=$callbackUrl';
-      
-      // Écouter les deep links avec app_links
-      final completer = Completer<Map<String, dynamic>?>();
-      final appLinks = AppLinks();
-      StreamSubscription? linkSubscription;
-
-      linkSubscription = appLinks.uriLinkStream.listen((Uri uri) {
-        if (uri.scheme == 'fylora' && uri.host == 'oauth' && uri.pathSegments.contains('github') && uri.pathSegments.contains('callback')) {
-          final token = uri.queryParameters['token'];
-          final refreshToken = uri.queryParameters['refresh_token'];
-          
-          if (token != null && refreshToken != null) {
-            completer.complete({
-              'access_token': token,
-              'refresh_token': refreshToken,
-            });
-          } else {
-            completer.complete(null);
-          }
-          
-          linkSubscription?.cancel();
-        }
-      }, onError: (err) {
-        completer.completeError(err);
-        linkSubscription?.cancel();
-      });
-
-      // Ouvrir le navigateur pour l'authentification
-      final uri = Uri.parse(oauthUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-        
-        // Attendre le callback (timeout après 5 minutes)
-        return await completer.future.timeout(
-          const Duration(minutes: 5),
-          onTimeout: () {
-            linkSubscription?.cancel();
-            throw TimeoutException('OAuth timeout');
-          },
-        );
-      } else {
-        linkSubscription?.cancel();
-        throw 'Impossible d\'ouvrir le navigateur';
-      }
-    } catch (e) {
-      SecureLogger.error('Error signing in with GitHub', error: e);
-      rethrow;
-    }
-  }
-
-  /// Connexion OAuth générique (fallback vers navigateur)
+  /// Connexion OAuth générique (fallback vers navigateur) - Désactivé, Google uniquement
   static Future<void> signInWithProvider(String provider) async {
     try {
       final callbackUrl = 'fylora://oauth/$provider/callback';
