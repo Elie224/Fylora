@@ -61,6 +61,11 @@ export default defineConfig({
   },
   // Optimisations de développement
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom', 'react/jsx-runtime'],
+    force: true, // Forcer la pré-optimisation
+  },
+  // S'assurer que les dépendances sont correctement résolues
+  resolve: {
+    dedupe: ['react', 'react-dom'],
   },
 });
