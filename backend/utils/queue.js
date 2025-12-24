@@ -109,16 +109,30 @@ class QueueManager {
   constructor() {
     this.queues = new Map();
     this.useRedis = false;
-    this.init();
+    this.Bull = null;
+    // Initialisation synchrone immédiate
+    this._initSync();
+    // Initialisation asynchrone en arrière-plan
+    this._initAsync().catch(() => {
+      // Erreur silencieuse, on utilisera memory queues
+    });
   }
 
-  async init() {
-    // Vérifier si Redis est configuré
+  _initSync() {
+    // Vérification synchrone initiale
     if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
       this.useRedis = false;
       if (process.env.NODE_ENV !== 'production') {
         console.log('ℹ️  Redis not configured for queues, using memory queues');
       }
+      return;
+    }
+  }
+
+  async _initAsync() {
+    // Vérifier si Redis est configuré
+    if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
+      this.useRedis = false;
       return;
     }
 

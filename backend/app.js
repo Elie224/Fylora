@@ -24,9 +24,8 @@ const { createIndexes } = require('./models/indexes');
 const configurePassport = require('./config/passport');
 configurePassport(); // Configurer les stratégies OAuth
 
-// Initialize Queue Manager (pour utiliser Redis si disponible)
-const queueManager = require('./utils/queue');
-queueManager.init(); // Initialiser les queues
+// Initialize Queue Manager (initialisation automatique dans le constructeur)
+require('./utils/queue'); // Charge et initialise automatiquement les queues
 
 // Créer le répertoire d'upload au démarrage
 async function ensureUploadDir() {
