@@ -27,6 +27,11 @@ services:
     rootDir: frontend-web
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    # Configuration pour le routing SPA
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
     envVars:
       # URL du backend API
       - key: VITE_API_URL

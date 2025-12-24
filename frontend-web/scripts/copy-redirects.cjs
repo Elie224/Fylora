@@ -13,12 +13,26 @@ try {
     process.exit(1);
   }
 
-  // Copier le fichier _redirects
-  if (fs.existsSync(sourceFile)) {
-    fs.copyFileSync(sourceFile, destFile);
-    console.log('✅ Fichier _redirects copié dans dist/');
-  } else {
+  // Vérifier que le fichier source existe
+  if (!fs.existsSync(sourceFile)) {
     console.warn('⚠️  Le fichier public/_redirects n\'existe pas');
+    // Créer le fichier _redirects s'il n'existe pas
+    const redirectsContent = '/*    /index.html   200\n';
+    fs.writeFileSync(sourceFile, redirectsContent);
+    console.log('✅ Fichier public/_redirects créé');
+  }
+
+  // Copier le fichier _redirects dans dist
+  fs.copyFileSync(sourceFile, destFile);
+  console.log('✅ Fichier _redirects copié dans dist/');
+  
+  // Vérifier que le fichier a bien été copié
+  if (fs.existsSync(destFile)) {
+    const content = fs.readFileSync(destFile, 'utf8');
+    console.log('✅ Contenu du fichier _redirects:', content.trim());
+  } else {
+    console.error('❌ Le fichier _redirects n\'a pas été copié dans dist/');
+    process.exit(1);
   }
 } catch (error) {
   console.error('❌ Erreur lors de la copie du fichier _redirects:', error.message);

@@ -14,6 +14,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // S'assurer que le dossier public est copié (incluant _redirects)
+    copyPublicDir: true,
     // Optimisations de build
     minify: 'terser',
     terserOptions: {
