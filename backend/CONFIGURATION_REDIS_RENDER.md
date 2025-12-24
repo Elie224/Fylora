@@ -33,9 +33,19 @@ Une fois le service créé :
 
 1. Dans la page du service Redis, vous verrez une section **"Connections"**
 
-2. Copiez l'**Internal Redis URL** (format : `redis://red-xxxxx:6379`)
+2. Copiez l'**Internal Redis URL** (pour backend sur Render) ou **External Redis URL** (pour accès externe)
 
-   **Important** : Utilisez l'URL **interne** si votre backend est sur Render, ou l'URL **externe** si vous accédez depuis l'extérieur.
+   **Format exact sur Render** :
+   ```
+   redis://red-[ID_UNIQUE]:6379
+   ```
+   
+   Où `[ID_UNIQUE]` est un identifiant unique généré par Render (ex: `redis://red-c1234567890abcdef:6379`)
+
+   **Important** : 
+   - Utilisez l'URL **interne** (`Internal Redis URL`) si votre backend est sur Render
+   - Utilisez l'URL **externe** (`External Redis URL`) si vous accédez depuis l'extérieur
+   - **Copiez exactement** l'URL fournie par Render, ne modifiez rien
 
 ## ⚙️ Étape 3 : Configurer REDIS_URL dans le backend
 
@@ -45,9 +55,10 @@ Une fois le service créé :
 
 3. Ajoutez une nouvelle variable d'environnement :
    - **Key** : `REDIS_URL`
-   - **Value** : Collez l'URL Redis que vous avez copiée
-     - Exemple : `redis://red-xxxxx:6379`
-     - Si Redis nécessite un mot de passe : `redis://:password@red-xxxxx:6379`
+   - **Value** : Collez **exactement** l'URL Redis que vous avez copiée depuis Render
+     - Format Render : `redis://red-[ID_UNIQUE]:6379`
+     - **Ne modifiez pas** l'URL, utilisez-la telle quelle
+     - Si Render affiche un mot de passe dans l'URL : `redis://:password@red-[ID_UNIQUE]:6379`
 
 4. Cliquez sur **"Save Changes"**
 
