@@ -132,12 +132,17 @@ class QueueManager {
 
     let queue;
     if (this.useRedis && this.Bull) {
+      // Utiliser REDIS_URL si disponible, sinon utiliser les variables individuelles
+      const redisConfig = process.env.REDIS_URL 
+        ? { url: process.env.REDIS_URL }
+        : {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: process.env.REDIS_PORT || 6379,
+            password: process.env.REDIS_PASSWORD,
+          };
+      
       queue = new this.Bull(name, {
-        redis: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: process.env.REDIS_PORT || 6379,
-          password: process.env.REDIS_PASSWORD,
-        },
+        redis: redisConfig,
         defaultJobOptions: {
           attempts: 3,
           backoff: {
