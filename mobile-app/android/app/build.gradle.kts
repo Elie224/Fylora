@@ -28,6 +28,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Configuration pour flutter_appauth
+        manifestPlaceholders["appAuthRedirectScheme"] = "fylora"
     }
 
     buildTypes {

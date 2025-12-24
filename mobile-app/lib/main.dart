@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
@@ -17,29 +19,82 @@ import 'utils/performance_monitor.dart';
 import 'utils/view_preloader.dart';
 
 void main() async {
+  // S'assurer que Flutter est initialisé
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialiser le monitoring de performance
-  PerformanceMonitor().init();
+  // Gestion globale des erreurs Flutter - CRITIQUE pour éviter les crashes
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // En production, logger l'erreur mais ne pas faire crasher
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
+    debugPrint('Flutter Error: ${details.exception}');
+    debugPrint('Stack: ${details.stack}');
+  };
   
-  // Initialiser le cache HTTP de manière asynchrone
-  HttpCache.initialize();
+  // Gestion des erreurs non capturées (dart:ui, isolates, etc.)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught Error: $error');
+    debugPrint('Stack: $stack');
+    // Retourner true pour indiquer qu'on a géré l'erreur
+    return true;
+  };
   
-  // Initialiser le cache avancé
-  await AdvancedCache().cleanExpired();
+  // Initialisations non-bloquantes - toutes dans des try-catch
+  _initializeApp();
   
-  // Initialiser offline-first
-  OfflineFirst();
-  
-  // Nettoyer le cache expiré au démarrage
-  PerformanceOptimizer.cleanExpiredCache();
-  
+  // Lancer l'application immédiatement
   runApp(const FyloraApp());
-  
-  // Marquer le premier frame rendu
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    PerformanceMonitor().markFirstFrame();
-    PerformanceMonitor().markTimeToInteractive();
+}
+
+/// Initialiser les services de manière asynchrone et non-bloquante
+void _initializeApp() {
+  // Toutes les initialisations sont asynchrones et ne bloquent pas le démarrage
+  Future.microtask(() async {
+    try {
+      // Initialiser le monitoring de performance
+      PerformanceMonitor().init();
+    } catch (e) {
+      debugPrint('Erreur PerformanceMonitor: $e');
+    }
+    
+    try {
+      // Initialiser le cache HTTP
+      await HttpCache.initialize();
+    } catch (e) {
+      debugPrint('Erreur HttpCache: $e');
+    }
+    
+    try {
+      // Nettoyer le cache avancé
+      await AdvancedCache().cleanExpired();
+    } catch (e) {
+      debugPrint('Erreur AdvancedCache: $e');
+    }
+    
+    try {
+      // Initialiser offline-first
+      OfflineFirst();
+    } catch (e) {
+      debugPrint('Erreur OfflineFirst: $e');
+    }
+    
+    try {
+      // Nettoyer le cache expiré
+      PerformanceOptimizer.cleanExpiredCache();
+    } catch (e) {
+      debugPrint('Erreur PerformanceOptimizer: $e');
+    }
+    
+    // Marquer le premier frame rendu après un délai
+    Future.delayed(const Duration(milliseconds: 100), () {
+      try {
+        PerformanceMonitor().markFirstFrame();
+        PerformanceMonitor().markTimeToInteractive();
+      } catch (e) {
+        debugPrint('Erreur marquage performance: $e');
+      }
+    });
   });
 }
 
@@ -50,14 +105,51 @@ class FyloraApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => FilesProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => NotesProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            try {
+              return AuthProvider();
+            } catch (e) {
+              debugPrint('Erreur création AuthProvider: $e');
+              return AuthProvider(); // Réessayer une fois
+            }
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            try {
+              return FilesProvider();
+            } catch (e) {
+              debugPrint('Erreur création FilesProvider: $e');
+              return FilesProvider();
+            }
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            try {
+              return ThemeProvider();
+            } catch (e) {
+              debugPrint('Erreur création ThemeProvider: $e');
+              return ThemeProvider();
+            }
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            try {
+              return NotesProvider();
+            } catch (e) {
+              debugPrint('Erreur création NotesProvider: $e');
+              return NotesProvider();
+            }
+          },
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
-          return MaterialApp.router(
+          try {
+            return MaterialApp.router(
             title: 'Fylora',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
@@ -123,7 +215,7 @@ class FyloraApp extends StatelessWidget {
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -190,7 +282,7 @@ class FyloraApp extends StatelessWidget {
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -208,8 +300,34 @@ class FyloraApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            routerConfig: AppRouter.createRouter(context),
+            routerConfig: AppRouter.createRouter(),
           );
+          } catch (e) {
+            // En cas d'erreur critique, afficher une page d'erreur
+            debugPrint('Erreur critique dans MaterialApp.router: $e');
+            return MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Erreur de démarrage: $e'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Redémarrer l'application
+                          main();
+                        },
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
         },
       ),
     );

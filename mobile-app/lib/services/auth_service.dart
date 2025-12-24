@@ -1,7 +1,7 @@
 /// Service d'authentification
 import '../services/api_service.dart';
-import '../utils/security.dart';
-import 'secure_storage.dart';
+import '../utils/security.dart' show isValidEmail, isValidPassword;
+import 'secure_storage.dart' show SecureStorage;
 
 class AuthService {
   final ApiService _api = ApiService();

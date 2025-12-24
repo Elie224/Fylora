@@ -18,8 +18,8 @@ class SecureStorage {
     try {
       await _storage.write(key: key, value: value);
     } catch (e) {
-      print('Failed to store secure value: $e');
-      rethrow;
+      // En cas d'erreur, ne pas faire crasher l'application
+      // L'erreur sera silencieuse pour éviter les problèmes au démarrage
     }
   }
 
@@ -28,7 +28,8 @@ class SecureStorage {
     try {
       return await _storage.read(key: key);
     } catch (e) {
-      print('Failed to retrieve secure value: $e');
+      // En cas d'erreur, retourner null silencieusement
+      // Ne pas logger en production pour éviter les problèmes de performance
       return null;
     }
   }

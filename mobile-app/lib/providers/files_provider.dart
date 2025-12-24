@@ -131,9 +131,10 @@ class FilesProvider with ChangeNotifier {
         return false;
       }
       
+      final path = folderId != null ? '/api/files?folder=$folderId' : '/api/files';
       final response = await _apiService.uploadFile(
+        path,
         file,
-        folderId: folderId,
         onProgress: onProgress,
       );
       

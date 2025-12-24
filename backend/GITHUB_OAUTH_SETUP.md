@@ -226,3 +226,4 @@ Si vous rencontrez des problèmes :
 3. Consultez `backend/OAUTH_URIS.md` pour les URIs exactes
 4. Vérifiez que l'URI dans GitHub correspond exactement à celle dans le code
 
+

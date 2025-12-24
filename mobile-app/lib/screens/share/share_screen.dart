@@ -84,10 +84,12 @@ class _ShareScreenState extends State<ShareScreen> {
     });
 
     try {
+      final resourceId = widget.fileId ?? widget.folderId!;
+      final resourceType = widget.fileId != null ? 'file' : 'folder';
       final response = await _apiService.createInternalShare(
-        fileId: widget.fileId,
-        folderId: widget.folderId,
-        userId: _selectedUserId!,
+        resourceId: resourceId,
+        resourceType: resourceType,
+        userIds: [_selectedUserId!],
       );
 
       if (response.statusCode == 201) {
@@ -116,9 +118,11 @@ class _ShareScreenState extends State<ShareScreen> {
     });
 
     try {
+      final resourceId = widget.fileId ?? widget.folderId!;
+      final resourceType = widget.fileId != null ? 'file' : 'folder';
       final response = await _apiService.createPublicShare(
-        fileId: widget.fileId,
-        folderId: widget.folderId,
+        resourceId: resourceId,
+        resourceType: resourceType,
         password: _passwordProtected && _passwordController.text.isNotEmpty 
             ? _passwordController.text 
             : null,

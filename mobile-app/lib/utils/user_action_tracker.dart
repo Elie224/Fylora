@@ -8,18 +8,17 @@ import 'dart:collection';
 class UserActionTracker {
   static final UserActionTracker _instance = UserActionTracker._internal();
   factory UserActionTracker() => _instance;
-  UserActionTracker._internal();
-
-  final Map<String, DateTime> _actionStarts = {};
-  final Queue<ActionLog> _pendingLogs = Queue<ActionLog>();
-  Timer? _flushTimer;
-
+  
   UserActionTracker._internal() {
     // Flush les logs toutes les 30 secondes
     _flushTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _flushLogs();
     });
   }
+
+  final Map<String, DateTime> _actionStarts = {};
+  final Queue<ActionLog> _pendingLogs = Queue<ActionLog>();
+  Timer? _flushTimer;
 
   /// Démarrer le tracking d'une action
   void startAction(String action, {Map<String, dynamic>? metadata}) {

@@ -39,3 +39,4 @@ console.log('3. Après création, mettez à jour votre .env avec les nouveaux id
 console.log('4. Redémarrez le serveur');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
+

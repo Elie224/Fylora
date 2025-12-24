@@ -419,10 +419,142 @@ async function logout(req, res, next) {
   }
 }
 
+/**
+ * Vérifier et valider un token Google natif (pour mobile)
+ * Crée ou met à jour l'utilisateur et génère les tokens JWT
+ */
+async function verifyGoogleToken(req, res, next) {
+  try {
+    const { id_token, access_token } = req.body;
+
+    if (!id_token) {
+      return res.status(400).json({
+        error: {
+          message: 'Token Google manquant',
+        },
+      });
+    }
+
+    // Vérifier le token Google avec Google OAuth2
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(config.oauth?.google?.clientId);
+
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken: id_token,
+        audience: config.oauth?.google?.clientId,
+      });
+    } catch (error) {
+      logger.logError(error, { contexte: 'vérification_token_google' });
+      return res.status(401).json({
+        error: {
+          message: 'Token Google invalide',
+        },
+      });
+    }
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const displayName = payload.name || payload.given_name || email.split('@')[0];
+    const photoUrl = payload.picture;
+
+    if (!email) {
+      return res.status(400).json({
+        error: {
+          message: 'Email non trouvé dans le profil Google',
+        },
+      });
+    }
+
+    // Chercher ou créer l'utilisateur
+    let utilisateur = await User.findByEmail(email);
+
+    if (!utilisateur) {
+      // Créer un nouvel utilisateur OAuth
+      utilisateur = await User.create({
+        email,
+        display_name: displayName,
+        avatar_url: photoUrl,
+        password_hash: null, // Pas de mot de passe pour les comptes OAuth
+        google_id: payload.sub,
+      });
+      logger.logInfo(`Nouvel utilisateur Google créé: ${email}`, { userId: utilisateur.id });
+
+      // Créer le dossier racine
+      const FolderModel = require('../models/folderModel');
+      await FolderModel.create({
+        name: 'Root',
+        ownerId: utilisateur.id,
+        parentId: null,
+      });
+    } else {
+      // Mettre à jour les informations OAuth si nécessaire
+      if (!utilisateur.google_id) {
+        utilisateur.google_id = payload.sub;
+        await utilisateur.save();
+      }
+      if (photoUrl && !utilisateur.avatar_url) {
+        utilisateur.avatar_url = photoUrl;
+        await utilisateur.save();
+      }
+      await User.updateLastLogin(utilisateur.id);
+    }
+
+    // Générer les tokens JWT
+    const donneesToken = { id: utilisateur.id, email: utilisateur.email };
+    const tokenAcces = generateAccessToken(donneesToken);
+    const tokenRafraichissement = generateRefreshToken(donneesToken);
+
+    // Créer une session
+    try {
+      const userAgent = req.get('user-agent') || null;
+      const adresseIP = req.ip || req.headers['x-forwarded-for'] || null;
+      await Session.createSession({
+        userId: utilisateur.id,
+        refreshToken: tokenRafraichissement,
+        userAgent,
+        ipAddress: adresseIP,
+        deviceName: null,
+        expiresIn: config.jwt.refreshExpiresIn,
+      });
+    } catch (erreur) {
+      logger.logError(erreur, { contexte: 'création_session_google', userId: utilisateur.id });
+    }
+
+    // Récupérer les données utilisateur mises à jour
+    const utilisateurMisAJour = await User.findById(utilisateur.id);
+    const utilisateurSecurise = {
+      id: utilisateurMisAJour.id,
+      email: utilisateurMisAJour.email,
+      display_name: utilisateurMisAJour.display_name,
+      avatar_url: utilisateurMisAJour.avatar_url,
+      quota_used: utilisateurMisAJour.quota_used,
+      quota_limit: utilisateurMisAJour.quota_limit,
+      preferences: utilisateurMisAJour.preferences,
+      is_admin: utilisateurMisAJour.is_admin || false,
+      created_at: utilisateurMisAJour.created_at,
+      last_login_at: utilisateurMisAJour.last_login_at,
+    };
+
+    res.status(200).json({
+      data: {
+        user: utilisateurSecurise,
+        access_token: tokenAcces,
+        refresh_token: tokenRafraichissement,
+      },
+    });
+  } catch (erreur) {
+    logger.logError(erreur, { contexte: 'vérification_token_google' });
+    next(erreur);
+  }
+}
+
 module.exports = {
   signup,
   login,
   refresh,
   logout,
+  verifyGoogleToken,
 };
 

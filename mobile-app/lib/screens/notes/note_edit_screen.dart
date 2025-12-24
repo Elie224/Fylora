@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
@@ -36,16 +37,25 @@ class _NoteEditScreenState extends State<NoteEditScreen> {
       _titleController.text = note.title;
       try {
         if (note.content.isNotEmpty) {
-          final delta = quill.Delta.fromJson(
-            quill.Document.fromJson(note.content).toDelta().toJson()
-          );
-          _quillController.document = quill.Document.fromDelta(delta);
+          try {
+            // Essayer de parser comme JSON Quill
+            final contentJson = note.content;
+            if (contentJson.startsWith('[') || contentJson.startsWith('{')) {
+              _quillController.document = quill.Document.fromJson(
+                jsonDecode(contentJson) as List<dynamic>,
+              );
+            } else {
+              // Sinon, utiliser comme texte brut
+              _quillController.document = quill.Document()..insert(0, note.content);
+            }
+          } catch (e) {
+            // Si le contenu n'est pas au format Quill, utiliser le texte brut
+            _quillController.document = quill.Document()..insert(0, note.content);
+          }
         }
       } catch (e) {
         // Si le contenu n'est pas au format Quill, utiliser le texte brut
-        _quillController.document = quill.Document.fromDelta(
-          quill.Delta()..insert(note.content),
-        );
+        _quillController.document = quill.Document()..insert(0, note.content);
       }
     }
   }
@@ -58,13 +68,12 @@ class _NoteEditScreenState extends State<NoteEditScreen> {
     });
 
     final provider = context.read<NotesProvider>();
-    final deltaJson = _quillController.document.toDelta().toJson();
-    final contentJson = _quillController.document.toJson();
+    final contentJson = jsonEncode(_quillController.document.toDelta().toJson());
     
     final success = await provider.updateNote(
       widget.noteId,
       title: _titleController.text,
-      content: contentJson.toString(),
+      content: contentJson,
     );
 
     setState(() {
@@ -124,24 +133,15 @@ class _NoteEditScreenState extends State<NoteEditScreen> {
       ),
       body: Column(
         children: [
-          // Barre d'outils de l'éditeur
-          quill.QuillToolbar.simple(
-            configurations: quill.QuillSimpleToolbarConfigurations(
-              controller: _quillController,
-              sharedConfigurations: const quill.QuillSharedConfigurations(),
-            ),
-          ),
+          // Barre d'outils de l'éditeur (temporairement désactivée - API flutter_quill 11.5.0)
+          // TODO: Implémenter avec la bonne API de QuillToolbar
           
           // Éditeur
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
               child: quill.QuillEditor.basic(
-                configurations: quill.QuillEditorConfigurations(
-                  controller: _quillController,
-                  placeholder: 'Commencez à écrire...',
-                  sharedConfigurations: const quill.QuillSharedConfigurations(),
-                ),
+                controller: _quillController,
               ),
             ),
           ),

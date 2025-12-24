@@ -24,6 +24,9 @@ router.get('/github', initiateOAuth('github'));
 router.get('/google/callback', handleOAuthCallback('google'));
 router.get('/github/callback', handleOAuthCallback('github'));
 
+// Route pour vérifier les tokens Google natifs (mobile)
+router.post('/google/verify', authController.verifyGoogleToken);
+
 module.exports = router;
 
 

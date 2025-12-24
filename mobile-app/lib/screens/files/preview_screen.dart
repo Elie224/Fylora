@@ -332,8 +332,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
             ),
           );
         }
-        final textContent = snapshot.data?.data['content'] ?? 
-                           snapshot.data?.data.toString() ?? 
+        final response = snapshot.data;
+        final textContent = response?.data['content'] ?? 
+                           response?.data.toString() ?? 
                            'Contenu non disponible';
         return Padding(
           padding: const EdgeInsets.all(16.0),

@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import '../models/file_model.dart';
 import '../services/api_service.dart';
-import '../utils/security.dart';
+import '../utils/security.dart' show sanitizeFileName;
 import '../utils/constants.dart';
-import 'secure_storage.dart';
+import 'secure_storage.dart' show SecureStorage;
 
 class FileService {
   final ApiService _api = ApiService();

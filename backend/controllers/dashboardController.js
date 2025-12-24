@@ -37,46 +37,46 @@ async function getDashboard(req, res, next) {
       totalFiles,
       totalFolders
     ] = await Promise.all([
-      // Calculer la répartition par type avec agrégation MongoDB (plus rapide)
+    // Calculer la répartition par type avec agrégation MongoDB (plus rapide)
       File.aggregate([
-        { $match: { owner_id: ownerObjectId, is_deleted: false } },
-        {
-          $group: {
-            _id: null,
-            images: {
-              $sum: {
-                $cond: [{ $regexMatch: { input: '$mime_type', regex: '^image/' } }, '$size', 0]
-              }
-            },
-            videos: {
-              $sum: {
-                $cond: [{ $regexMatch: { input: '$mime_type', regex: '^video/' } }, '$size', 0]
-              }
-            },
-            audio: {
-              $sum: {
-                $cond: [{ $regexMatch: { input: '$mime_type', regex: '^audio/' } }, '$size', 0]
-              }
-            },
-            documents: {
-              $sum: {
-                $cond: [
-                  {
-                    $or: [
-                      { $regexMatch: { input: '$mime_type', regex: 'pdf' } },
-                      { $regexMatch: { input: '$mime_type', regex: 'document' } },
-                      { $regexMatch: { input: '$mime_type', regex: 'text' } },
-                      { $regexMatch: { input: '$mime_type', regex: 'spreadsheet' } }
-                    ]
-                  },
-                  '$size',
-                  0
-                ]
-              }
-            },
-            total: { $sum: '$size' }
-          }
+      { $match: { owner_id: ownerObjectId, is_deleted: false } },
+      {
+        $group: {
+          _id: null,
+          images: {
+            $sum: {
+              $cond: [{ $regexMatch: { input: '$mime_type', regex: '^image/' } }, '$size', 0]
+            }
+          },
+          videos: {
+            $sum: {
+              $cond: [{ $regexMatch: { input: '$mime_type', regex: '^video/' } }, '$size', 0]
+            }
+          },
+          audio: {
+            $sum: {
+              $cond: [{ $regexMatch: { input: '$mime_type', regex: '^audio/' } }, '$size', 0]
+            }
+          },
+          documents: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { $regexMatch: { input: '$mime_type', regex: 'pdf' } },
+                    { $regexMatch: { input: '$mime_type', regex: 'document' } },
+                    { $regexMatch: { input: '$mime_type', regex: 'text' } },
+                    { $regexMatch: { input: '$mime_type', regex: 'spreadsheet' } }
+                  ]
+                },
+                '$size',
+                0
+              ]
+            }
+          },
+          total: { $sum: '$size' }
         }
+      }
       ]),
       // Récupérer les 5 derniers fichiers modifiés avec requête optimisée
       File.find({ owner_id: ownerObjectId, is_deleted: false })

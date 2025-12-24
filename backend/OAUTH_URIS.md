@@ -155,3 +155,4 @@ Le script affichera les URIs configurées et vérifiera qu'elles correspondent.
 - [Documentation Google OAuth](https://developers.google.com/identity/protocols/oauth2)
 - [Documentation GitHub OAuth](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)
 
+

@@ -8,14 +8,15 @@ services:
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5001
+      # ⚠️ NE PAS définir PORT - Render le définit automatiquement
+      - key: SERVER_HOST
+        value: 0.0.0.0
       # Les autres variables d'environnement doivent être configurées manuellement dans Render Dashboard
-      # MongoDB, JWT, OAuth, etc.
+      # MongoDB, JWT, OAuth, CORS_ORIGIN, etc.
 
   # Frontend Static Site
   - type: web

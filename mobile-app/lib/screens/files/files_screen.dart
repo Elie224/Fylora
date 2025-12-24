@@ -401,72 +401,73 @@ class _FilesScreenState extends State<FilesScreen> {
           onTap: () {
             context.go('/files?folder=${folder.id}');
           },
-      trailing: PopupMenuButton(
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'share',
-            child: Row(
-              children: [
-                Icon(Icons.share, size: 20),
-                SizedBox(width: 8),
-                Text('Partager'),
-              ],
-            ),
+          trailing: PopupMenuButton(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share, size: 20),
+                    SizedBox(width: 8),
+                    Text('Partager'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'download',
+                child: Row(
+                  children: [
+                    Icon(Icons.download, size: 20),
+                    SizedBox(width: 8),
+                    Text('Télécharger (ZIP)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'move',
+                child: Row(
+                  children: [
+                    Icon(Icons.drive_file_move, size: 20),
+                    SizedBox(width: 8),
+                    Text('Déplacer'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'rename',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20),
+                    SizedBox(width: 8),
+                    Text('Renommer'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Supprimer', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) async {
+              if (value == 'share') {
+                context.go('/share?folder=${folder.id}');
+              } else if (value == 'download') {
+                await _downloadFolder(folder.id);
+              } else if (value == 'move') {
+                _showMoveDialog(context, folder.id, folder.name, true);
+              } else if (value == 'rename') {
+                _showRenameDialog(context, folder.id, folder.name, true);
+              } else if (value == 'delete') {
+                _showDeleteDialog(context, folder.id, folder.name, true);
+              }
+            },
           ),
-          const PopupMenuItem(
-            value: 'download',
-            child: Row(
-              children: [
-                Icon(Icons.download, size: 20),
-                SizedBox(width: 8),
-                Text('Télécharger (ZIP)'),
-              ],
-            ),
-          ),
-          const PopupMenuItem(
-            value: 'move',
-            child: Row(
-              children: [
-                Icon(Icons.drive_file_move, size: 20),
-                SizedBox(width: 8),
-                Text('Déplacer'),
-              ],
-            ),
-          ),
-          const PopupMenuItem(
-            value: 'rename',
-            child: Row(
-              children: [
-                Icon(Icons.edit, size: 20),
-                SizedBox(width: 8),
-                Text('Renommer'),
-              ],
-            ),
-          ),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Row(
-              children: [
-                Icon(Icons.delete, size: 20, color: Colors.red),
-                SizedBox(width: 8),
-                Text('Supprimer', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
-        ],
-        onSelected: (value) async {
-          if (value == 'share') {
-            context.go('/share?folder=${folder.id}');
-          } else if (value == 'download') {
-            await _downloadFolder(folder.id);
-          } else if (value == 'move') {
-            _showMoveDialog(context, folder.id, folder.name, true);
-          } else if (value == 'rename') {
-            _showRenameDialog(context, folder.id, folder.name, true);
-          } else if (value == 'delete') {
-            _showDeleteDialog(context, folder.id, folder.name, true);
-          }
-        },
         ),
       ),
     );

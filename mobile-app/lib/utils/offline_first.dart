@@ -9,11 +9,14 @@ class OfflineFirst {
   static final OfflineFirst _instance = OfflineFirst._internal();
   factory OfflineFirst() => _instance;
   OfflineFirst._internal() {
-    _init();
+    // Initialiser de manière asynchrone sans bloquer
+    _init().catchError((e) {
+      // Ignorer les erreurs d'initialisation
+    });
   }
 
   final Map<String, CacheEntry> _cache = {};
-  final List<SyncItem<dynamic>> _syncQueue = [];
+  final List<SyncItem> _syncQueue = [];
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   bool _isOnline = true;
 
@@ -95,13 +98,13 @@ class OfflineFirst {
         await updateFn(data);
       } catch (e) {
         // En cas d'erreur, ajouter à la queue
-        _syncQueue.add(SyncItem(key: key, updateFn: updateFn, data: data));
+        _syncQueue.add(SyncItem(key: key, updateFn: (dynamic d) => updateFn(d as T), data: data));
         await _saveSyncQueue();
         rethrow;
       }
     } else {
       // Si offline, ajouter à la queue
-      _syncQueue.add(SyncItem(key: key, updateFn: updateFn, data: data));
+      _syncQueue.add(SyncItem(key: key, updateFn: (dynamic d) => updateFn(d as T), data: data));
       await _saveSyncQueue();
     }
   }

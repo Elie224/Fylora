@@ -47,6 +47,7 @@ dependencies:
   # UI
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.0
+  cupertino_icons: ^1.0.8
   
   # Internationalisation
   intl: ^0.20.2
@@ -61,7 +62,7 @@ dependencies:
   # OAuth natif
   google_sign_in: ^6.2.1
   flutter_appauth: ^6.0.0
-  uni_links: ^0.5.1
+  app_links: ^6.3.1
   
   # Rich Text Editor
   flutter_quill: ^11.5.0

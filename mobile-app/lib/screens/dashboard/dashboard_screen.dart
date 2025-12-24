@@ -117,11 +117,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 35,
-                        backgroundImage: authProvider.user?.avatarUrl != null
-                            ? NetworkImage(authProvider.user!.avatarUrl!)
+                        backgroundImage: authProvider.user?['avatar_url'] != null || authProvider.user?['avatarUrl'] != null
+                            ? NetworkImage(authProvider.user!['avatar_url'] ?? authProvider.user!['avatarUrl'])
                             : null,
                         backgroundColor: AppConstants.supinfoWhite.withOpacity(0.2),
-                        child: authProvider.user?.avatarUrl == null
+                        child: authProvider.user?['avatar_url'] == null && authProvider.user?['avatarUrl'] == null
                             ? const Icon(
                                 Icons.person,
                                 size: 35,
@@ -132,17 +132,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      authProvider.user?.displayName ?? authProvider.user?.email ?? 'Utilisateur',
+                      authProvider.user?['display_name'] ?? authProvider.user?['displayName'] ?? authProvider.user?['email'] ?? 'Utilisateur',
                       style: const TextStyle(
                         color: AppConstants.supinfoWhite,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (authProvider.user?.email != null) ...[
+                    if (authProvider.user?['email'] != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        authProvider.user!.email!,
+                        authProvider.user!['email'],
                         style: TextStyle(
                           color: AppConstants.supinfoWhite.withOpacity(0.9),
                           fontSize: 14,
@@ -264,6 +264,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             ),
           ],
+        ),
         ),
       ),
       body: _isLoading

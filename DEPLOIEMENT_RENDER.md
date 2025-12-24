@@ -58,9 +58,10 @@ JWT_REFRESH_SECRET=<GÉNÉREZ_UN_AUTRE_SECRET_ALÉATOIRE_FORT>
 
 # Server
 NODE_ENV=production
-PORT=5001
+# ⚠️ NE PAS définir PORT - Render le définit automatiquement
+SERVER_HOST=0.0.0.0
 
-# CORS - Remplacez par votre URL Render frontend
+# CORS - Remplacez par votre URL Render frontend (SANS slash final)
 CORS_ORIGIN=https://fylora-frontend.onrender.com
 
 # OAuth Google
@@ -83,10 +84,12 @@ MAX_FILE_SIZE=10737418240
 ```
 
 **⚠️ IMPORTANT** :
+- **NE PAS définir PORT** : Render définit automatiquement la variable `PORT`. Ne l'ajoutez pas dans les variables d'environnement.
 - Remplacez `<VOTRE_MOT_DE_PASSE>` dans MONGODB_URI par le mot de passe MongoDB
 - Remplacez `cluster0.xxxxx` par votre vrai cluster MongoDB
 - Générez des secrets JWT forts (utilisez `openssl rand -hex 32` ou un générateur en ligne)
 - Les URLs Render seront au format `https://fylora-backend.onrender.com` (vous obtiendrez l'URL exacte après le déploiement)
+- **CORS_ORIGIN** : Utilisez l'URL exacte du frontend SANS slash final (ex: `https://fylora-frontend.onrender.com` et NON `https://fylora-frontend.onrender.com/`)
 
 ### 2.3 Mettre à jour les Redirect URIs OAuth
 
@@ -143,9 +146,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5001
-    healthCheckPath: /api/health
+      # ⚠️ NE PAS définir PORT - Render le définit automatiquement
+      - key: SERVER_HOST
+        value: 0.0.0.0
+    healthCheckPath: /health
 ```
 
 ---
@@ -200,8 +204,12 @@ Mettez à jour les Redirect URIs dans Google Cloud Console et GitHub Settings av
 
 ### 5.1 Vérifier le Backend
 
-1. Allez sur `https://fylora-backend.onrender.com/api/health`
-2. Vous devriez voir une réponse JSON avec le statut
+1. **Health check simple** : Allez sur `https://fylora-backend.onrender.com/health`
+   - Vous devriez voir : `{"status":"OK","message":"Fylora API is running"}`
+2. **Health check détaillé** : Allez sur `https://fylora-backend.onrender.com/api/health`
+   - Vous devriez voir une réponse JSON avec le statut MongoDB, mémoire, etc.
+3. **Page d'accueil API** : Allez sur `https://fylora-backend.onrender.com/`
+   - Vous devriez voir la documentation JSON de l'API
 
 ### 5.2 Vérifier le Frontend
 
@@ -246,15 +254,28 @@ Dans Render Dashboard :
 
 ### Backend ne démarre pas
 
-1. Vérifiez les logs dans Render Dashboard
-2. Vérifiez que toutes les variables d'environnement sont définies
-3. Vérifiez que `MONGODB_URI` est correct (avec le mot de passe)
-4. Vérifiez que le port est bien `5001` ou laissez Render gérer automatiquement
+1. **Vérifiez les logs dans Render Dashboard** : Allez dans votre service > "Logs" pour voir les erreurs détaillées
+2. **Variables d'environnement** :
+   - ✅ Vérifiez que `MONGODB_URI` est correct (avec le mot de passe remplacé)
+   - ✅ Vérifiez que `JWT_SECRET` et `JWT_REFRESH_SECRET` sont définis
+   - ✅ **NE PAS définir `PORT`** - Render le gère automatiquement
+   - ✅ Vérifiez que `NODE_ENV=production`
+3. **Erreur MongoDB** : Si vous voyez "MongoDB connection timeout" :
+   - Vérifiez que votre cluster MongoDB Atlas autorise les connexions depuis `0.0.0.0/0`
+   - Vérifiez que le mot de passe dans `MONGODB_URI` est correct
+   - Vérifiez que le nom de la base de données dans l'URI est correct
+4. **Erreur de port** : Si vous voyez "EADDRINUSE" ou "port already in use" :
+   - Supprimez la variable `PORT` des variables d'environnement (Render la définit automatiquement)
+5. **Build échoue** : Vérifiez que `Root Directory` est bien défini sur `backend`
 
 ### Erreur CORS
 
-1. Vérifiez que `CORS_ORIGIN` dans le backend correspond exactement à l'URL du frontend
-2. Vérifiez qu'il n'y a pas de slash final dans l'URL
+1. **Vérifiez que `CORS_ORIGIN` correspond exactement** :
+   - URL du frontend SANS slash final : `https://fylora-frontend.onrender.com` (et NON `https://fylora-frontend.onrender.com/`)
+   - Vérifiez dans la console du navigateur l'erreur exacte (elle indiquera l'origine bloquée)
+2. **Si plusieurs origines** : Séparez par des virgules : `https://fylora-frontend.onrender.com,https://autre-domaine.com`
+3. **Redéployez le backend** après modification de `CORS_ORIGIN` pour appliquer les changements
+4. **Vérifiez les logs backend** : Les logs afficheront "CORS blocked origin: ..." si une origine est bloquée
 
 ### OAuth ne fonctionne pas
 
@@ -264,9 +285,16 @@ Dans Render Dashboard :
 
 ### Frontend ne se connecte pas au backend
 
-1. Vérifiez que `VITE_API_URL` est bien configuré dans Render
-2. Vérifiez que l'URL du backend est correcte
-3. Vérifiez la console du navigateur pour les erreurs CORS
+1. **Variable d'environnement** : Vérifiez que `VITE_API_URL` est bien configuré dans Render (section "Environment Variables")
+   - Format : `https://fylora-backend.onrender.com` (SANS slash final)
+   - ⚠️ Après modification, vous devez **redéployer** le frontend pour que la variable soit prise en compte
+2. **URL du backend** : Vérifiez que l'URL du backend est correcte et accessible
+   - Testez : `https://fylora-backend.onrender.com/health` dans votre navigateur
+   - Vous devriez voir : `{"status":"OK","message":"Fylora API is running"}`
+3. **Console du navigateur** : Ouvrez les outils de développement (F12) > Console
+   - Cherchez les erreurs CORS, 404, ou de connexion
+   - Les erreurs indiqueront l'URL exacte utilisée
+4. **Build du frontend** : Vérifiez que le build s'est bien terminé sans erreur
 
 ---
 

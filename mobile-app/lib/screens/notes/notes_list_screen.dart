@@ -37,7 +37,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
         title: const Text('📝 Notes'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.template_outlined),
+            icon: const Icon(Icons.description),
             onPressed: () {
               Navigator.push(
                 context,

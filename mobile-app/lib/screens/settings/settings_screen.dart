@@ -34,8 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
     if (user != null) {
-      _emailController.text = user.email;
-      _displayNameController.text = user.displayName ?? '';
+      _emailController.text = user['email'] ?? '';
+      _displayNameController.text = user['display_name'] ?? user['displayName'] ?? '';
     }
   }
 
@@ -59,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       await _apiService.updateProfile(
-        email: _emailController.text.trim() != currentUser?.email 
+        email: _emailController.text.trim() != (currentUser?['email'] ?? '')
             ? _emailController.text.trim() 
             : null,
         displayName: _displayNameController.text.trim().isNotEmpty
@@ -403,10 +403,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundImage: user?.avatarUrl != null
-                              ? NetworkImage(user!.avatarUrl!)
+                          backgroundImage: user?['avatar_url'] != null || user?['avatarUrl'] != null
+                              ? NetworkImage(user!['avatar_url'] ?? user!['avatarUrl'])
                               : null,
-                          child: user?.avatarUrl == null
+                          child: user?['avatar_url'] == null && user?['avatarUrl'] == null
                               ? const Icon(Icons.person, size: 50)
                               : null,
                         ),
@@ -427,12 +427,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    user?.email ?? '',
+                    user?['email'] ?? '',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  if (user?.displayName != null) ...[
+                  if (user?['display_name'] != null || user?['displayName'] != null) ...[
                     const SizedBox(height: 8),
-                    Text(user!.displayName!),
+                    Text(user!['display_name'] ?? user!['displayName']),
                   ],
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
@@ -453,7 +453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: const Text('Mode sombre'),
                 value: themeProvider.isDarkMode,
                 onChanged: (value) {
-                  themeProvider.setThemeMode(
+                  themeProvider.setTheme(
                     value ? ThemeMode.dark : ThemeMode.light,
                   );
                 },
@@ -469,14 +469,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Icon(Icons.storage),
               title: const Text('Espace de stockage'),
               subtitle: LinearProgressIndicator(
-                value: user.quotaPercentage / 100,
+                value: ((user['quota_used'] ?? user['quotaUsed'] ?? 0) / (user['quota_limit'] ?? user['quotaLimit'] ?? 1)).toDouble(),
                 backgroundColor: Colors.grey[300],
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  user.quotaPercentage > 80 ? Colors.red : Colors.green,
+                  ((user['quota_used'] ?? user['quotaUsed'] ?? 0) / (user['quota_limit'] ?? user['quotaLimit'] ?? 1)) > 0.8 ? Colors.red : Colors.green,
                 ),
               ),
               trailing: Text(
-                '${(user.quotaUsed / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB / ${(user.quotaLimit / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB',
+                '${((user['quota_used'] ?? user['quotaUsed'] ?? 0) / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB / ${((user['quota_limit'] ?? user['quotaLimit'] ?? 0) / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB',
               ),
             ),
           

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../screens/auth/login_screen.dart';
@@ -18,9 +19,10 @@ import '../screens/activity/activity_screen.dart';
 import '../screens/admin/admin_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../providers/auth_provider.dart';
+import '../models/file.dart';
 
 class AppRouter {
-  static GoRouter createRouter(BuildContext context) {
+  static GoRouter createRouter() {
     return GoRouter(
       initialLocation: '/login',
       routes: [
@@ -121,27 +123,62 @@ class AppRouter {
         ),
       ],
       redirect: (context, state) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final isLoggedIn = authProvider.isAuthenticated;
-        final isLoginRoute = state.matchedLocation == '/login' || state.matchedLocation == '/signup';
-        final isPublicShareRoute = state.matchedLocation.startsWith('/share/') && 
-                                   state.pathParameters.containsKey('token');
-        
-        // Permettre l'accès aux liens de partage publics sans authentification
-        if (isPublicShareRoute) {
-          return null;
-        }
-        
-        if (!isLoggedIn && !isLoginRoute) {
+        try {
+          // Vérifier si le context est disponible et contient les providers
+          if (!context.mounted) {
+            return '/login';
+          }
+          
+          try {
+            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            final isLoggedIn = authProvider.isAuthenticated;
+            final isLoginRoute = state.matchedLocation == '/login' || state.matchedLocation == '/signup';
+            final isPublicShareRoute = state.matchedLocation.startsWith('/share/') && 
+                                       state.pathParameters.containsKey('token');
+            
+            // Permettre l'accès aux liens de partage publics sans authentification
+            if (isPublicShareRoute) {
+              return null;
+            }
+            
+            if (!isLoggedIn && !isLoginRoute) {
+              return '/login';
+            }
+            
+            if (isLoggedIn && isLoginRoute) {
+              return '/dashboard';
+            }
+            
+            return null;
+          } catch (e) {
+            // Si le provider n'est pas disponible, rediriger vers login
+            debugPrint('Provider non disponible dans redirect: $e');
+            final isLoginRoute = state.matchedLocation == '/login' || state.matchedLocation == '/signup';
+            return isLoginRoute ? null : '/login';
+          }
+        } catch (e) {
+          // En cas d'erreur, rediriger vers login
+          debugPrint('Erreur dans redirect: $e');
           return '/login';
         }
-        
-        if (isLoggedIn && isLoginRoute) {
-          return '/dashboard';
-        }
-        
-        return null;
       },
+      errorBuilder: (context, state) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Erreur de navigation: ${state.error}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Retour à l\'accueil'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

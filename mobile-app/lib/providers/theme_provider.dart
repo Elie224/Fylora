@@ -7,7 +7,10 @@ class ThemeProvider with ChangeNotifier {
   static const String _themeKey = 'theme_mode';
 
   ThemeProvider() {
-    _loadTheme();
+    // Charger le thème de manière asynchrone sans bloquer
+    _loadTheme().catchError((e) {
+      // Ignorer les erreurs de chargement du thème
+    });
   }
 
   ThemeMode get themeMode => _themeMode;

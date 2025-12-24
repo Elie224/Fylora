@@ -91,6 +91,25 @@ class AppConstants {
   static const Color fyloraDarkBlue = Color(0xFF1976D2);
   
   // ============================================
+  // Couleurs SUPINFO (compatibilité)
+  // ============================================
+  
+  /// Violet SUPINFO principal
+  static const Color supinfoPurple = Color(0xFF6A1B9A);
+  
+  /// Violet SUPINFO clair
+  static const Color supinfoPurpleLight = Color(0xFF9C27B0);
+  
+  /// Violet SUPINFO foncé
+  static const Color supinfoPurpleDark = Color(0xFF4A148C);
+  
+  /// Blanc SUPINFO
+  static const Color supinfoWhite = Color(0xFFFFFFFF);
+  
+  /// Gris SUPINFO
+  static const Color supinfoGrey = Color(0xFFF5F5F5);
+  
+  // ============================================
   // Couleurs système (feedback utilisateur)
   // ============================================
   

@@ -88,3 +88,4 @@ Si l'authentification ne fonctionne PAS (pas seulement des avertissements), vér
 - [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
 - [CORS Explained](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
 
+

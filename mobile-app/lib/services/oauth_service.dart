@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 import 'dart:async';
 import '../utils/constants.dart';
 import '../utils/secure_logger.dart';
@@ -51,13 +51,13 @@ class OAuthService {
       final callbackUrl = 'fylora://oauth/github/callback';
       final oauthUrl = '${AppConstants.apiBaseUrl}/api/auth/github?redirect_uri=$callbackUrl';
       
-      // Écouter les deep links
+      // Écouter les deep links avec app_links
       final completer = Completer<Map<String, dynamic>?>();
+      final appLinks = AppLinks();
       StreamSubscription? linkSubscription;
 
-      linkSubscription = linkStream.listen((String link) {
-        if (link.startsWith('fylora://oauth/github/callback')) {
-          final uri = Uri.parse(link);
+      linkSubscription = appLinks.uriLinkStream.listen((Uri uri) {
+        if (uri.scheme == 'fylora' && uri.host == 'oauth' && uri.pathSegments.contains('github') && uri.pathSegments.contains('callback')) {
           final token = uri.queryParameters['token'];
           final refreshToken = uri.queryParameters['refresh_token'];
           
