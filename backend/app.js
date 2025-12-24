@@ -226,7 +226,12 @@ app.get('/favicon.ico', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Fylora API is running' });
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Fylora API is running',
+    timestamp: new Date().toISOString(),
+    port: PORT
+  });
 });
 
 // Page d'accueil de l'API - Réponse JSON simple
