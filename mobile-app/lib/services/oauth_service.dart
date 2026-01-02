@@ -54,7 +54,18 @@ class OAuthService {
         return null;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      GoogleSignInAuthentication googleAuth;
+      try {
+        googleAuth = await googleUser.authentication;
+      } catch (e) {
+        // Si l'authentification échoue à cause de la People API (403), 
+        // on peut quand même utiliser les infos utilisateur disponibles
+        // et l'access_token si disponible via une méthode alternative
+        SecureLogger.error('Error getting authentication', error: e);
+        // Sur le web, si l'authentification échoue, on ne peut pas continuer
+        // car nous avons besoin de l'access_token
+        throw Exception('Erreur lors de l\'authentification Google. L\'API People pourrait ne pas être activée.');
+      }
 
       // Sur le web, si idToken est null, on peut toujours envoyer access_token et user info
       if (googleAuth.idToken == null && googleAuth.accessToken == null) {
