@@ -302,32 +302,32 @@ class ApiService {
   }) async {
     print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}');
 
-    // Créer le MultipartFile une seule fois (peut être réutilisé)
-    MultipartFile multipartFile;
-    
-    if (kIsWeb) {
-      // Sur le web, utiliser bytes
-      if (platformFile.bytes == null) {
-        throw ArgumentError('PlatformFile.bytes est null. Impossible d\'uploader le fichier.');
-      }
-      multipartFile = MultipartFile.fromBytes(
-        platformFile.bytes!,
-        filename: platformFile.name,
-      );
-    } else {
-      // Sur mobile, utiliser le chemin du fichier
-      if (platformFile.path == null) {
-        throw ArgumentError('PlatformFile.path est null. Impossible d\'uploader le fichier.');
-      }
-      multipartFile = await MultipartFile.fromFile(
-        platformFile.path!,
-        filename: platformFile.name,
-      );
-    }
-
     return await _timeoutManager.withTimeout(
       () => _retry.execute(() async {
         try {
+          // Créer un nouveau MultipartFile à chaque tentative pour éviter l'erreur "MultipartFile already finalized"
+          MultipartFile multipartFile;
+          
+          if (kIsWeb) {
+            // Sur le web, utiliser bytes
+            if (platformFile.bytes == null) {
+              throw ArgumentError('PlatformFile.bytes est null. Impossible d\'uploader le fichier.');
+            }
+            multipartFile = MultipartFile.fromBytes(
+              platformFile.bytes!,
+              filename: platformFile.name,
+            );
+          } else {
+            // Sur mobile, utiliser le chemin du fichier
+            if (platformFile.path == null) {
+              throw ArgumentError('PlatformFile.path est null. Impossible d\'uploader le fichier.');
+            }
+            multipartFile = await MultipartFile.fromFile(
+              platformFile.path!,
+              filename: platformFile.name,
+            );
+          }
+          
           // Créer un nouveau FormData à chaque tentative pour éviter l'erreur "FormData already finalized"
           final formData = FormData.fromMap({
             fieldName: multipartFile,

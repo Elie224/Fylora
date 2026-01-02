@@ -12,6 +12,10 @@ const { compareObjectIds } = require('../utils/objectId');
 const { successResponse, errorResponse } = require('../utils/response');
 const { calculateRealQuotaUsed, updateQuotaAfterOperation } = require('../utils/quota');
 const { trackFileUsage } = require('../utils/fileUsageTracker');
+const fileDeduplication = require('../utils/fileDeduplication');
+const { queues } = require('../utils/queue');
+const searchEngine = require('../services/searchEngine');
+const smartCache = require('../utils/smartCache');
 
 // Configuration multer pour l'upload
 const storage = multer.diskStorage({
