@@ -168,6 +168,8 @@ class FilesProvider with ChangeNotifier {
   /// Upload de fichier avec PlatformFile (support web et mobile)
   Future<bool> uploadFileFromPlatform(PlatformFile platformFile, {String? folderId, Function(int, int)? onProgress}) async {
     try {
+      print('🔵 [FilesProvider] Début uploadFileFromPlatform: name=${platformFile.name}, folderId=$folderId');
+      
       // Rate limiting pour les uploads
       if (!uploadRateLimiter.canMakeRequest('upload')) {
         final waitTime = uploadRateLimiter.getTimeUntilNextRequest('upload');
@@ -184,17 +186,24 @@ class FilesProvider with ChangeNotifier {
         onProgress: onProgress,
       );
       
+      print('🔵 [FilesProvider] Réponse upload: statusCode=${response.statusCode}');
+      
       if (response.statusCode == 201 || response.statusCode == 200) {
+        print('✅ [FilesProvider] Upload réussi');
         // Invalider le cache pour forcer le rechargement
         await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
         await loadFiles(folderId: folderId);
         return true;
       } else {
-        _error = 'Erreur lors de l\'upload (code: ${response.statusCode})';
+        final errorMsg = response.data?['error']?['message'] ?? response.data?['message'] ?? 'Erreur lors de l\'upload';
+        _error = 'Erreur lors de l\'upload (code: ${response.statusCode}): $errorMsg';
+        print('❌ [FilesProvider] Erreur upload: $_error');
         notifyListeners();
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ [FilesProvider] Exception upload: $e');
+      print('❌ [FilesProvider] Stack: $stackTrace');
       _error = e.toString();
       notifyListeners();
       return false;

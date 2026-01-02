@@ -319,16 +319,20 @@ class ApiService {
       if (folderId != null) 'folder_id': folderId,
     });
 
+    print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}');
+
     return await _timeoutManager.withTimeout(
       () => _retry.execute(() async {
         return await _dio.post(
           path,
           data: formData,
           onSendProgress: onProgress,
+          // Ne pas définir Content-Type manuellement - Dio le fait automatiquement avec la boundary
           options: Options(
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
+            // Laisser Dio gérer le Content-Type avec la boundary appropriée
+            contentType: 'multipart/form-data',
+            followRedirects: false,
+            validateStatus: (status) => status! < 500, // Accepter les erreurs client (< 500)
           ),
         );
       }),
