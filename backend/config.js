@@ -25,22 +25,19 @@ module.exports = {
   },
   cors: {
     origin: function (origin, callback) {
-      // En développement, autoriser toutes les origines localhost
-      if (process.env.NODE_ENV !== 'production') {
-        // Autoriser les requêtes sans origine (preflight OPTIONS)
-        if (!origin) {
-          return callback(null, true);
-        }
-        
-        // Autoriser toutes les origines localhost avec n'importe quel port
-        if (origin.includes('localhost') || 
-            origin.includes('127.0.0.1') ||
-            origin.match(/^http:\/\/192\.168\.\d+\.\d+/) ||
-            origin.match(/^http:\/\/10\.\d+\.\d+\.\d+/) ||
-            origin.match(/^http:\/\/localhost:\d+/) ||
-            origin.match(/^http:\/\/127\.0\.0\.1:\d+/)) {
-          return callback(null, true);
-        }
+      // Autoriser les requêtes sans origine (health checks, applications mobiles, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Toujours autoriser localhost (développement et tests)
+      if (origin.includes('localhost') || 
+          origin.includes('127.0.0.1') ||
+          origin.match(/^http:\/\/192\.168\.\d+\.\d+/) ||
+          origin.match(/^http:\/\/10\.\d+\.\d+\.\d+/) ||
+          origin.match(/^http:\/\/localhost:\d+/) ||
+          origin.match(/^http:\/\/127\.0\.0\.1:\d+/)) {
+        return callback(null, true);
       }
       
       // En production, utiliser la liste des origines autorisées
@@ -52,12 +49,6 @@ module.exports = {
         .split(',')
         .map(origin => origin.trim())
         .filter(origin => origin.length > 0);
-      
-      // Autoriser les requêtes sans origine (health checks Render, Postman, curl, applications mobiles)
-      if (!origin) {
-        // Autoriser les health checks et requêtes système même en production
-        return callback(null, true);
-      }
       
       // Vérifier si l'origine est autorisée
       if (allowedOrigins.indexOf(origin) !== -1) {

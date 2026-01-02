@@ -37,14 +37,33 @@ class ApiService {
       onError: (error, handler) async {
         // Gérer les erreurs 401 avec refresh token
         if (error.response?.statusCode == 401) {
+          // Ne pas rafraîchir pour les routes d'authentification
+          final path = error.requestOptions.path;
+          if (path.contains('/auth/login') || 
+              path.contains('/auth/signup') || 
+              path.contains('/auth/google/verify')) {
+            return handler.next(error);
+          }
+          
           final refreshed = await _refreshToken();
           if (refreshed) {
             // Réessayer la requête avec retry intelligent
             final opts = error.requestOptions;
             final token = await SecureStorage.getSecure('access_token');
-            opts.headers['Authorization'] = 'Bearer $token';
-            final response = await _dio.fetch(opts);
-            return handler.resolve(response);
+            if (token != null) {
+              opts.headers['Authorization'] = 'Bearer $token';
+              try {
+                final response = await _dio.fetch(opts);
+                return handler.resolve(response);
+              } catch (e) {
+                // Si la retry échoue, continuer avec l'erreur originale
+                return handler.next(error);
+              }
+            }
+          } else {
+            // Si le refresh échoue, nettoyer les tokens et laisser l'erreur passer
+            // L'application redirigera vers login
+            await SecureStorage.deleteAll();
           }
         }
         return handler.next(error);
@@ -64,21 +83,39 @@ class ApiService {
   Future<bool> _refreshToken() async {
     try {
       final refreshToken = await SecureStorage.getSecure('refresh_token');
-      if (refreshToken == null) return false;
+      if (refreshToken == null) {
+        return false;
+      }
 
-      final response = await _dio.post(
+      // Créer une nouvelle instance Dio sans intercepteurs pour éviter les boucles
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: Constants.apiUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      ));
+
+      final response = await refreshDio.post(
         '/auth/refresh',
         data: {'refresh_token': refreshToken},
       );
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
-        await SecureStorage.setSecure('access_token', data['access_token']);
-        await SecureStorage.setSecure('refresh_token', data['refresh_token']);
-        return true;
+        if (data != null && data['access_token'] != null) {
+          await SecureStorage.setSecure('access_token', data['access_token']);
+          if (data['refresh_token'] != null) {
+            await SecureStorage.setSecure('refresh_token', data['refresh_token']);
+          }
+          return true;
+        }
       }
       return false;
     } catch (e) {
+      // En cas d'erreur, nettoyer les tokens
+      await SecureStorage.deleteAll();
       return false;
     }
   }

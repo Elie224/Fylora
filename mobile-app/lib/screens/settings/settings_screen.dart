@@ -404,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         CircleAvatar(
                           radius: 50,
                           backgroundImage: user?['avatar_url'] != null || user?['avatarUrl'] != null
-                              ? NetworkImage(user['avatar_url'] ?? user['avatarUrl'])
+                              ? NetworkImage(user?['avatar_url'] ?? user?['avatarUrl'] ?? '')
                               : null,
                           child: user?['avatar_url'] == null && user?['avatarUrl'] == null
                               ? const Icon(Icons.person, size: 50)
@@ -432,7 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   if (user?['display_name'] != null || user?['displayName'] != null) ...[
                     const SizedBox(height: 8),
-                    Text(user['display_name'] ?? user['displayName']),
+                    Text(user?['display_name'] ?? user?['displayName'] ?? ''),
                   ],
                   const SizedBox(height: 16),
                   ElevatedButton.icon(

@@ -93,7 +93,9 @@ class AuthProvider with ChangeNotifier {
         // Précharger les vues clés après connexion
         final userId = userData['id']?.toString() ?? userData['_id']?.toString();
         if (userId != null) {
-          ViewPreloader().preloadKeyViews(userId);
+          ViewPreloader().preloadKeyViews(userId).catchError((e) {
+            // Ignorer les erreurs de préchargement
+          });
         }
         
         return true;
@@ -104,7 +106,14 @@ class AuthProvider with ChangeNotifier {
       return false;
     } catch (e) {
       _isLoading = false;
-      _error = e.toString();
+      // Extraire le message d'erreur proprement
+      String errorMessage = 'Erreur lors de la connexion';
+      if (e is Exception) {
+        errorMessage = e.toString().replaceAll('Exception: ', '');
+      } else {
+        errorMessage = e.toString();
+      }
+      _error = errorMessage;
       notifyListeners();
       return false;
     }
@@ -117,6 +126,7 @@ class AuthProvider with ChangeNotifier {
     String confirmPassword,
   ) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
@@ -125,23 +135,35 @@ class AuthProvider with ChangeNotifier {
         _user = userData;
         _isAuthenticated = true;
         _isLoading = false;
+        _error = null;
         notifyListeners();
         
         // Précharger les vues clés après inscription
         final userId = userData['id']?.toString() ?? userData['_id']?.toString();
         if (userId != null) {
-          ViewPreloader().preloadKeyViews(userId);
+          ViewPreloader().preloadKeyViews(userId).catchError((e) {
+            // Ignorer les erreurs de préchargement
+          });
         }
         
         return true;
       }
       _isLoading = false;
+      _error = 'Erreur lors de l\'inscription';
       notifyListeners();
       return false;
     } catch (e) {
       _isLoading = false;
+      // Extraire le message d'erreur proprement
+      String errorMessage = 'Erreur lors de l\'inscription';
+      if (e is Exception) {
+        errorMessage = e.toString().replaceAll('Exception: ', '');
+      } else {
+        errorMessage = e.toString();
+      }
+      _error = errorMessage;
       notifyListeners();
-      rethrow;
+      return false;
     }
   }
 
@@ -171,7 +193,14 @@ class AuthProvider with ChangeNotifier {
         
         if (response.statusCode == 200 || response.statusCode == 201) {
           final data = response.data['data'];
+          if (data == null) {
+            throw Exception('Réponse invalide du serveur');
+          }
+          
           final userData = data['user'];
+          if (userData == null) {
+            throw Exception('Données utilisateur manquantes');
+          }
           
           // Sauvegarder les tokens
           if (data['access_token'] != null) {
@@ -190,10 +219,20 @@ class AuthProvider with ChangeNotifier {
           // Précharger les vues clés après connexion
           final userId = userData['id']?.toString() ?? userData['_id']?.toString();
           if (userId != null) {
-            ViewPreloader().preloadKeyViews(userId);
+            ViewPreloader().preloadKeyViews(userId).catchError((e) {
+              // Ignorer les erreurs de préchargement
+            });
           }
           
           return true;
+        } else if (response.statusCode == 401) {
+          throw Exception('Token Google invalide');
+        } else if (response.statusCode == 400) {
+          final errorMsg = response.data['error']?['message'] ?? 'Données invalides';
+          throw Exception(errorMsg);
+        } else {
+          final errorMsg = response.data['error']?['message'] ?? 'Erreur lors de la connexion Google';
+          throw Exception(errorMsg);
         }
       }
       
@@ -204,7 +243,20 @@ class AuthProvider with ChangeNotifier {
       return false;
     } catch (e) {
       _isLoading = false;
-      _error = e.toString().replaceAll('Exception: ', '').replaceAll('Error: ', '');
+      // Extraire le message d'erreur proprement
+      String errorMessage = 'Erreur lors de la connexion Google';
+      if (e is Exception) {
+        errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Error: ', '');
+      } else {
+        errorMessage = e.toString();
+      }
+      
+      // Gérer les erreurs réseau
+      if (errorMessage.contains('timeout') || errorMessage.contains('SocketException')) {
+        errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.';
+      }
+      
+      _error = errorMessage;
       notifyListeners();
       return false;
     }

@@ -24,14 +24,32 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
-        await SecureStorage.setSecure('access_token', data['access_token']);
-        await SecureStorage.setSecure('refresh_token', data['refresh_token']);
-        return data['user'];
+        if (data != null && data['access_token'] != null) {
+          await SecureStorage.setSecure('access_token', data['access_token']);
+          if (data['refresh_token'] != null) {
+            await SecureStorage.setSecure('refresh_token', data['refresh_token']);
+          }
+          return data['user'];
+        }
+        throw Exception('Réponse invalide du serveur');
+      } else if (response.statusCode == 401) {
+        throw Exception('Email ou mot de passe incorrect');
+      } else if (response.statusCode == 400) {
+        final errorMsg = response.data['error']?['message'] ?? 'Données invalides';
+        throw Exception(errorMsg);
+      } else {
+        final errorMsg = response.data['error']?['message'] ?? 'Erreur de connexion';
+        throw Exception(errorMsg);
       }
-      return null;
     } catch (e) {
-      print('Error logging in: $e');
-      return null;
+      if (e is Exception) {
+        rethrow;
+      }
+      // Gérer les erreurs réseau
+      if (e.toString().contains('timeout') || e.toString().contains('SocketException')) {
+        throw Exception('Erreur de connexion réseau. Vérifiez votre connexion internet.');
+      }
+      throw Exception('Erreur lors de la connexion: ${e.toString()}');
     }
   }
 
@@ -61,14 +79,33 @@ class AuthService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data['data'];
-        await SecureStorage.setSecure('access_token', data['access_token']);
-        await SecureStorage.setSecure('refresh_token', data['refresh_token']);
-        return data['user'];
+        if (data != null && data['access_token'] != null) {
+          await SecureStorage.setSecure('access_token', data['access_token']);
+          if (data['refresh_token'] != null) {
+            await SecureStorage.setSecure('refresh_token', data['refresh_token']);
+          }
+          return data['user'];
+        }
+        throw Exception('Réponse invalide du serveur');
+      } else if (response.statusCode == 409) {
+        final errorMsg = response.data['error']?['message'] ?? 'Cet email est déjà utilisé';
+        throw Exception(errorMsg);
+      } else if (response.statusCode == 400) {
+        final errorMsg = response.data['error']?['message'] ?? 'Données invalides';
+        throw Exception(errorMsg);
+      } else {
+        final errorMsg = response.data['error']?['message'] ?? 'Erreur lors de l\'inscription';
+        throw Exception(errorMsg);
       }
-      return null;
     } catch (e) {
-      print('Error signing up: $e');
-      return null;
+      if (e is Exception) {
+        rethrow;
+      }
+      // Gérer les erreurs réseau
+      if (e.toString().contains('timeout') || e.toString().contains('SocketException')) {
+        throw Exception('Erreur de connexion réseau. Vérifiez votre connexion internet.');
+      }
+      throw Exception('Erreur lors de l\'inscription: ${e.toString()}');
     }
   }
 
