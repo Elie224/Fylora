@@ -72,14 +72,14 @@ class FilesProvider with ChangeNotifier {
           }
           
           try {
-            // Validation de la structure avant parsing
-            if (item['type'] == 'file' || item['folder_id'] != null) {
+            // Utiliser le champ 'type' retourné par le backend pour déterminer si c'est un fichier ou un dossier
+            if (item['type'] == 'file') {
               final file = FileItem.fromJson(item);
               // Validation supplémentaire après parsing
               if (file.id.isNotEmpty && file.name.isNotEmpty) {
                 _files.add(file);
               }
-            } else if (item['type'] == 'folder' || item['parent_id'] != null || item['folder_id'] == null) {
+            } else if (item['type'] == 'folder') {
               final folder = FolderItem.fromJson(item);
               // Validation supplémentaire après parsing
               if (folder.id.isNotEmpty && folder.name.isNotEmpty) {

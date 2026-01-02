@@ -52,10 +52,10 @@ class ApiService {
             final opts = error.requestOptions;
             final token = await SecureStorage.getSecure('access_token');
             if (token != null) {
-              opts.headers['Authorization'] = 'Bearer $token';
+            opts.headers['Authorization'] = 'Bearer $token';
               try {
-                final response = await _dio.fetch(opts);
-                return handler.resolve(response);
+            final response = await _dio.fetch(opts);
+            return handler.resolve(response);
               } catch (e) {
                 // Si la retry échoue, continuer avec l'erreur originale
                 return handler.next(error);
@@ -106,11 +106,11 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = response.data['data'];
         if (data != null && data['access_token'] != null) {
-          await SecureStorage.setSecure('access_token', data['access_token']);
+        await SecureStorage.setSecure('access_token', data['access_token']);
           if (data['refresh_token'] != null) {
-            await SecureStorage.setSecure('refresh_token', data['refresh_token']);
+        await SecureStorage.setSecure('refresh_token', data['refresh_token']);
           }
-          return true;
+        return true;
         }
       }
       return false;
@@ -540,21 +540,31 @@ class ApiService {
 
   /// Lister les fichiers de la corbeille
   Future<Response> listTrashFiles() async {
-    return await get('/trash/files');
+    return await get('/files/trash');
   }
 
   /// Lister les dossiers de la corbeille
   Future<Response> listTrashFolders() async {
-    return await get('/trash/folders');
+    return await get('/folders/trash');
   }
 
   /// Restaurer un fichier
   Future<Response> restoreFile(String fileId) async {
-    return await post('/trash/files/$fileId/restore');
+    return await post('/files/$fileId/restore');
   }
 
   /// Restaurer un dossier
   Future<Response> restoreFolder(String folderId) async {
-    return await post('/trash/folders/$folderId/restore');
+    return await post('/folders/$folderId/restore');
+  }
+
+  /// Supprimer définitivement un fichier
+  Future<Response> permanentlyDeleteFile(String fileId) async {
+    return await delete('/files/$fileId/permanent');
+  }
+
+  /// Supprimer définitivement un dossier
+  Future<Response> permanentlyDeleteFolder(String folderId) async {
+    return await delete('/folders/$folderId/permanent');
   }
 }

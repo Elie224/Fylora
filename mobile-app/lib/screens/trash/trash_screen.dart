@@ -38,16 +38,31 @@ class _TrashScreenState extends State<TrashScreen> {
 
       if (filesResponse.statusCode == 200 && foldersResponse.statusCode == 200) {
         setState(() {
-          _files = (filesResponse.data['data']['items'] ?? [])
-              .map((item) => FileItem.fromJson(item))
-              .toList()
-              .cast<FileItem>();
+          try {
+            _files = (filesResponse.data['data']['items'] ?? [])
+                .map((item) => FileItem.fromJson(item))
+                .toList()
+                .cast<FileItem>();
+          } catch (e) {
+            print('Erreur parsing fichiers corbeille: $e');
+            _files = [];
+          }
           
-          _folders = (foldersResponse.data['data']['items'] ?? [])
-              .map((item) => FolderItem.fromJson(item))
-              .toList()
-              .cast<FolderItem>();
+          try {
+            _folders = (foldersResponse.data['data']['items'] ?? [])
+                .map((item) => FolderItem.fromJson(item))
+                .toList()
+                .cast<FolderItem>();
+          } catch (e) {
+            print('Erreur parsing dossiers corbeille: $e');
+            _folders = [];
+          }
           
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Erreur lors du chargement de la corbeille (${filesResponse.statusCode}, ${foldersResponse.statusCode})';
           _isLoading = false;
         });
       }
@@ -129,8 +144,7 @@ class _TrashScreenState extends State<TrashScreen> {
 
     if (confirmed == true) {
       try {
-        final filesProvider = Provider.of<FilesProvider>(context, listen: false);
-        await filesProvider.deleteFile(fileId);
+        await _apiService.permanentlyDeleteFile(fileId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -175,8 +189,7 @@ class _TrashScreenState extends State<TrashScreen> {
 
     if (confirmed == true) {
       try {
-        final filesProvider = Provider.of<FilesProvider>(context, listen: false);
-        await filesProvider.deleteFolder(folderId);
+        await _apiService.permanentlyDeleteFolder(folderId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
