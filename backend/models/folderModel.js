@@ -174,15 +174,24 @@ const FolderModel = {
 
   toDTO(folder) {
     if (!folder) return null;
+    
+    // Formater les dates correctement (ISO string ou null)
+    const formatDate = (date) => {
+      if (!date) return null;
+      if (date instanceof Date) return date.toISOString();
+      if (typeof date === 'string') return date;
+      return null;
+    };
+    
     return {
       id: folder._id.toString(),
       name: folder.name,
       owner_id: folder.owner_id?.toString() || folder.owner_id,
       parent_id: folder.parent_id?.toString() || folder.parent_id || null,
       is_deleted: folder.is_deleted || false,
-      deleted_at: folder.deleted_at,
-      created_at: folder.created_at,
-      updated_at: folder.updated_at,
+      deleted_at: formatDate(folder.deleted_at),
+      created_at: formatDate(folder.created_at),
+      updated_at: formatDate(folder.updated_at),
     };
   },
 };

@@ -336,11 +336,15 @@ class ApiService {
           
           // Ne pas définir Content-Type - Dio le fait automatiquement avec FormData et ajoute la boundary
           // L'intercepteur supprimera le Content-Type par défaut pour FormData
+          // Augmenter le receiveTimeout pour les uploads (5 minutes)
           final response = await _dio.post(
             path,
             data: formData,
             onSendProgress: onProgress,
-            // Options par défaut - Dio gère automatiquement le Content-Type avec boundary pour FormData
+            options: Options(
+              receiveTimeout: const Duration(minutes: 5),
+              sendTimeout: const Duration(minutes: 5),
+            ),
           );
           print('✅ [ApiService] Upload réussi: statusCode=${response.statusCode}');
           return response;

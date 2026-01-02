@@ -248,6 +248,15 @@ const FileModel = {
 
   toDTO(file) {
     if (!file) return null;
+    
+    // Formater les dates correctement (ISO string ou null)
+    const formatDate = (date) => {
+      if (!date) return null;
+      if (date instanceof Date) return date.toISOString();
+      if (typeof date === 'string') return date;
+      return null;
+    };
+    
     return {
       id: file._id.toString(),
       name: file.name,
@@ -257,9 +266,9 @@ const FileModel = {
       owner_id: file.owner_id?.toString() || file.owner_id,
       file_path: file.file_path,
       is_deleted: file.is_deleted || false,
-      deleted_at: file.deleted_at,
-      created_at: file.created_at,
-      updated_at: file.updated_at,
+      deleted_at: formatDate(file.deleted_at),
+      created_at: formatDate(file.created_at),
+      updated_at: formatDate(file.updated_at),
     };
   },
 };
