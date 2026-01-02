@@ -407,15 +407,15 @@ class ApiService {
   /// Supprimer un fichier
   Future<Response> deleteFile(String fileId) async {
     // Invalider le cache des fichiers avant la suppression
-    await _cache.remove('/files');
+    await _cache.invalidate('/files', pattern: true);
     return await delete('/files/$fileId');
   }
 
   /// Supprimer un dossier
   Future<Response> deleteFolder(String folderId) async {
     // Invalider le cache des fichiers et dossiers avant la suppression
-    await _cache.remove('/files');
-    await _cache.remove('/folders');
+    await _cache.invalidate('/files', pattern: true);
+    await _cache.invalidate('/folders', pattern: true);
     return await delete('/folders/$folderId');
   }
 
