@@ -323,17 +323,12 @@ class ApiService {
 
     return await _timeoutManager.withTimeout(
       () => _retry.execute(() async {
+        // Ne pas définir Content-Type - Dio le fait automatiquement avec FormData et ajoute la boundary
         return await _dio.post(
           path,
           data: formData,
           onSendProgress: onProgress,
-          // Ne pas définir Content-Type manuellement - Dio le fait automatiquement avec la boundary
-          options: Options(
-            // Laisser Dio gérer le Content-Type avec la boundary appropriée
-            contentType: 'multipart/form-data',
-            followRedirects: false,
-            validateStatus: (status) => status! < 500, // Accepter les erreurs client (< 500)
-          ),
+          // Options par défaut - Dio gère automatiquement le Content-Type avec boundary pour FormData
         );
       }),
       'fileUpload',
