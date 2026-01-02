@@ -1336,12 +1336,19 @@ class _FilesScreenState extends State<FilesScreen> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (context.mounted) {
+        // Fermer le dialogue de progression en cas d'erreur
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        print('❌ [FilesScreen] Erreur upload: $e');
+        print('❌ [FilesScreen] Stack: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de l\'upload: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

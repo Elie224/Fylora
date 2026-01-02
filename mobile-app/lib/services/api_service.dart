@@ -33,6 +33,14 @@ class ApiService {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+        
+        // Pour les requêtes FormData (upload), laisser Dio gérer le Content-Type avec boundary
+        // Ne pas définir Content-Type manuellement pour multipart/form-data
+        if (options.data is FormData) {
+          // Supprimer Content-Type pour laisser Dio l'ajouter avec la boundary appropriée
+          options.headers.remove('Content-Type');
+        }
+        
         return handler.next(options);
       },
       onError: (error, handler) async {
@@ -319,17 +327,25 @@ class ApiService {
       if (folderId != null) 'folder_id': folderId,
     });
 
-    print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}');
+    print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}, formData fields: ${formData.fields.length}, files: ${formData.files.length}');
 
     return await _timeoutManager.withTimeout(
       () => _retry.execute(() async {
-        // Ne pas définir Content-Type - Dio le fait automatiquement avec FormData et ajoute la boundary
-        return await _dio.post(
-          path,
-          data: formData,
-          onSendProgress: onProgress,
-          // Options par défaut - Dio gère automatiquement le Content-Type avec boundary pour FormData
-        );
+        try {
+          // Ne pas définir Content-Type - Dio le fait automatiquement avec FormData et ajoute la boundary
+          // L'intercepteur supprimera le Content-Type par défaut pour FormData
+          final response = await _dio.post(
+            path,
+            data: formData,
+            onSendProgress: onProgress,
+            // Options par défaut - Dio gère automatiquement le Content-Type avec boundary pour FormData
+          );
+          print('✅ [ApiService] Upload réussi: statusCode=${response.statusCode}');
+          return response;
+        } catch (e) {
+          print('❌ [ApiService] Erreur upload: $e');
+          rethrow;
+        }
       }),
       'fileUpload',
     );
