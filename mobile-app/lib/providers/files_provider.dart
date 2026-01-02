@@ -47,6 +47,22 @@ class FilesProvider with ChangeNotifier {
     
     _isLoading = true;
     _error = null;
+    
+    // Mettre à jour le dossier courant si un folderId est fourni
+    if (folderId != null && (_currentFolder == null || _currentFolder!.id != folderId)) {
+      try {
+        final folderResponse = await _apiService.getFolder(folderId);
+        if (folderResponse.statusCode == 200) {
+          _currentFolder = FolderItem.fromJson(folderResponse.data['data']);
+        }
+      } catch (e) {
+        // Si on ne peut pas charger le dossier, continuer quand même
+        _currentFolder = null;
+      }
+    } else if (folderId == null) {
+      _currentFolder = null; // On est à la racine
+    }
+    
     notifyListeners();
     
     try {
@@ -190,7 +206,19 @@ class FilesProvider with ChangeNotifier {
       
       if (response.statusCode == 201 || response.statusCode == 200) {
         print('✅ [FilesProvider] Upload réussi');
-        // Invalider le cache pour forcer le rechargement
+        // Ajouter le fichier à la liste localement pour une mise à jour immédiate
+        try {
+          final fileData = response.data['data'];
+          if (fileData != null) {
+            final newFile = FileItem.fromJson(fileData);
+            _files.add(newFile);
+            notifyListeners();
+          }
+        } catch (e) {
+          // Si le parsing échoue, recharger depuis le serveur
+        }
+        
+        // Invalider le cache et recharger pour s'assurer que tout est à jour
         await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
         await loadFiles(folderId: folderId);
         return true;
@@ -210,7 +238,7 @@ class FilesProvider with ChangeNotifier {
     }
   }
   
-  Future<bool> deleteFile(String fileId) async {
+  Future<bool> deleteFile(String fileId, {String? currentFolderId}) async {
     try {
       _error = null;
       final response = await _apiService.deleteFile(fileId);
@@ -218,8 +246,9 @@ class FilesProvider with ChangeNotifier {
         // Retirer immédiatement de la liste pour un feedback instantané
         _files.removeWhere((f) => f.id == fileId);
         notifyListeners();
-        // Recharger pour s'assurer de la synchronisation
-        await loadFiles(folderId: _currentFolder?.id);
+        // Recharger pour s'assurer de la synchronisation avec le bon folderId
+        final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+        await loadFiles(folderId: folderIdToReload);
         return true;
       } else {
         _error = 'Erreur lors de la suppression du fichier';
@@ -233,7 +262,7 @@ class FilesProvider with ChangeNotifier {
     }
   }
   
-  Future<bool> deleteFolder(String folderId) async {
+  Future<bool> deleteFolder(String folderId, {String? currentFolderId}) async {
     try {
       _error = null;
       final response = await _apiService.deleteFolder(folderId);
@@ -241,8 +270,9 @@ class FilesProvider with ChangeNotifier {
         // Retirer immédiatement de la liste pour un feedback instantané
         _folders.removeWhere((f) => f.id == folderId);
         notifyListeners();
-        // Recharger pour s'assurer de la synchronisation
-        await loadFiles(folderId: _currentFolder?.id);
+        // Recharger pour s'assurer de la synchronisation avec le bon folderId
+        final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+        await loadFiles(folderId: folderIdToReload);
         return true;
       } else {
         _error = 'Erreur lors de la suppression du dossier';
@@ -256,7 +286,7 @@ class FilesProvider with ChangeNotifier {
     }
   }
   
-  Future<bool> renameFile(String fileId, String newName) async {
+  Future<bool> renameFile(String fileId, String newName, {String? currentFolderId}) async {
     try {
       _error = null;
       final response = await _apiService.renameFile(fileId, newName);
@@ -267,8 +297,9 @@ class FilesProvider with ChangeNotifier {
           _files[index] = FileItem.fromJson(response.data['data']);
           notifyListeners();
         }
-        // Recharger pour s'assurer de la synchronisation
-        await loadFiles(folderId: _currentFolder?.id);
+        // Recharger pour s'assurer de la synchronisation avec le bon folderId
+        final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+        await loadFiles(folderId: folderIdToReload);
         return true;
       } else {
         _error = 'Erreur lors du renommage du fichier';
@@ -282,7 +313,7 @@ class FilesProvider with ChangeNotifier {
     }
   }
   
-  Future<bool> renameFolder(String folderId, String newName) async {
+  Future<bool> renameFolder(String folderId, String newName, {String? currentFolderId}) async {
     try {
       _error = null;
       final response = await _apiService.renameFolder(folderId, newName);
@@ -293,8 +324,9 @@ class FilesProvider with ChangeNotifier {
           _folders[index] = FolderItem.fromJson(response.data['data']);
           notifyListeners();
         }
-        // Recharger pour s'assurer de la synchronisation
-        await loadFiles(folderId: _currentFolder?.id);
+        // Recharger pour s'assurer de la synchronisation avec le bon folderId
+        final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+        await loadFiles(folderId: folderIdToReload);
         return true;
       } else {
         _error = 'Erreur lors du renommage du dossier';
@@ -311,10 +343,24 @@ class FilesProvider with ChangeNotifier {
   Future<bool> createFolder(String name, {String? parentId}) async {
     try {
       _error = null;
-      final response = await _apiService.createFolder(name, parentId: parentId ?? _currentFolder?.id);
+      // Utiliser le parentId fourni, sinon le dossier courant, sinon null (racine)
+      final actualParentId = parentId ?? _currentFolder?.id;
+      final response = await _apiService.createFolder(name, parentId: actualParentId);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Invalider le cache et recharger
-        await loadFiles(folderId: _currentFolder?.id);
+        // Ajouter le nouveau dossier à la liste localement pour une mise à jour immédiate
+        try {
+          final folderData = response.data['data'];
+          if (folderData != null) {
+            final newFolder = FolderItem.fromJson(folderData);
+            _folders.add(newFolder);
+            notifyListeners();
+          }
+        } catch (e) {
+          // Si le parsing échoue, recharger depuis le serveur
+        }
+        
+        // Recharger pour s'assurer que tout est à jour
+        await loadFiles(folderId: actualParentId);
         return true;
       } else {
         _error = 'Erreur lors de la création du dossier';
@@ -328,10 +374,16 @@ class FilesProvider with ChangeNotifier {
     }
   }
   
-  Future<bool> moveFile(String fileId, String? folderId) async {
+  Future<bool> moveFile(String fileId, String? folderId, {String? currentFolderId}) async {
     try {
+      _error = null;
       await _apiService.moveFile(fileId, folderId);
-      await loadFiles(folderId: _currentFolder?.id);
+      // Retirer le fichier de la liste actuelle pour un feedback instantané
+      _files.removeWhere((f) => f.id == fileId);
+      notifyListeners();
+      // Recharger pour s'assurer de la synchronisation avec le bon folderId
+      final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+      await loadFiles(folderId: folderIdToReload);
       return true;
     } catch (e) {
       _error = e.toString();
@@ -340,11 +392,16 @@ class FilesProvider with ChangeNotifier {
     }
   }
   
-  Future<bool> moveFolder(String folderId, String? parentId) async {
+  Future<bool> moveFolder(String folderId, String? parentId, {String? currentFolderId}) async {
     try {
       _error = null;
       await _apiService.moveFolder(folderId, parentId);
-      await loadFiles(folderId: _currentFolder?.id);
+      // Retirer le dossier de la liste actuelle pour un feedback instantané
+      _folders.removeWhere((f) => f.id == folderId);
+      notifyListeners();
+      // Recharger pour s'assurer de la synchronisation avec le bon folderId
+      final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+      await loadFiles(folderId: folderIdToReload);
       return true;
     } catch (e) {
       _error = e.toString();

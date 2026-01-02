@@ -806,7 +806,8 @@ class _FilesScreenState extends State<FilesScreen> {
               if (!context.mounted) return;
               
               final filesProvider = Provider.of<FilesProvider>(context, listen: false);
-              final success = await filesProvider.createFolder(name);
+              // Passer widget.folderId comme parentId pour créer le dossier dans le bon emplacement
+              final success = await filesProvider.createFolder(name, parentId: widget.folderId);
               
               if (context.mounted) {
                 Navigator.pop(context);
@@ -857,8 +858,8 @@ class _FilesScreenState extends State<FilesScreen> {
               if (nameController.text.isNotEmpty) {
                 final filesProvider = Provider.of<FilesProvider>(context, listen: false);
                 final success = isFolder
-                    ? await filesProvider.renameFolder(id, nameController.text)
-                    : await filesProvider.renameFile(id, nameController.text);
+                    ? await filesProvider.renameFolder(id, nameController.text, currentFolderId: widget.folderId)
+                    : await filesProvider.renameFile(id, nameController.text, currentFolderId: widget.folderId);
                 
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -1004,8 +1005,8 @@ class _FilesScreenState extends State<FilesScreen> {
             onPressed: () async {
               final filesProvider = Provider.of<FilesProvider>(context, listen: false);
               final success = isFolder
-                  ? await filesProvider.deleteFolder(id)
-                  : await filesProvider.deleteFile(id);
+                  ? await filesProvider.deleteFolder(id, currentFolderId: widget.folderId)
+                  : await filesProvider.deleteFile(id, currentFolderId: widget.folderId);
               
               if (context.mounted) {
                 Navigator.pop(context);
@@ -1253,9 +1254,9 @@ class _FilesScreenState extends State<FilesScreen> {
                     ? null
                     : () async {
                         if (isFolder) {
-                          await filesProvider.moveFolder(id, selectedFolderId);
+                          await filesProvider.moveFolder(id, selectedFolderId, currentFolderId: widget.folderId);
                         } else {
-                          await filesProvider.moveFile(id, selectedFolderId);
+                          await filesProvider.moveFile(id, selectedFolderId, currentFolderId: widget.folderId);
                         }
                         if (context.mounted) {
                           Navigator.pop(context);
