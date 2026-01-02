@@ -137,6 +137,8 @@ const UserModel = {
       quota_used: utilisateurTrouve.quota_used,
       preferences: utilisateurTrouve.preferences,
       is_admin: utilisateurTrouve.is_admin || false,
+      oauth_provider: utilisateurTrouve.oauth_provider,
+      oauth_id: utilisateurTrouve.oauth_id,
       created_at: utilisateurTrouve.created_at,
       last_login_at: utilisateurTrouve.last_login_at,
     };

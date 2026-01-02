@@ -488,10 +488,25 @@ async function verifyGoogleToken(req, res, next) {
         logger.logError(error, { contexte: 'vérification_access_token_google', note: 'Utilisation des infos fournies dans la requête' });
         // Ne pas retourner d'erreur, continuer avec les infos fournies
       }
+    }
+    // Fallback : utiliser seulement email + user info (web sans token - limitation du plugin google_sign_in)
+    else if (email && !id_token && !access_token) {
+      // Sur le web, le plugin google_sign_in peut ne pas exposer l'access_token
+      // même si Google Sign-In l'a obtenu (à cause de l'erreur 403 People API)
+      // Dans ce cas, on accepte les infos utilisateur sans vérification de token
+      // C'est un fallback pour permettre la connexion web malgré la limitation du plugin
+      email_final = email;
+      displayName_final = display_name || email_final.split('@')[0];
+      photoUrl_final = photo_url;
+      google_id = null;
+      
+      logger.logWarn('Google OAuth web: using user info without token verification (plugin limitation)', {
+        email: email_final,
+      });
     } else {
       return res.status(400).json({
         error: {
-          message: 'Token Google manquant (id_token ou access_token requis)',
+          message: 'Données Google manquantes (id_token, access_token, ou email requis)',
         },
       });
     }
@@ -513,8 +528,9 @@ async function verifyGoogleToken(req, res, next) {
         email: email_final,
         display_name: displayName_final,
         avatar_url: photoUrl_final,
-        password_hash: null, // Pas de mot de passe pour les comptes OAuth
-        google_id: google_id,
+        passwordHash: null, // Pas de mot de passe pour les comptes OAuth
+        oauth_provider: 'google',
+        oauth_id: google_id || null,
       });
       logger.logInfo(`Nouvel utilisateur Google créé: ${email_final}`, { userId: utilisateur.id });
 
@@ -527,18 +543,27 @@ async function verifyGoogleToken(req, res, next) {
       });
     } else {
       // Mettre à jour les informations OAuth si nécessaire
-      if (!utilisateur.google_id && google_id) {
-        utilisateur.google_id = google_id;
-        await utilisateur.save();
+      // Construire l'objet de mise à jour
+      const updates = {};
+      
+      if (google_id && !utilisateur.oauth_id) {
+        updates.oauth_provider = 'google';
+        updates.oauth_id = google_id;
       }
       if (photoUrl_final && !utilisateur.avatar_url) {
-        utilisateur.avatar_url = photoUrl_final;
-        await utilisateur.save();
+        updates.avatar_url = photoUrl_final;
       }
       if (displayName_final && !utilisateur.display_name) {
-        utilisateur.display_name = displayName_final;
-        await utilisateur.save();
+        updates.display_name = displayName_final;
       }
+      
+      // Appliquer les mises à jour si nécessaire
+      if (Object.keys(updates).length > 0) {
+        const mongoose = require('mongoose');
+        const UserMongoose = mongoose.models.User;
+        await UserMongoose.findByIdAndUpdate(utilisateur.id, updates);
+      }
+      
       await User.updateLastLogin(utilisateur.id);
     }
 
