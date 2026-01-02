@@ -26,18 +26,18 @@ module.exports = {
   cors: {
     origin: function (origin, callback) {
       // Autoriser les requêtes sans origine (health checks, applications mobiles, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-      
+        if (!origin) {
+          return callback(null, true);
+        }
+        
       // Toujours autoriser localhost (développement et tests)
-      if (origin.includes('localhost') || 
-          origin.includes('127.0.0.1') ||
-          origin.match(/^http:\/\/192\.168\.\d+\.\d+/) ||
-          origin.match(/^http:\/\/10\.\d+\.\d+\.\d+/) ||
-          origin.match(/^http:\/\/localhost:\d+/) ||
-          origin.match(/^http:\/\/127\.0\.0\.1:\d+/)) {
-        return callback(null, true);
+        if (origin.includes('localhost') || 
+            origin.includes('127.0.0.1') ||
+            origin.match(/^http:\/\/192\.168\.\d+\.\d+/) ||
+            origin.match(/^http:\/\/10\.\d+\.\d+\.\d+/) ||
+            origin.match(/^http:\/\/localhost:\d+/) ||
+            origin.match(/^http:\/\/127\.0\.0\.1:\d+/)) {
+          return callback(null, true);
       }
       
       // En production, utiliser la liste des origines autorisées

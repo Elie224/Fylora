@@ -51,6 +51,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
+  String _formatDate(dynamic dateValue) {
+    if (dateValue == null) return 'N/A';
+    
+    // Si c'est déjà une String, essayer de la parser
+    if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue).toString().substring(0, 10);
+      } catch (e) {
+        return dateValue;
+      }
+    }
+    
+    // Si c'est un objet Map, essayer d'extraire une date
+    if (dateValue is Map) {
+      // Chercher des champs de date communs
+      if (dateValue['\$date'] != null) {
+        final timestamp = dateValue['\$date'];
+        if (timestamp is int) {
+          return DateTime.fromMillisecondsSinceEpoch(timestamp).toString().substring(0, 10);
+        }
+      }
+      if (dateValue['date'] != null && dateValue['date'] is String) {
+        try {
+          return DateTime.parse(dateValue['date']).toString().substring(0, 10);
+        } catch (e) {
+          return 'N/A';
+        }
+      }
+      return 'N/A';
+    }
+    
+    // Si c'est un int (timestamp)
+    if (dateValue is int) {
+      try {
+        return DateTime.fromMillisecondsSinceEpoch(dateValue).toString().substring(0, 10);
+      } catch (e) {
+        return 'N/A';
+      }
+    }
+    
+    return 'N/A';
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -574,9 +617,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       title: Text(file['name'] ?? ''),
                                       subtitle: Text(_formatBytes(file['size'] ?? 0)),
                                       trailing: Text(
-                                        DateTime.parse(file['updated_at'])
-                                            .toString()
-                                            .substring(0, 10),
+                                        _formatDate(file['updated_at']),
                                       ),
                                   );
                                 })

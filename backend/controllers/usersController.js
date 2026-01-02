@@ -63,6 +63,14 @@ async function getMe(req, res, next) {
 
     // UserModel.findById() retourne déjà un objet formaté avec id au lieu de _id
     // Retirer les informations sensibles
+    // Formater les dates correctement (ISO string ou null)
+    const formatDate = (date) => {
+      if (!date) return null;
+      if (date instanceof Date) return date.toISOString();
+      if (typeof date === 'string') return date;
+      return null;
+    };
+    
     const safeUser = {
       id: user.id,
       email: user.email,
@@ -72,8 +80,8 @@ async function getMe(req, res, next) {
       quota_limit: user.quota_limit,
       preferences: user.preferences,
       is_admin: user.is_admin || false,
-      created_at: user.created_at,
-      last_login_at: user.last_login_at,
+      created_at: formatDate(user.created_at),
+      last_login_at: formatDate(user.last_login_at),
     };
 
     res.status(200).json({ data: safeUser });

@@ -25,12 +25,12 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data['data'];
         if (data != null && data['access_token'] != null) {
-          await SecureStorage.setSecure('access_token', data['access_token']);
+        await SecureStorage.setSecure('access_token', data['access_token']);
           if (data['refresh_token'] != null) {
-            await SecureStorage.setSecure('refresh_token', data['refresh_token']);
+        await SecureStorage.setSecure('refresh_token', data['refresh_token']);
           }
-          return data['user'];
-        }
+        return data['user'];
+      }
         throw Exception('Réponse invalide du serveur');
       } else if (response.statusCode == 401) {
         throw Exception('Email ou mot de passe incorrect');
@@ -80,12 +80,12 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data['data'];
         if (data != null && data['access_token'] != null) {
-          await SecureStorage.setSecure('access_token', data['access_token']);
+        await SecureStorage.setSecure('access_token', data['access_token']);
           if (data['refresh_token'] != null) {
-            await SecureStorage.setSecure('refresh_token', data['refresh_token']);
+        await SecureStorage.setSecure('refresh_token', data['refresh_token']);
           }
-          return data['user'];
-        }
+        return data['user'];
+      }
         throw Exception('Réponse invalide du serveur');
       } else if (response.statusCode == 409) {
         final errorMsg = response.data['error']?['message'] ?? 'Cet email est déjà utilisé';

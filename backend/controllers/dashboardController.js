@@ -151,7 +151,7 @@ async function getDashboard(req, res, next) {
         name: f.name,
         size: f.size,
         mime_type: f.mime_type,
-        updated_at: f.updated_at,
+        updated_at: f.updated_at ? (f.updated_at instanceof Date ? f.updated_at.toISOString() : f.updated_at) : new Date().toISOString(),
       })),
       total_files: totalFiles,
       total_folders: totalFolders,
