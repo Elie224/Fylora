@@ -406,17 +406,25 @@ class ApiService {
 
   /// Supprimer un fichier
   Future<Response> deleteFile(String fileId) async {
-    // Invalider le cache des fichiers avant la suppression
-    await _cache.invalidate('/files', pattern: true);
-    return await delete('/files/$fileId');
+    final response = await delete('/files/$fileId');
+    // Invalider le cache des fichiers après la suppression
+    if (response.statusCode == 200) {
+      await _cache.invalidate('/files', pattern: true);
+      await _cache.invalidate('/dashboard', pattern: true);
+    }
+    return response;
   }
 
   /// Supprimer un dossier
   Future<Response> deleteFolder(String folderId) async {
-    // Invalider le cache des fichiers et dossiers avant la suppression
-    await _cache.invalidate('/files', pattern: true);
-    await _cache.invalidate('/folders', pattern: true);
-    return await delete('/folders/$folderId');
+    final response = await delete('/folders/$folderId');
+    // Invalider le cache des fichiers et dossiers après la suppression
+    if (response.statusCode == 200) {
+      await _cache.invalidate('/files', pattern: true);
+      await _cache.invalidate('/folders', pattern: true);
+      await _cache.invalidate('/dashboard', pattern: true);
+    }
+    return response;
   }
 
   /// Renommer un fichier
