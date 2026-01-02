@@ -121,9 +121,12 @@ class FilesProvider with ChangeNotifier {
         
         // Nettoyer le cache de memoization
         PerformanceOptimizer.cleanExpiredCache();
+      } else {
+        _error = 'Erreur lors du chargement des fichiers (code: ${response.statusCode})';
       }
     } catch (e) {
-      _error = e.toString();
+      _error = 'Erreur lors du chargement: ${e.toString()}';
+      print('❌ [FilesProvider] Erreur loadFiles: $_error');
     }
     
     _isLoading = false;
@@ -162,7 +165,7 @@ class FilesProvider with ChangeNotifier {
         if (response.statusCode == 201 || response.statusCode == 200) {
           // Invalider le cache pour forcer le rechargement
           await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
-          await loadFiles(folderId: folderId);
+          await loadFiles(folderId: folderId, force: true);
           return true;
         } else {
           _error = 'Erreur lors de l\'upload (code: ${response.statusCode})';
@@ -222,7 +225,8 @@ class FilesProvider with ChangeNotifier {
         
         // Invalider le cache et recharger pour s'assurer que tout est à jour
         await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
-        await loadFiles(folderId: folderId);
+        // Recharger avec force pour s'assurer que les données sont à jour
+        await loadFiles(folderId: folderId, force: true);
         return true;
       } else {
         final errorMsg = response.data?['error']?['message'] ?? response.data?['message'] ?? 'Erreur lors de l\'upload';
@@ -250,7 +254,7 @@ class FilesProvider with ChangeNotifier {
         notifyListeners();
         // Recharger pour s'assurer de la synchronisation avec le bon folderId
         final folderIdToReload = currentFolderId ?? _currentFolder?.id;
-        await loadFiles(folderId: folderIdToReload);
+        await loadFiles(folderId: folderIdToReload, force: true);
         return true;
       } else {
         _error = 'Erreur lors de la suppression du fichier';
@@ -274,7 +278,7 @@ class FilesProvider with ChangeNotifier {
         notifyListeners();
         // Recharger pour s'assurer de la synchronisation avec le bon folderId
         final folderIdToReload = currentFolderId ?? _currentFolder?.id;
-        await loadFiles(folderId: folderIdToReload);
+        await loadFiles(folderId: folderIdToReload, force: true);
         return true;
       } else {
         _error = 'Erreur lors de la suppression du dossier';
@@ -301,7 +305,7 @@ class FilesProvider with ChangeNotifier {
         }
         // Recharger pour s'assurer de la synchronisation avec le bon folderId
         final folderIdToReload = currentFolderId ?? _currentFolder?.id;
-        await loadFiles(folderId: folderIdToReload);
+        await loadFiles(folderId: folderIdToReload, force: true);
         return true;
       } else {
         _error = 'Erreur lors du renommage du fichier';
@@ -328,7 +332,7 @@ class FilesProvider with ChangeNotifier {
         }
         // Recharger pour s'assurer de la synchronisation avec le bon folderId
         final folderIdToReload = currentFolderId ?? _currentFolder?.id;
-        await loadFiles(folderId: folderIdToReload);
+        await loadFiles(folderId: folderIdToReload, force: true);
         return true;
       } else {
         _error = 'Erreur lors du renommage du dossier';
@@ -362,7 +366,7 @@ class FilesProvider with ChangeNotifier {
         }
         
         // Recharger pour s'assurer que tout est à jour
-        await loadFiles(folderId: actualParentId);
+        await loadFiles(folderId: actualParentId, force: true);
         return true;
       } else {
         _error = 'Erreur lors de la création du dossier';
@@ -385,7 +389,7 @@ class FilesProvider with ChangeNotifier {
       notifyListeners();
       // Recharger pour s'assurer de la synchronisation avec le bon folderId
       final folderIdToReload = currentFolderId ?? _currentFolder?.id;
-      await loadFiles(folderId: folderIdToReload);
+      await loadFiles(folderId: folderIdToReload, force: true);
       return true;
     } catch (e) {
       _error = e.toString();
@@ -403,7 +407,7 @@ class FilesProvider with ChangeNotifier {
       notifyListeners();
       // Recharger pour s'assurer de la synchronisation avec le bon folderId
       final folderIdToReload = currentFolderId ?? _currentFolder?.id;
-      await loadFiles(folderId: folderIdToReload);
+      await loadFiles(folderId: folderIdToReload, force: true);
       return true;
     } catch (e) {
       _error = e.toString();

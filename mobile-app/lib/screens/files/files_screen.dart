@@ -365,6 +365,37 @@ class _FilesScreenState extends State<FilesScreen> {
           Expanded(
             child: filesProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : filesProvider.error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Erreur',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          filesProvider.error!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.red),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          filesProvider.clearError();
+                          filesProvider.loadFiles(folderId: widget.folderId, force: true);
+                        },
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
+                )
           : filesProvider.allItems.isEmpty
               ? Center(
                   child: Column(
@@ -381,7 +412,7 @@ class _FilesScreenState extends State<FilesScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: () async {
-                    await filesProvider.loadFiles(folderId: widget.folderId);
+                    await filesProvider.loadFiles(folderId: widget.folderId, force: true);
                     await _loadFileTags();
                   },
                   child: ListView.builder(

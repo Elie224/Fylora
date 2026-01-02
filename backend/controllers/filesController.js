@@ -118,9 +118,18 @@ async function listFiles(req, res, next) {
 
     const folderId = folder_id === 'root' || !folder_id ? null : folder_id;
 
-    // Vérifier que le dossier appartient à l'utilisateur
-    if (folderId) {
-      const folder = await FolderModel.findById(folderId);
+    // Si folderId est null (racine), récupérer ou créer le dossier Root
+    let actualFolderId = folderId;
+    if (!actualFolderId) {
+      let rootFolder = await FolderModel.findRootFolder(userId);
+      if (!rootFolder) {
+        // Créer le dossier Root s'il n'existe pas
+        rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
+      }
+      actualFolderId = rootFolder.id;
+    } else {
+      // Vérifier que le dossier appartient à l'utilisateur
+      const folder = await FolderModel.findById(actualFolderId);
       if (!folder) {
         return res.status(404).json({ error: { message: 'Folder not found' } });
       }
@@ -136,16 +145,24 @@ async function listFiles(req, res, next) {
     const limitNum = parseInt(limit);
     
     // Récupérer en parallèle avec pagination optimisée
+    // Pour les dossiers, si folderId est null (racine), chercher les dossiers avec parent_id = null
+    // Pour les fichiers, utiliser actualFolderId (qui sera le Root si on est à la racine)
     const [files, folders, totalFiles, totalFolders] = await Promise.all([
-      FileModel.findByOwner(userId, folderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
+      FileModel.findByOwner(userId, actualFolderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
       FolderModel.findByOwner(userId, folderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
-      FileModel.countByOwner(userId, folderId, false),
+      FileModel.countByOwner(userId, actualFolderId, false),
       FolderModel.countByOwner(userId, folderId, false),
     ]);
 
+    // Si on est à la racine (folderId est null), exclure le dossier Root de la liste
+    // car l'utilisateur est déjà dans le Root
+    const filteredFolders = folderId 
+      ? folders 
+      : folders.filter(f => f.name !== 'Root' || f.parent_id !== null);
+    
     // Combiner et trier (tri déjà fait côté DB, mais combiner pour l'affichage)
     const items = [
-      ...folders.map(f => ({ ...f, type: 'folder' })),
+      ...filteredFolders.map(f => ({ ...f, type: 'folder' })),
       ...files.map(f => ({ ...f, type: 'file' })),
     ];
 
