@@ -300,6 +300,9 @@ class ApiService {
     String? folderId,
     Function(int, int)? onProgress,
   }) async {
+    print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}');
+
+    // Créer le MultipartFile une seule fois (peut être réutilisé)
     MultipartFile multipartFile;
     
     if (kIsWeb) {
@@ -321,17 +324,16 @@ class ApiService {
         filename: platformFile.name,
       );
     }
-    
-    final formData = FormData.fromMap({
-      fieldName: multipartFile,
-      if (folderId != null) 'folder_id': folderId,
-    });
-
-    print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}, formData fields: ${formData.fields.length}, files: ${formData.files.length}');
 
     return await _timeoutManager.withTimeout(
       () => _retry.execute(() async {
         try {
+          // Créer un nouveau FormData à chaque tentative pour éviter l'erreur "FormData already finalized"
+          final formData = FormData.fromMap({
+            fieldName: multipartFile,
+            if (folderId != null) 'folder_id': folderId,
+          });
+          
           // Ne pas définir Content-Type - Dio le fait automatiquement avec FormData et ajoute la boundary
           // L'intercepteur supprimera le Content-Type par défaut pour FormData
           final response = await _dio.post(
