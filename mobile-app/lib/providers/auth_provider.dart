@@ -52,14 +52,64 @@ class AuthProvider with ChangeNotifier {
             // Ignorer les erreurs de préchargement
           }
           } else {
-            // Si pas de données utilisateur, déconnecter
+            // Si pas de données utilisateur, essayer de rafraîchir le token avant de déconnecter
+            try {
+              // Essayer de rafraîchir le token via l'intercepteur ApiService
+              final refreshToken = await SecureStorage.getSecure('refresh_token');
+              if (refreshToken != null) {
+                // Créer une instance ApiService pour utiliser sa méthode de refresh
+                final apiService = ApiService();
+                // Faire une requête qui déclenchera le refresh automatique via l'intercepteur
+                // L'intercepteur ApiService gère automatiquement le refresh sur 401
+                // Réessayer après un court délai pour laisser le refresh se faire
+                await Future.delayed(const Duration(milliseconds: 500));
+                final retryUserData = await _userService.getCurrentUser();
+                if (retryUserData != null) {
+                  _user = retryUserData;
+                  _isAuthenticated = true;
+                } else {
+                  // Si le refresh échoue, déconnecter
+                  _isAuthenticated = false;
+                  _user = null;
+                }
+              } else {
+                // Pas de refresh token, déconnecter
+                _isAuthenticated = false;
+                _user = null;
+              }
+            } catch (refreshError) {
+              // Si le refresh échoue, déconnecter
+              _isAuthenticated = false;
+              _user = null;
+            }
+          }
+        } catch (e) {
+          // En cas d'erreur, essayer de rafraîchir le token avant de déconnecter
+          try {
+            final refreshToken = await SecureStorage.getSecure('refresh_token');
+            if (refreshToken != null) {
+              // Créer une instance ApiService pour utiliser sa méthode de refresh
+              final apiService = ApiService();
+              // Faire une requête qui déclenchera le refresh automatique via l'intercepteur
+              // L'intercepteur ApiService gère automatiquement le refresh sur 401
+              await Future.delayed(const Duration(milliseconds: 500));
+              final retryUserData = await _userService.getCurrentUser();
+              if (retryUserData != null) {
+                _user = retryUserData;
+                _isAuthenticated = true;
+              } else {
+                _isAuthenticated = false;
+                _user = null;
+              }
+            } else {
+              _isAuthenticated = false;
+              _user = null;
+            }
+          } catch (refreshError) {
+            // Si le refresh échoue, déconnecter
             _isAuthenticated = false;
             _user = null;
           }
-        } catch (e) {
-          // En cas d'erreur, considérer comme non authentifié
-          _isAuthenticated = false;
-          _user = null;
         }
       } else {
         _isAuthenticated = false;

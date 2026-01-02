@@ -72,6 +72,7 @@ class FilesProvider with ChangeNotifier {
         folderId: folderId,
         skip: skip,
         limit: limit,
+        force: force, // Passer le paramètre force pour désactiver le cache si nécessaire
       );
       
       if (response.statusCode == 200) {
@@ -247,22 +248,30 @@ class FilesProvider with ChangeNotifier {
   Future<bool> deleteFile(String fileId, {String? currentFolderId}) async {
     try {
       _error = null;
+      final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+      
+      // Invalider le cache AVANT la suppression pour éviter les problèmes de cache
+      await PerformanceCache.remove('files_${folderIdToReload ?? 'root'}_0_50');
+      
       final response = await _apiService.deleteFile(fileId);
       if (response.statusCode == 200) {
         // Retirer immédiatement de la liste pour un feedback instantané
         _files.removeWhere((f) => f.id == fileId);
         notifyListeners();
+        
+        // Invalider tous les caches liés aux fichiers
+        await PerformanceCache.clear();
+        
         // Recharger pour s'assurer de la synchronisation avec le bon folderId
-        final folderIdToReload = currentFolderId ?? _currentFolder?.id;
         await loadFiles(folderId: folderIdToReload, force: true);
         return true;
       } else {
-        _error = 'Erreur lors de la suppression du fichier';
+        _error = 'Erreur lors de la suppression du fichier (code: ${response.statusCode})';
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _error = e.toString();
+      _error = 'Erreur lors de la suppression: ${e.toString()}';
       notifyListeners();
       return false;
     }
@@ -271,13 +280,21 @@ class FilesProvider with ChangeNotifier {
   Future<bool> deleteFolder(String folderId, {String? currentFolderId}) async {
     try {
       _error = null;
+      final folderIdToReload = currentFolderId ?? _currentFolder?.id;
+      
+      // Invalider le cache AVANT la suppression
+      await PerformanceCache.remove('files_${folderIdToReload ?? 'root'}_0_50');
+      
       final response = await _apiService.deleteFolder(folderId);
       if (response.statusCode == 200) {
         // Retirer immédiatement de la liste pour un feedback instantané
         _folders.removeWhere((f) => f.id == folderId);
         notifyListeners();
+        
+        // Invalider tous les caches liés
+        await PerformanceCache.clear();
+        
         // Recharger pour s'assurer de la synchronisation avec le bon folderId
-        final folderIdToReload = currentFolderId ?? _currentFolder?.id;
         await loadFiles(folderId: folderIdToReload, force: true);
         return true;
       } else {

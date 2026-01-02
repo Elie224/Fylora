@@ -372,12 +372,13 @@ class ApiService {
   // ============================================
 
   /// Lister les fichiers et dossiers
-  Future<Response> listFiles({String? folderId, int? skip, int? limit}) async {
+  Future<Response> listFiles({String? folderId, int? skip, int? limit, bool force = false}) async {
     final queryParams = <String, dynamic>{};
     if (folderId != null) queryParams['folder_id'] = folderId; // Backend attend 'folder_id', pas 'folder'
     if (skip != null) queryParams['skip'] = skip;
     if (limit != null) queryParams['limit'] = limit;
-    return await get('/files', queryParameters: queryParams.isEmpty ? null : queryParams);
+    // Si force = true, ne pas utiliser le cache
+    return await get('/files', queryParameters: queryParams.isEmpty ? null : queryParams, useCache: !force);
   }
 
   /// Obtenir un dossier
@@ -405,11 +406,16 @@ class ApiService {
 
   /// Supprimer un fichier
   Future<Response> deleteFile(String fileId) async {
+    // Invalider le cache des fichiers avant la suppression
+    await _cache.remove('/files');
     return await delete('/files/$fileId');
   }
 
   /// Supprimer un dossier
   Future<Response> deleteFolder(String folderId) async {
+    // Invalider le cache des fichiers et dossiers avant la suppression
+    await _cache.remove('/files');
+    await _cache.remove('/folders');
     return await delete('/folders/$folderId');
   }
 
