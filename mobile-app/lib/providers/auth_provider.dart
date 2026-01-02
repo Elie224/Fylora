@@ -184,12 +184,28 @@ class AuthProvider with ChangeNotifier {
     try {
       final apiService = ApiService();
       
-      // Pour Google natif, envoyer les tokens au backend pour validation
-      if (provider == 'google' && oauthData.containsKey('id_token')) {
-        final response = await apiService.post('/auth/google/verify', data: {
-          'id_token': oauthData['id_token'],
-          'access_token': oauthData['access_token'],
-        });
+      // Pour Google natif/web, envoyer les tokens au backend pour validation
+      if (provider == 'google' && (oauthData.containsKey('id_token') || oauthData.containsKey('access_token'))) {
+        final requestData = <String, dynamic>{};
+        
+        if (oauthData.containsKey('id_token')) {
+          requestData['id_token'] = oauthData['id_token'];
+        }
+        if (oauthData.containsKey('access_token')) {
+          requestData['access_token'] = oauthData['access_token'];
+        }
+        // Sur le web, envoyer aussi les infos utilisateur
+        if (oauthData.containsKey('email')) {
+          requestData['email'] = oauthData['email'];
+        }
+        if (oauthData.containsKey('display_name')) {
+          requestData['display_name'] = oauthData['display_name'];
+        }
+        if (oauthData.containsKey('photo_url')) {
+          requestData['photo_url'] = oauthData['photo_url'];
+        }
+        
+        final response = await apiService.post('/auth/google/verify', data: requestData);
         
         if (response.statusCode == 200 || response.statusCode == 201) {
           final data = response.data['data'];

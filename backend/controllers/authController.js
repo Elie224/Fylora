@@ -420,46 +420,76 @@ async function logout(req, res, next) {
 }
 
 /**
- * Vérifier et valider un token Google natif (pour mobile)
+ * Vérifier et valider un token Google natif (pour mobile/web)
  * Crée ou met à jour l'utilisateur et génère les tokens JWT
+ * Accepte soit id_token (mobile) soit access_token + user info (web)
  */
 async function verifyGoogleToken(req, res, next) {
   try {
-    const { id_token, access_token } = req.body;
+    const { id_token, access_token, email, display_name, photo_url } = req.body;
 
-    if (!id_token) {
+    let email_final, displayName_final, photoUrl_final, google_id;
+
+    // Si id_token est présent (mobile), l'utiliser
+    if (id_token) {
+      // Vérifier le token Google avec Google OAuth2
+      const { OAuth2Client } = require('google-auth-library');
+      const client = new OAuth2Client(config.oauth?.google?.clientId);
+
+      let ticket;
+      try {
+        ticket = await client.verifyIdToken({
+          idToken: id_token,
+          audience: config.oauth?.google?.clientId,
+        });
+      } catch (error) {
+        logger.logError(error, { contexte: 'vérification_token_google' });
+        return res.status(401).json({
+          error: {
+            message: 'Token Google invalide',
+          },
+        });
+      }
+
+      const payload = ticket.getPayload();
+      email_final = payload.email;
+      displayName_final = payload.name || payload.given_name || email_final.split('@')[0];
+      photoUrl_final = payload.picture;
+      google_id = payload.sub;
+    } 
+    // Sinon, utiliser access_token + user info (web)
+    else if (access_token && email) {
+      // Vérifier l'access_token en récupérant les infos utilisateur depuis Google
+      const axios = require('axios');
+      try {
+        const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+
+        const userInfo = userInfoResponse.data;
+        email_final = email || userInfo.email;
+        displayName_final = display_name || userInfo.name || userInfo.given_name || email_final.split('@')[0];
+        photoUrl_final = photo_url || userInfo.picture;
+        google_id = userInfo.id;
+      } catch (error) {
+        logger.logError(error, { contexte: 'vérification_access_token_google' });
+        return res.status(401).json({
+          error: {
+            message: 'Access token Google invalide',
+          },
+        });
+      }
+    } else {
       return res.status(400).json({
         error: {
-          message: 'Token Google manquant',
+          message: 'Token Google manquant (id_token ou access_token requis)',
         },
       });
     }
 
-    // Vérifier le token Google avec Google OAuth2
-    const { OAuth2Client } = require('google-auth-library');
-    const client = new OAuth2Client(config.oauth?.google?.clientId);
-
-    let ticket;
-    try {
-      ticket = await client.verifyIdToken({
-        idToken: id_token,
-        audience: config.oauth?.google?.clientId,
-      });
-    } catch (error) {
-      logger.logError(error, { contexte: 'vérification_token_google' });
-      return res.status(401).json({
-        error: {
-          message: 'Token Google invalide',
-        },
-      });
-    }
-
-    const payload = ticket.getPayload();
-    const email = payload.email;
-    const displayName = payload.name || payload.given_name || email.split('@')[0];
-    const photoUrl = payload.picture;
-
-    if (!email) {
+    if (!email_final) {
       return res.status(400).json({
         error: {
           message: 'Email non trouvé dans le profil Google',
@@ -468,18 +498,18 @@ async function verifyGoogleToken(req, res, next) {
     }
 
     // Chercher ou créer l'utilisateur
-    let utilisateur = await User.findByEmail(email);
+    let utilisateur = await User.findByEmail(email_final);
 
     if (!utilisateur) {
       // Créer un nouvel utilisateur OAuth
       utilisateur = await User.create({
-        email,
-        display_name: displayName,
-        avatar_url: photoUrl,
+        email: email_final,
+        display_name: displayName_final,
+        avatar_url: photoUrl_final,
         password_hash: null, // Pas de mot de passe pour les comptes OAuth
-        google_id: payload.sub,
+        google_id: google_id,
       });
-      logger.logInfo(`Nouvel utilisateur Google créé: ${email}`, { userId: utilisateur.id });
+      logger.logInfo(`Nouvel utilisateur Google créé: ${email_final}`, { userId: utilisateur.id });
 
       // Créer le dossier racine
       const FolderModel = require('../models/folderModel');
@@ -490,12 +520,16 @@ async function verifyGoogleToken(req, res, next) {
       });
     } else {
       // Mettre à jour les informations OAuth si nécessaire
-      if (!utilisateur.google_id) {
-        utilisateur.google_id = payload.sub;
+      if (!utilisateur.google_id && google_id) {
+        utilisateur.google_id = google_id;
         await utilisateur.save();
       }
-      if (photoUrl && !utilisateur.avatar_url) {
-        utilisateur.avatar_url = photoUrl;
+      if (photoUrl_final && !utilisateur.avatar_url) {
+        utilisateur.avatar_url = photoUrl_final;
+        await utilisateur.save();
+      }
+      if (displayName_final && !utilisateur.display_name) {
+        utilisateur.display_name = displayName_final;
         await utilisateur.save();
       }
       await User.updateLastLogin(utilisateur.id);
