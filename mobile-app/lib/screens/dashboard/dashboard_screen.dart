@@ -130,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : null,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       authProvider.user?['display_name'] ?? authProvider.user?['displayName'] ?? authProvider.user?['email'] ?? 'Utilisateur',
                       style: const TextStyle(
@@ -140,7 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     if (authProvider.user?['email'] != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         authProvider.user!['email'],
                         style: TextStyle(

@@ -1282,8 +1282,7 @@ class _FilesScreenState extends State<FilesScreen> {
       
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
-        type: FileType.custom,
-        allowedExtensions: null, // Permet tous les types de fichiers
+        type: FileType.any, // Utiliser FileType.any au lieu de FileType.custom pour éviter les problèmes sur web
       );
 
       if (result != null && result.files.isNotEmpty) {

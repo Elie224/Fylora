@@ -30,16 +30,16 @@ class ViewPreloader {
   Future<void> preloadKeyViews(String userId) async {
     final apiService = ApiService();
 
-    // Précharger le dashboard
+    // Précharger le dashboard (pas besoin de /api car baseUrl l'inclut déjà)
     await preloadView('dashboard', () async {
-      final response = await apiService.get('/api/dashboard');
+      final response = await apiService.get('/dashboard');
       await _cache.set('dashboard:$userId', response.data, priority: CachePriority.high);
       return response.data;
     });
 
-    // Précharger les fichiers récents
+    // Précharger les fichiers récents (pas besoin de /api car baseUrl l'inclut déjà)
     await preloadView('recentFiles', () async {
-      final response = await apiService.get('/api/files', queryParameters: {'limit': '10'});
+      final response = await apiService.get('/files', queryParameters: {'limit': 10});
       await _cache.set('recent:$userId', response.data, priority: CachePriority.high);
       return response.data;
     });
