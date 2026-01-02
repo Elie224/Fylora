@@ -374,7 +374,7 @@ class ApiService {
   /// Lister les fichiers et dossiers
   Future<Response> listFiles({String? folderId, int? skip, int? limit}) async {
     final queryParams = <String, dynamic>{};
-    if (folderId != null) queryParams['folder'] = folderId;
+    if (folderId != null) queryParams['folder_id'] = folderId; // Backend attend 'folder_id', pas 'folder'
     if (skip != null) queryParams['skip'] = skip;
     if (limit != null) queryParams['limit'] = limit;
     return await get('/files', queryParameters: queryParams.isEmpty ? null : queryParams);

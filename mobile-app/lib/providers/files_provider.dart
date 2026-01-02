@@ -38,11 +38,13 @@ class FilesProvider with ChangeNotifier {
     ) ?? [];
   }
   
-  Future<void> loadFiles({String? folderId, int skip = 0, int limit = 50}) async {
-    // Throttle pour éviter les appels trop fréquents
-    final throttleKey = 'loadFiles_${folderId ?? 'root'}';
-    if (!PerformanceOptimizer.throttle(throttleKey, const Duration(milliseconds: 300))) {
-      return; // Ignorer si appelé trop récemment
+  Future<void> loadFiles({String? folderId, int skip = 0, int limit = 50, bool force = false}) async {
+    // Throttle pour éviter les appels trop fréquents (sauf si force = true)
+    if (!force) {
+      final throttleKey = 'loadFiles_${folderId ?? 'root'}';
+      if (!PerformanceOptimizer.throttle(throttleKey, const Duration(milliseconds: 300))) {
+        return; // Ignorer si appelé trop récemment
+      }
     }
     
     _isLoading = true;

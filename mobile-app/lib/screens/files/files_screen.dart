@@ -32,11 +32,25 @@ class _FilesScreenState extends State<FilesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<FilesProvider>(context, listen: false)
-          .loadFiles(folderId: widget.folderId);
-      _loadBreadcrumbs();
-      _loadFileTags();
+      _loadFiles();
     });
+  }
+
+  @override
+  void didUpdateWidget(FilesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si le folderId a changé, recharger les fichiers
+    if (oldWidget.folderId != widget.folderId) {
+      _loadFiles();
+    }
+  }
+
+  void _loadFiles() {
+    final filesProvider = Provider.of<FilesProvider>(context, listen: false);
+    // Forcer le rechargement quand on navigue vers un nouveau dossier
+    filesProvider.loadFiles(folderId: widget.folderId, force: true);
+    _loadBreadcrumbs();
+    _loadFileTags();
   }
 
   Future<void> _loadFileTags() async {
