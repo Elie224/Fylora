@@ -144,24 +144,54 @@ class _TrashScreenState extends State<TrashScreen> {
 
     if (confirmed == true) {
       try {
-        await _apiService.permanentlyDeleteFile(fileId);
+        final response = await _apiService.permanentlyDeleteFile(fileId);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fichier supprimé définitivement'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          _loadTrash();
+          if (response.statusCode == 200) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fichier supprimé définitivement'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            _loadTrash();
+          } else if (response.statusCode == 404) {
+            // Le fichier a déjà été supprimé, juste rafraîchir la liste
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fichier déjà supprimé'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            _loadTrash();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur lors de la suppression (code: ${response.statusCode})'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          // Si c'est une erreur 404, c'est normal (fichier déjà supprimé)
+          final errorString = e.toString();
+          if (errorString.contains('404') || errorString.contains('not found')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fichier déjà supprimé'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            _loadTrash();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     }
@@ -189,24 +219,54 @@ class _TrashScreenState extends State<TrashScreen> {
 
     if (confirmed == true) {
       try {
-        await _apiService.permanentlyDeleteFolder(folderId);
+        final response = await _apiService.permanentlyDeleteFolder(folderId);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dossier supprimé définitivement'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          _loadTrash();
+          if (response.statusCode == 200) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Dossier supprimé définitivement'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            _loadTrash();
+          } else if (response.statusCode == 404) {
+            // Le dossier a déjà été supprimé, juste rafraîchir la liste
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Dossier déjà supprimé'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            _loadTrash();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur lors de la suppression (code: ${response.statusCode})'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          // Si c'est une erreur 404, c'est normal (dossier déjà supprimé)
+          final errorString = e.toString();
+          if (errorString.contains('404') || errorString.contains('not found')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Dossier déjà supprimé'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            _loadTrash();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     }
@@ -218,7 +278,13 @@ class _TrashScreenState extends State<TrashScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
         ),
         title: const Text('Corbeille'),
         actions: [
