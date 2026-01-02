@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import '../utils/security.dart' show isValidEmail, isValidPassword;
 import 'secure_storage.dart' show SecureStorage;
 import '../utils/constants.dart';
@@ -246,18 +247,76 @@ class ApiService {
     );
   }
 
-  /// Upload de fichier avec progression, retry et timeout
+  /// Upload de fichier avec progression, retry et timeout (mobile uniquement)
   Future<Response> uploadFile(
     String path,
     File file, {
     String fieldName = 'file',
     Function(int, int)? onProgress,
   }) async {
+    if (kIsWeb) {
+      throw UnsupportedError('uploadFile(File) ne fonctionne pas sur le web. Utilisez uploadFileFromPlatform.');
+    }
+    
+    // Utiliser le dernier élément du chemin (fonctionne avec / et \)
+    final fileName = file.path.split('/').last.split('\\').last;
     final formData = FormData.fromMap({
       fieldName: await MultipartFile.fromFile(
         file.path,
-        filename: file.path.split('/').last,
+        filename: fileName,
       ),
+    });
+
+    return await _timeoutManager.withTimeout(
+      () => _retry.execute(() async {
+        return await _dio.post(
+          path,
+          data: formData,
+          onSendProgress: onProgress,
+          options: Options(
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          ),
+        );
+      }),
+      'fileUpload',
+    );
+  }
+  
+  /// Upload de fichier avec PlatformFile (support web et mobile)
+  Future<Response> uploadFileFromPlatform(
+    String path,
+    PlatformFile platformFile, {
+    String fieldName = 'file',
+    String? folderId,
+    Function(int, int)? onProgress,
+  }) async {
+    MultipartFile multipartFile;
+    
+    if (kIsWeb) {
+      // Sur le web, utiliser bytes
+      if (platformFile.bytes == null) {
+        throw ArgumentError('PlatformFile.bytes est null. Impossible d\'uploader le fichier.');
+      }
+      multipartFile = MultipartFile.fromBytes(
+        platformFile.bytes!,
+        filename: platformFile.name,
+      );
+    } else {
+      // Sur mobile, utiliser le chemin du fichier
+      if (platformFile.path == null) {
+        throw ArgumentError('PlatformFile.path est null. Impossible d\'uploader le fichier.');
+      }
+      multipartFile = await MultipartFile.fromFile(
+        platformFile.path!,
+        filename: platformFile.name,
+      );
+    }
+    
+    final formData = FormData.fromMap({
+      fieldName: multipartFile,
+      if (folderId != null) 'folder_id': folderId,
     });
 
     return await _timeoutManager.withTimeout(

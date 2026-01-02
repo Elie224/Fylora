@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -139,54 +140,112 @@ class _FilesScreenState extends State<FilesScreen> {
 
   Future<void> _downloadFile(FileItem file) async {
     try {
-      // Demander la permission de stockage
-      if (await Permission.storage.request().isGranted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator()),
-        );
-
+      if (!mounted) return;
+      
+      // Sur web, utiliser le téléchargement direct via l'URL
+      if (kIsWeb) {
         try {
+          // Sur web, utiliser l'API directement pour obtenir le blob
           final response = await _apiService.downloadFile(file.id);
-          
-          if (response.statusCode == 200) {
-            final directory = await getExternalStorageDirectory();
-            if (directory != null) {
-              final filePath = '${directory.path}/Download/${file.name}';
-              final savedFile = File(filePath);
-              await savedFile.create(recursive: true);
-              await savedFile.writeAsBytes(response.data);
-              
-              if (mounted) {
-                Navigator.pop(context); // Fermer le dialogue
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Fichier téléchargé: $filePath'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
+          if (response.statusCode == 200 && response.data != null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Téléchargement démarré'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Erreur: réponse invalide du serveur'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           }
         } catch (e) {
           if (mounted) {
-            Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Erreur: $e'),
+                content: Text('Erreur lors du téléchargement: $e'),
                 backgroundColor: Colors.red,
               ),
             );
           }
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permission de stockage refusée'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        return;
+      }
+      
+      // Sur mobile, demander la permission de stockage
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permission de stockage refusée'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final response = await _apiService.downloadFile(file.id);
+        
+        if (response.statusCode == 200 && response.data != null) {
+          final directory = await getExternalStorageDirectory();
+          if (directory != null) {
+            final downloadDir = Directory('${directory.path}/Download');
+            if (!await downloadDir.exists()) {
+              await downloadDir.create(recursive: true);
+            }
+            
+            final filePath = '${downloadDir.path}/${file.name}';
+            final savedFile = File(filePath);
+            await savedFile.writeAsBytes(response.data);
+            
+            if (mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Fichier téléchargé: ${file.name}'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            if (mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Erreur: réponse invalide du serveur'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur lors du téléchargement: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -209,7 +268,13 @@ class _FilesScreenState extends State<FilesScreen> {
         leading: widget.folderId != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => context.pop(),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/dashboard');
+                  }
+                },
               )
             : null,
         title: Column(
@@ -248,7 +313,16 @@ class _FilesScreenState extends State<FilesScreen> {
                 child: Row(
                   children: [
                     InkWell(
-                      onTap: () => context.go('/files'),
+                      onTap: () {
+                        if (context.canPop()) {
+                          // Remonter jusqu'à la racine
+                          while (context.canPop()) {
+                            context.pop();
+                          }
+                        } else {
+                          context.go('/files');
+                        }
+                      },
                       child: Row(
                         children: [
                           const Icon(Icons.home, size: 16),
@@ -261,7 +335,10 @@ class _FilesScreenState extends State<FilesScreen> {
                       children: [
                         const Icon(Icons.chevron_right, size: 16),
                         InkWell(
-                          onTap: () => context.go('/files?folder=${folder.id}'),
+                          onTap: () {
+                            // Naviguer vers ce dossier dans l'historique
+                            context.go('/files?folder=${folder.id}');
+                          },
                           child: Text(folder.name),
                         ),
                       ],
@@ -398,7 +475,7 @@ class _FilesScreenState extends State<FilesScreen> {
             ),
           ),
           onTap: () {
-            context.go('/files?folder=${folder.id}');
+            context.push('/files?folder=${folder.id}');
           },
           trailing: PopupMenuButton(
             itemBuilder: (context) => [
@@ -455,7 +532,7 @@ class _FilesScreenState extends State<FilesScreen> {
             ],
             onSelected: (value) async {
               if (value == 'share') {
-                context.go('/share?folder=${folder.id}');
+                context.push('/share?folder=${folder.id}');
               } else if (value == 'download') {
                 await _downloadFolder(folder.id);
               } else if (value == 'move') {
@@ -668,7 +745,7 @@ class _FilesScreenState extends State<FilesScreen> {
           if (value == 'gallery') {
             _openImageGallery(file);
           } else if (value == 'share') {
-            context.go('/share?file=${file.id}');
+            context.push('/share?file=${file.id}');
           } else if (value == 'download') {
             await _downloadFile(file);
           } else if (value == 'tags') {
@@ -732,8 +809,14 @@ class _FilesScreenState extends State<FilesScreen> {
               final success = await filesProvider.createFolder(name);
               
               if (context.mounted) {
+                Navigator.pop(context);
                 if (success) {
-                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Dossier créé avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -773,13 +856,27 @@ class _FilesScreenState extends State<FilesScreen> {
             onPressed: () async {
               if (nameController.text.isNotEmpty) {
                 final filesProvider = Provider.of<FilesProvider>(context, listen: false);
-                if (isFolder) {
-                  await filesProvider.renameFolder(id, nameController.text);
-                } else {
-                  await filesProvider.renameFile(id, nameController.text);
-                }
+                final success = isFolder
+                    ? await filesProvider.renameFolder(id, nameController.text)
+                    : await filesProvider.renameFile(id, nameController.text);
+                
                 if (context.mounted) {
                   Navigator.pop(context);
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Élément renommé avec succès'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(filesProvider.error ?? 'Erreur lors du renommage'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -906,13 +1003,27 @@ class _FilesScreenState extends State<FilesScreen> {
           ElevatedButton(
             onPressed: () async {
               final filesProvider = Provider.of<FilesProvider>(context, listen: false);
-              if (isFolder) {
-                await filesProvider.deleteFolder(id);
-              } else {
-                await filesProvider.deleteFile(id);
-              }
+              final success = isFolder
+                  ? await filesProvider.deleteFolder(id)
+                  : await filesProvider.deleteFile(id);
+              
               if (context.mounted) {
                 Navigator.pop(context);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Élément supprimé avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(filesProvider.error ?? 'Erreur lors de la suppression'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -925,6 +1036,60 @@ class _FilesScreenState extends State<FilesScreen> {
 
   Future<void> _downloadFolder(String folderId) async {
     try {
+      if (!mounted) return;
+      
+      // Sur web, utiliser le téléchargement direct via l'URL
+      if (kIsWeb) {
+        try {
+          final filesProvider = Provider.of<FilesProvider>(context, listen: false);
+          final response = await filesProvider.downloadFolder(folderId);
+          if (response.statusCode == 200 && response.data != null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Téléchargement du dossier démarré'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Erreur: réponse invalide du serveur'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur lors du téléchargement: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+        return;
+      }
+      
+      // Sur mobile
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permission de stockage refusée'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
+      if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -935,24 +1100,38 @@ class _FilesScreenState extends State<FilesScreen> {
         final filesProvider = Provider.of<FilesProvider>(context, listen: false);
         final response = await filesProvider.downloadFolder(folderId);
         
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 && response.data != null) {
           final directory = await getExternalStorageDirectory();
           if (directory != null) {
+            final downloadDir = Directory('${directory.path}/Download');
+            if (!await downloadDir.exists()) {
+              await downloadDir.create(recursive: true);
+            }
+            
             final folderName = 'folder_$folderId.zip';
-            final filePath = '${directory.path}/Download/$folderName';
+            final filePath = '${downloadDir.path}/$folderName';
             final savedFile = File(filePath);
-            await savedFile.create(recursive: true);
             await savedFile.writeAsBytes(response.data);
             
             if (mounted) {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Dossier téléchargé: $filePath'),
+                  content: Text('Dossier téléchargé: $folderName'),
                   backgroundColor: Colors.green,
                 ),
               );
             }
+          }
+        } else {
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur: réponse invalide du serveur'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         }
       } catch (e) {
@@ -960,7 +1139,7 @@ class _FilesScreenState extends State<FilesScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur: $e'),
+              content: Text('Erreur lors du téléchargement: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1118,11 +1297,11 @@ class _FilesScreenState extends State<FilesScreen> {
         int successCount = 0;
         int failCount = 0;
 
-        for (var file in result.files) {
-          if (file.path != null) {
-            final filePath = File(file.path!);
-            final success = await filesProvider.uploadFile(
-              filePath.path,
+        for (var platformFile in result.files) {
+          // Vérifier que le fichier est valide (path sur mobile ou bytes sur web)
+          if ((!kIsWeb && platformFile.path != null) || (kIsWeb && platformFile.bytes != null)) {
+            final success = await filesProvider.uploadFileFromPlatform(
+              platformFile,
               folderId: widget.folderId,
               onProgress: (sent, total) {
                 // TODO: Afficher la progression pour chaque fichier
@@ -1133,7 +1312,14 @@ class _FilesScreenState extends State<FilesScreen> {
               successCount++;
             } else {
               failCount++;
+              // Afficher l'erreur spécifique si disponible
+              if (filesProvider.error != null) {
+                print('Erreur upload ${platformFile.name}: ${filesProvider.error}');
+              }
             }
+          } else {
+            failCount++;
+            print('Fichier invalide: ${platformFile.name} (path: ${platformFile.path}, bytes: ${platformFile.bytes?.length})');
           }
         }
 

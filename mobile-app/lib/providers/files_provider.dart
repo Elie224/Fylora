@@ -9,6 +9,7 @@ import '../utils/performance_optimizer.dart';
 import '../utils/performance_cache.dart';
 import '../utils/secure_logger.dart';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 
 class FilesProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -113,16 +114,6 @@ class FilesProvider with ChangeNotifier {
   
   Future<bool> uploadFile(String filePath, {String? folderId, Function(int, int)? onProgress}) async {
     try {
-      final file = File(filePath);
-      
-      // Validation de sécurité du fichier avant upload
-      final validation = FileSecurity.validateFile(file);
-      if (!validation.isValid) {
-        _error = validation.error ?? 'Fichier invalide';
-        notifyListeners();
-        return false;
-      }
-      
       // Rate limiting pour les uploads
       if (!uploadRateLimiter.canMakeRequest('upload')) {
         final waitTime = uploadRateLimiter.getTimeUntilNextRequest('upload');
@@ -131,31 +122,101 @@ class FilesProvider with ChangeNotifier {
         return false;
       }
       
-      final path = folderId != null ? '/api/files?folder=$folderId' : '/api/files';
-      final response = await _apiService.uploadFile(
-        path,
-        file,
-        onProgress: onProgress,
-      );
-      
-      if (response.statusCode == 201) {
-        // Invalider le cache pour forcer le rechargement
-        await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
-        await loadFiles(folderId: folderId);
-        return true;
+      // Sur mobile, utiliser File de dart:io
+      if (!kIsWeb) {
+        final file = File(filePath);
+        
+        // Validation de sécurité du fichier avant upload (uniquement sur mobile)
+        final validation = FileSecurity.validateFile(file);
+        if (!validation.isValid) {
+          _error = validation.error ?? 'Fichier invalide';
+          notifyListeners();
+          return false;
+        }
+        
+        final path = folderId != null ? '/files?folder=$folderId' : '/files';
+        final response = await _apiService.uploadFile(
+          path,
+          file,
+          onProgress: onProgress,
+        );
+        
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          // Invalider le cache pour forcer le rechargement
+          await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
+          await loadFiles(folderId: folderId);
+          return true;
+        } else {
+          _error = 'Erreur lors de l\'upload (code: ${response.statusCode})';
+          notifyListeners();
+          return false;
+        }
+      } else {
+        // Sur web, l'upload doit être fait différemment via PlatformFile
+        // Cette méthode ne doit pas être appelée directement sur le web
+        _error = 'Upload sur web non supporté via cette méthode';
+        notifyListeners();
+        return false;
       }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
+      return false;
     }
-    return false;
+  }
+  
+  /// Upload de fichier avec PlatformFile (support web et mobile)
+  Future<bool> uploadFileFromPlatform(PlatformFile platformFile, {String? folderId, Function(int, int)? onProgress}) async {
+    try {
+      // Rate limiting pour les uploads
+      if (!uploadRateLimiter.canMakeRequest('upload')) {
+        final waitTime = uploadRateLimiter.getTimeUntilNextRequest('upload');
+        _error = 'Trop d\'uploads. Veuillez attendre ${waitTime?.inSeconds ?? 0} secondes.';
+        notifyListeners();
+        return false;
+      }
+      
+      // Utiliser l'endpoint /files/upload avec folder_id dans le body si nécessaire
+      final response = await _apiService.uploadFileFromPlatform(
+        '/files/upload',
+        platformFile,
+        folderId: folderId,
+        onProgress: onProgress,
+      );
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        // Invalider le cache pour forcer le rechargement
+        await PerformanceCache.remove('files_${folderId ?? 'root'}_0_50');
+        await loadFiles(folderId: folderId);
+        return true;
+      } else {
+        _error = 'Erreur lors de l\'upload (code: ${response.statusCode})';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
   
   Future<bool> deleteFile(String fileId) async {
     try {
-      await _apiService.deleteFile(fileId);
-      await loadFiles(folderId: _currentFolder?.id);
-      return true;
+      _error = null;
+      final response = await _apiService.deleteFile(fileId);
+      if (response.statusCode == 200) {
+        // Retirer immédiatement de la liste pour un feedback instantané
+        _files.removeWhere((f) => f.id == fileId);
+        notifyListeners();
+        // Recharger pour s'assurer de la synchronisation
+        await loadFiles(folderId: _currentFolder?.id);
+        return true;
+      } else {
+        _error = 'Erreur lors de la suppression du fichier';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -165,9 +226,20 @@ class FilesProvider with ChangeNotifier {
   
   Future<bool> deleteFolder(String folderId) async {
     try {
-      await _apiService.deleteFolder(folderId);
-      await loadFiles(folderId: _currentFolder?.id);
-      return true;
+      _error = null;
+      final response = await _apiService.deleteFolder(folderId);
+      if (response.statusCode == 200) {
+        // Retirer immédiatement de la liste pour un feedback instantané
+        _folders.removeWhere((f) => f.id == folderId);
+        notifyListeners();
+        // Recharger pour s'assurer de la synchronisation
+        await loadFiles(folderId: _currentFolder?.id);
+        return true;
+      } else {
+        _error = 'Erreur lors de la suppression du dossier';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -177,9 +249,23 @@ class FilesProvider with ChangeNotifier {
   
   Future<bool> renameFile(String fileId, String newName) async {
     try {
-      await _apiService.renameFile(fileId, newName);
-      await loadFiles(folderId: _currentFolder?.id);
-      return true;
+      _error = null;
+      final response = await _apiService.renameFile(fileId, newName);
+      if (response.statusCode == 200) {
+        // Mettre à jour immédiatement dans la liste
+        final index = _files.indexWhere((f) => f.id == fileId);
+        if (index >= 0) {
+          _files[index] = FileItem.fromJson(response.data['data']);
+          notifyListeners();
+        }
+        // Recharger pour s'assurer de la synchronisation
+        await loadFiles(folderId: _currentFolder?.id);
+        return true;
+      } else {
+        _error = 'Erreur lors du renommage du fichier';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -189,9 +275,23 @@ class FilesProvider with ChangeNotifier {
   
   Future<bool> renameFolder(String folderId, String newName) async {
     try {
-      await _apiService.renameFolder(folderId, newName);
-      await loadFiles(folderId: _currentFolder?.id);
-      return true;
+      _error = null;
+      final response = await _apiService.renameFolder(folderId, newName);
+      if (response.statusCode == 200) {
+        // Mettre à jour immédiatement dans la liste
+        final index = _folders.indexWhere((f) => f.id == folderId);
+        if (index >= 0) {
+          _folders[index] = FolderItem.fromJson(response.data['data']);
+          notifyListeners();
+        }
+        // Recharger pour s'assurer de la synchronisation
+        await loadFiles(folderId: _currentFolder?.id);
+        return true;
+      } else {
+        _error = 'Erreur lors du renommage du dossier';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -201,9 +301,17 @@ class FilesProvider with ChangeNotifier {
   
   Future<bool> createFolder(String name, {String? parentId}) async {
     try {
-      await _apiService.createFolder(name, parentId: parentId ?? _currentFolder?.id);
-      await loadFiles(folderId: _currentFolder?.id);
-      return true;
+      _error = null;
+      final response = await _apiService.createFolder(name, parentId: parentId ?? _currentFolder?.id);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Invalider le cache et recharger
+        await loadFiles(folderId: _currentFolder?.id);
+        return true;
+      } else {
+        _error = 'Erreur lors de la création du dossier';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -225,6 +333,7 @@ class FilesProvider with ChangeNotifier {
   
   Future<bool> moveFolder(String folderId, String? parentId) async {
     try {
+      _error = null;
       await _apiService.moveFolder(folderId, parentId);
       await loadFiles(folderId: _currentFolder?.id);
       return true;
