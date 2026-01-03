@@ -55,10 +55,27 @@ export default function NoteTemplates({ onClose, onSelect }) {
       console.log('Creating note from template:', templateId);
       const response = await noteTemplatesService.createNoteFromTemplate(templateId);
       const note = response.data?.note;
+      
       if (note) {
-        navigate(`/notes/${note.id || note._id}`);
+        // Extraire l'ID de manière fiable
+        const noteId = note.id || note._id;
+        
+        if (!noteId) {
+          console.error('Note created but no ID found:', note);
+          alert('Note créée mais impossible de récupérer l\'ID');
+          return;
+        }
+        
+        // Convertir en string si c'est un objet
+        const noteIdString = typeof noteId === 'string' ? noteId : (noteId.toString ? noteId.toString() : String(noteId));
+        
+        console.log('Navigating to note:', noteIdString);
+        navigate(`/notes/${noteIdString}`);
         if (onSelect) onSelect();
         if (onClose) onClose();
+      } else {
+        console.error('No note in response:', response.data);
+        alert('Erreur: Note non créée');
       }
     } catch (err) {
       console.error('Failed to create note from template:', err);

@@ -136,11 +136,26 @@ exports.createNoteFromTemplate = async (req, res, next) => {
     template.usage_count = (template.usage_count || 0) + 1;
     await template.save();
 
-    await logActivity(req, 'note_create_from_template', 'note', note._id, { template_id });
+    // Logger l'activité (sans bloquer si ça échoue)
+    logActivity(req, 'note_create_from_template', 'note', note._id, { template_id }).catch(err => {
+      logger.logError(err, { context: 'logActivity_note_create_from_template' });
+    });
 
     logger.logInfo('Note created from template', { userId, note_id: note._id, template_id });
 
-    return successResponse(res, { note }, 201);
+    // Retourner la note avec l'ID formaté pour le frontend
+    return successResponse(res, { 
+      note: {
+        id: note._id.toString(),
+        _id: note._id.toString(),
+        title: note.title,
+        content: note.content,
+        owner_id: note.owner_id.toString(),
+        folder_id: note.folder_id ? note.folder_id.toString() : null,
+        created_at: note.created_at ? (note.created_at instanceof Date ? note.created_at.toISOString() : note.created_at) : new Date().toISOString(),
+        updated_at: note.updated_at ? (note.updated_at instanceof Date ? note.updated_at.toISOString() : note.updated_at) : new Date().toISOString(),
+      }
+    }, 201);
   } catch (error) {
     logger.logError(error, { context: 'createNoteFromTemplate' });
     next(error);
