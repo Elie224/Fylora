@@ -113,6 +113,9 @@ const uploadMiddleware = (req, res, next) => {
 // Cache simple en mémoire pour les Root folders (évite les requêtes répétées)
 const rootFolderCache = new Map();
 
+// Cache simple en mémoire pour les listes de fichiers (évite les requêtes répétées)
+const filesListCache = new Map();
+
 // Lister les fichiers d'un dossier
 // IMPORTANT: Même les admins ne peuvent voir que leurs propres fichiers
 // Le filtrage par owner_id garantit l'isolation des données entre utilisateurs
