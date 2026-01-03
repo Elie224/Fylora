@@ -2,12 +2,25 @@
 
 Ce guide explique comment définir `kouroumaelisee@gmail.com` comme administrateur de Fylora.
 
-## Méthode 1 : Script PowerShell (Windows - Recommandé)
+## Méthode 1 : Script Batch (Windows - Le plus simple)
 
-1. Ouvrez PowerShell dans le dossier `backend`
-2. Exécutez :
+1. Double-cliquez sur `backend\scripts\setAdmin.bat`
+   
+   OU
+
+2. Dans l'invite de commande (CMD) ou PowerShell :
+```cmd
+backend\scripts\setAdmin.bat
+```
+
+## Méthode 1b : Script PowerShell (si la politique d'exécution le permet)
+
+Si vous avez une erreur de politique d'exécution, utilisez plutôt le fichier `.bat` ci-dessus.
+
+Sinon, pour autoriser temporairement l'exécution :
 ```powershell
-.\scripts\setAdmin.ps1
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\backend\scripts\setAdmin.ps1
 ```
 
 ## Méthode 2 : Via npm (si Node.js est dans le PATH)
