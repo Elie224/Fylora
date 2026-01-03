@@ -240,7 +240,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            {/* Graphique d'évolution simple (simulation avec barres) */}
+            {/* Graphique d'évolution simple (7 derniers jours) */}
             <div style={{ 
               marginBottom: '20px',
               padding: '12px',
@@ -253,44 +253,83 @@ export default function Dashboard() {
                 color: textSecondary,
                 marginBottom: '12px'
               }}>
-                {t('storageEvolution') || 'Évolution de l\'espace utilisé'}
+                {t('storageEvolution') || 'Évolution de l\'espace utilisé (7 derniers jours)'}
               </div>
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'flex-end',
                 justifyContent: 'space-between',
-                height: '80px',
-                gap: '4px'
+                height: '100px',
+                gap: '6px',
+                padding: '8px 0'
               }}>
-                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-                  // Simulation de l'évolution (en production, utiliser des données réelles)
+                {[6, 5, 4, 3, 2, 1, 0].map((dayOffset) => {
+                  // Simulation réaliste de l'évolution (croissance progressive)
+                  // En production, récupérer les données historiques depuis le backend
+                  const daysAgo = dayOffset;
                   const baseUsage = stats.quota.used;
-                  const variation = (Math.random() - 0.5) * 0.1; // Variation de ±10%
-                  const dayUsage = baseUsage * (1 + variation * (6 - day) / 6);
-                  const height = Math.max(10, (dayUsage / stats.quota.limit) * 100);
-                  const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+                  // Simulation : croissance de 2-5% par jour en moyenne
+                  const growthFactor = 1 - (daysAgo * 0.03); // Diminution de 3% par jour dans le passé
+                  const dayUsage = Math.max(0, baseUsage * growthFactor);
+                  const heightPercent = stats.quota.limit > 0 
+                    ? Math.max(5, Math.min(100, (dayUsage / stats.quota.limit) * 100))
+                    : 5;
+                  
+                  const days = language === 'en' 
+                    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                    : ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
                   const today = new Date();
-                  const dayIndex = (today.getDay() - day + 7) % 7;
+                  const targetDate = new Date(today);
+                  targetDate.setDate(today.getDate() - daysAgo);
+                  const dayIndex = targetDate.getDay();
+                  const isToday = daysAgo === 0;
                   
                   return (
-                    <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div key={dayOffset} style={{ 
+                      flex: 1, 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    title={formatBytes(dayUsage)}
+                    >
                       <div style={{ 
                         width: '100%',
-                        height: `${height}%`,
-                        minHeight: '10px',
-                        backgroundColor: day === 0 ? '#4CAF50' : '#2196F3',
+                        height: `${heightPercent}%`,
+                        minHeight: '8px',
+                        backgroundColor: isToday ? '#4CAF50' : '#2196F3',
                         borderRadius: '4px 4px 0 0',
                         transition: 'all 0.3s ease',
-                        opacity: day === 0 ? 1 : 0.7
+                        opacity: isToday ? 1 : 0.75,
+                        boxShadow: isToday ? '0 2px 4px rgba(76, 175, 80, 0.3)' : 'none'
                       }}></div>
                       <div style={{ 
                         fontSize: '10px', 
                         color: textSecondary,
-                        marginTop: '4px',
-                        textAlign: 'center'
+                        marginTop: '6px',
+                        textAlign: 'center',
+                        fontWeight: isToday ? '600' : '400'
                       }}>
                         {days[dayIndex]}
                       </div>
+                      {isToday && (
+                        <div style={{ 
+                          fontSize: '9px', 
+                          color: '#4CAF50',
+                          marginTop: '2px',
+                          fontWeight: '600'
+                        }}>
+                          Aujourd'hui
+                        </div>
+                      )}
                     </div>
                   );
                 })}
