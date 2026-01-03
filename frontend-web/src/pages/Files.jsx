@@ -156,7 +156,14 @@ export default function Files() {
       // Forcer le rechargement sans cache si demandé
       const params = forceRefresh ? { _t: Date.now() } : {};
       const response = await fileService.list(currentFolder?.id || null, params);
-      setItems(response.data.data.items || []);
+      
+      // Vérifier la structure de réponse avant d'accéder aux données
+      if (!response || !response.data) {
+        throw new Error('Réponse invalide du serveur');
+      }
+      
+      const items = response.data?.data?.items || response.data?.items || [];
+      setItems(items);
     } catch (err) {
       console.error('Failed to load files:', err);
       const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur inconnue';

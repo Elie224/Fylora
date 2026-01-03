@@ -74,22 +74,24 @@ export default function Gallery() {
       setMediaFiles([]); // Vider la liste en cas d'erreur
       setGroupedByDate({});
       
-      // Afficher l'erreur avec showToast si disponible
-      try {
-        if (showToast && typeof showToast === 'function') {
-          showToast(`Erreur lors du chargement de la galerie: ${errorMessage}`, 'error');
+      // Afficher l'erreur avec showToast si disponible (sans dépendance pour éviter les re-renders)
+      const toastFn = showToast;
+      if (toastFn && typeof toastFn === 'function') {
+        try {
+          toastFn(`Erreur lors du chargement de la galerie: ${errorMessage}`, 'error');
+        } catch (toastErr) {
+          console.error('Erreur lors de l\'affichage du toast:', toastErr);
         }
-      } catch (toastErr) {
-        console.error('Erreur lors de l\'affichage du toast:', toastErr);
       }
     } finally {
       setLoading(false);
     }
-  }, [showToast]); // Inclure showToast mais avec vérification dans le catch
+  }, []); // Pas de dépendances pour éviter les re-renders infinis
 
   useEffect(() => {
     loadMediaFiles();
-  }, [loadMediaFiles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Charger une seule fois au montage
 
   const filteredFiles = useMemo(() => {
     if (filterType === 'all') return mediaFiles;
