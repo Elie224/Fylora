@@ -255,8 +255,58 @@ async function uploadFile(req, res, next) {
       return res.status(400).json({ error: { message: 'No file provided' } });
     }
 
-    const fileSize = req.file.size;
+    let fileSize = req.file.size;
     const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+
+    // Compression automatique des images
+    const isImage = req.file.mimetype?.startsWith('image/');
+    if (isImage) {
+      try {
+        const sharp = require('sharp');
+        const originalPath = req.file.path;
+        const compressedPath = path.join(path.dirname(originalPath), `compressed_${path.basename(originalPath)}`);
+        
+        // Compresser l'image avec Sharp
+        await sharp(originalPath)
+          .resize(1920, 1920, { 
+            fit: 'inside', 
+            withoutEnlargement: true 
+          })
+          .jpeg({ 
+            quality: 85, 
+            progressive: true,
+            mozjpeg: true 
+          })
+          .webp({ 
+            quality: 85 
+          })
+          .toFile(compressedPath);
+
+        // Vérifier si la compression a réduit la taille
+        const compressedStats = await fs.stat(compressedPath);
+        if (compressedStats.size < fileSize) {
+          // Remplacer l'original par la version compressée
+          await fs.unlink(originalPath).catch(() => {});
+          await fs.rename(compressedPath, originalPath);
+          fileSize = compressedStats.size;
+          logger.logInfo('Image compressed', {
+            userId,
+            originalSize: req.file.size,
+            compressedSize: fileSize,
+            reduction: `${((1 - fileSize / req.file.size) * 100).toFixed(1)}%`
+          });
+        } else {
+          // Garder l'original si la compression n'a pas réduit la taille
+          await fs.unlink(compressedPath).catch(() => {});
+        }
+      } catch (compressErr) {
+        // Si la compression échoue, continuer avec l'original
+        logger.logWarn('Image compression failed', {
+          error: compressErr.message,
+          file: req.file.originalname
+        });
+      }
+    }
 
     // OPTIMISATION: Utiliser quota_used stocké au lieu de recalculer (beaucoup plus rapide)
     // Utiliser mongoose directement pour avoir accès à .select()
@@ -270,7 +320,7 @@ async function uploadFile(req, res, next) {
     const currentUsed = user.quota_used || 0;
     const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
 
-    // Vérification rapide du quota
+    // Vérification rapide du quota (avec la taille après compression)
     if (currentUsed + fileSize > quotaLimit) {
       await fs.unlink(req.file.path).catch(() => {});
       return res.status(507).json({ error: { message: 'Insufficient storage quota' } });

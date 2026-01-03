@@ -8,6 +8,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { FileListSkeleton } from '../components/SkeletonLoader';
 import { VirtualList } from '../components/VirtualList';
 import { prefetchManager } from '../utils/prefetch';
+import { registerShortcut, CommonShortcuts } from '../utils/keyboardShortcuts';
 
 export default function Files() {
   const navigate = useNavigate();

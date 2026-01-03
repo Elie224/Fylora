@@ -26,6 +26,7 @@ const Search = lazy(() => import('./pages/Search'));
 const Trash = lazy(() => import('./pages/Trash'));
 const Activity = lazy(() => import('./pages/Activity'));
 const Gallery = lazy(() => import('./pages/Gallery'));
+const Calendar = lazy(() => import('./pages/Calendar'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 // Composant de chargement
