@@ -46,6 +46,26 @@ export default function NoteTemplates({ onClose, onSelect }) {
     }
   };
 
+  // Images de fond pour chaque catégorie de template
+  const categoryBackgrounds = {
+    meeting: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    project: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    education: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    work: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    personal: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    general: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  };
+
+  // Icônes pour chaque catégorie
+  const categoryIcons = {
+    meeting: '🤝',
+    project: '📊',
+    education: '📚',
+    work: '💼',
+    personal: '📝',
+    general: '📋',
+  };
+
   const categories = [
     { value: '', label: 'Tous', icon: '📋' },
     { value: 'general', label: 'Général', icon: '📄' },
