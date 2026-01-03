@@ -216,25 +216,12 @@ const FileModel = {
     const limit = filters.limit || 50;
     const skip = filters.skip || 0;
 
-    // Utiliser l'index approprié selon le tri
-    let hint = null;
-    if (sortBy === 'updated_at') {
-      hint = { owner_id: 1, is_deleted: 1, updated_at: -1 };
-    } else if (filters.mimeType) {
-      hint = { owner_id: 1, mime_type: 1, is_deleted: 1 };
-    }
-
-    const queryBuilder = File.find(matchQuery)
+    // MongoDB utilisera automatiquement les index disponibles
+    const files = await File.find(matchQuery)
       .sort({ [sortBy]: sortOrder })
       .limit(limit)
       .skip(skip)
       .lean();
-    
-    if (hint) {
-      queryBuilder.hint(hint);
-    }
-
-    const files = await queryBuilder;
     return files.map(f => this.toDTO(f));
   },
 

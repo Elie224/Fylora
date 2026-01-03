@@ -53,7 +53,8 @@ export default function Notes() {
 
   useEffect(() => {
     loadNotes();
-  }, [loadNotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder]);
 
   // Recharger les notes quand les filtres changent (avec debounce)
   useEffect(() => {
