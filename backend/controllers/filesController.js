@@ -110,6 +110,9 @@ const uploadMiddleware = (req, res, next) => {
   });
 };
 
+// Cache simple en mémoire pour les Root folders (évite les requêtes répétées)
+const rootFolderCache = new Map();
+
 // Lister les fichiers d'un dossier
 // IMPORTANT: Même les admins ne peuvent voir que leurs propres fichiers
 // Le filtrage par owner_id garantit l'isolation des données entre utilisateurs
@@ -124,27 +127,38 @@ async function listFiles(req, res, next) {
     // Si folderId est null (racine), récupérer ou créer le dossier Root
     let actualFolderId = folderId;
     if (!actualFolderId) {
-      // OPTIMISATION: Utiliser mongoose directement avec cache en mémoire (simple)
-      const mongoose = require('mongoose');
-      const Folder = mongoose.models.Folder || mongoose.model('Folder');
-      const ownerObjectId = new mongoose.Types.ObjectId(userId);
-      
-      // Requête optimisée pour trouver le Root folder (seulement _id)
-      let rootFolder = await Folder.findOne({ 
-        owner_id: ownerObjectId, 
-        name: 'Root', 
-        parent_id: null 
-      })
-      .select('_id')
-      .lean()
-      .maxTimeMS(5000); // Timeout de 5 secondes
-      
-      if (!rootFolder) {
-        // Créer le dossier Root s'il n'existe pas (en arrière-plan si possible)
-        rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
-        actualFolderId = rootFolder.id;
+      // Vérifier le cache d'abord
+      const cacheKey = `root_${userId}`;
+      if (rootFolderCache.has(cacheKey)) {
+        actualFolderId = rootFolderCache.get(cacheKey);
       } else {
-        actualFolderId = rootFolder._id.toString();
+        // OPTIMISATION: Utiliser mongoose directement avec requête optimisée
+        const mongoose = require('mongoose');
+        const Folder = mongoose.models.Folder || mongoose.model('Folder');
+        const ownerObjectId = new mongoose.Types.ObjectId(userId);
+        
+        // Requête optimisée pour trouver le Root folder (seulement _id) avec index explicite
+        let rootFolder = await Folder.findOne({ 
+          owner_id: ownerObjectId, 
+          name: 'Root', 
+          parent_id: null 
+        })
+        .select('_id')
+        .lean()
+        .maxTimeMS(2000) // Timeout réduit à 2 secondes
+        .hint({ owner_id: 1, name: 1, parent_id: 1 }); // Forcer l'utilisation d'un index
+        
+        if (!rootFolder) {
+          // Créer le dossier Root s'il n'existe pas
+          rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
+          actualFolderId = rootFolder.id;
+        } else {
+          actualFolderId = rootFolder._id.toString();
+        }
+        
+        // Mettre en cache (expire après 5 minutes)
+        rootFolderCache.set(cacheKey, actualFolderId);
+        setTimeout(() => rootFolderCache.delete(cacheKey), 5 * 60 * 1000);
       }
     } else {
       // OPTIMISATION: Vérifier le dossier avec une requête optimisée (seulement owner_id)
@@ -159,7 +173,8 @@ async function listFiles(req, res, next) {
       })
       .select('owner_id')
       .lean()
-      .maxTimeMS(5000); // Timeout de 5 secondes
+      .maxTimeMS(2000) // Timeout réduit à 2 secondes
+      .hint({ _id: 1, owner_id: 1 }); // Forcer l'utilisation d'un index
       
       if (!folder) {
         return res.status(404).json({ error: { message: 'Folder not found' } });
@@ -168,41 +183,33 @@ async function listFiles(req, res, next) {
 
     // Utiliser FileModel.findByOwner pour requêtes optimisées avec formatage cohérent
     const skipNum = parseInt(skip);
-    const limitNum = parseInt(limit);
+    const limitNum = Math.min(parseInt(limit) || 50, 100); // Limiter à 100 max
     
-    // OPTIMISATION: Récupérer en parallèle avec pagination optimisée
-    // Pour les dossiers, si folderId est null (racine), chercher les dossiers avec parent_id = null
-    // Pour les fichiers, utiliser actualFolderId (qui sera le Root si on est à la racine)
-    // OPTIMISATION: Ne pas compter si on n'a pas besoin (skip=0 et limit suffisant)
-    const needCount = skipNum === 0 && limitNum >= 100; // Compter seulement si nécessaire
+    // OPTIMISATION: Ne jamais compter pour les petites requêtes (améliore drastiquement les performances)
+    const needCount = false; // Désactiver le comptage pour améliorer les performances
     
     // Optimisation: findByOwner utilise déjà lean() en interne
-    const promises = [
+    // Exécuter les requêtes en parallèle avec timeout
+    const [files, folders] = await Promise.all([
       FileModel.findByOwner(userId, actualFolderId, false, { 
         skip: skipNum, 
         limit: limitNum, 
         sortBy: sort_by, 
         sortOrder: sort_order 
+      }).catch(err => {
+        logger.logError(err, { context: 'listFiles - FileModel.findByOwner' });
+        return [];
       }),
       FolderModel.findByOwner(userId, folderId, false, { 
         skip: skipNum, 
         limit: limitNum, 
         sortBy: sort_by, 
         sortOrder: sort_order 
+      }).catch(err => {
+        logger.logError(err, { context: 'listFiles - FolderModel.findByOwner' });
+        return [];
       }),
-    ];
-    
-    // Optimisation: Ne compter que si vraiment nécessaire (pagination)
-    if (needCount) {
-      promises.push(
-        FileModel.countByOwner(userId, actualFolderId, false),
-        FolderModel.countByOwner(userId, folderId, false)
-      );
-    } else {
-      promises.push(Promise.resolve(0), Promise.resolve(0));
-    }
-    
-    const [files, folders, totalFiles, totalFolders] = await Promise.all(promises);
+    ]);
 
     // Si on est à la racine (folderId est null), exclure le dossier Root de la liste
     // car l'utilisateur est déjà dans le Root
@@ -226,10 +233,8 @@ async function listFiles(req, res, next) {
       });
     }
 
-    // Calculer le total (si on n'a pas compté, utiliser la longueur des résultats)
-    const total = needCount 
-      ? (totalFiles + totalFolders)
-      : (files.length + folders.length);
+    // Calculer le total (utiliser la longueur des résultats pour éviter les requêtes coûteuses)
+    const total = items.length;
 
     res.status(200).json({
       data: {
@@ -238,7 +243,7 @@ async function listFiles(req, res, next) {
           total,
           skip: skipNum,
           limit: limitNum,
-          hasMore: needCount ? (skipNum + limitNum) < total : items.length >= limitNum,
+          hasMore: items.length >= limitNum, // Si on a récupéré le nombre demandé, il y a probablement plus
         },
       },
     });
