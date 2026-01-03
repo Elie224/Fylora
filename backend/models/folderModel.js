@@ -60,11 +60,13 @@ const FolderModel = {
       
       // Construire la requête optimisée - MongoDB utilisera automatiquement les index disponibles
       // Limiter les champs récupérés pour améliorer les performances
+      // Utiliser maxTimeMS pour éviter les requêtes trop longues
       const folders = await Folder.find(query)
         .select('name owner_id parent_id is_deleted created_at updated_at _id')
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
+        .maxTimeMS(3000) // Timeout de 3 secondes max
         .lean();
       return folders.map(f => this.toDTO(f));
     } catch (err) {

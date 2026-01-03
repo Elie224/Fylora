@@ -173,8 +173,7 @@ async function listFiles(req, res, next) {
       })
       .select('owner_id')
       .lean()
-      .maxTimeMS(2000) // Timeout réduit à 2 secondes
-      .hint({ _id: 1, owner_id: 1 }); // Forcer l'utilisation d'un index
+      .maxTimeMS(2000); // Timeout réduit à 2 secondes
       
       if (!folder) {
         return res.status(404).json({ error: { message: 'Folder not found' } });
