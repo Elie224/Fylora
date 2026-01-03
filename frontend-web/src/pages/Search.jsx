@@ -326,30 +326,91 @@ export default function Search() {
                     }) : '-'}
                   </td>
                   <td style={{ padding: '16px' }}>
-                    <button
-                      onClick={() => {
-                        if (item.item_type === 'folder' || item.type === 'folder') {
-                          navigate(`/files?folder=${item.id}`);
-                        } else {
-                          // Pour les fichiers, naviguer vers la page de prévisualisation
-                          navigate(`/preview/${item.id}`);
-                        }
-                      }}
-                      style={{
-                        padding: '8px 16px',
-                        fontSize: '14px',
-                        backgroundColor: '#2196F3',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
-                    >
-                      {t('view') || 'Voir'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          if (item.item_type === 'folder' || item.type === 'folder') {
+                            navigate(`/files?folder=${item.id}`);
+                          } else {
+                            // Pour les fichiers, naviguer vers la page de prévisualisation
+                            navigate(`/preview/${item.id}`);
+                          }
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '14px',
+                          backgroundColor: '#2196F3',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
+                      >
+                        {t('view') || 'Voir'}
+                      </button>
+                      {item.item_type !== 'folder' && item.type !== 'folder' && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                              const token = localStorage.getItem('access_token');
+                              
+                              if (!token) {
+                                alert(t('mustBeConnected') || 'Vous devez être connecté pour télécharger');
+                                return;
+                              }
+                              
+                              const itemId = item.id || item._id;
+                              if (!itemId) {
+                                alert(t('errorNoItemId') || 'Erreur: l\'élément n\'a pas d\'identifiant');
+                                return;
+                              }
+                              
+                              const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              
+                              if (!response.ok) {
+                                const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur lors du téléchargement' } }));
+                                throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
+                              }
+                              
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = item.name || 'file';
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } catch (err) {
+                              console.error('Download error:', err);
+                              alert(err.message || t('downloadError') || 'Erreur lors du téléchargement');
+                            }
+                          }}
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            backgroundColor: '#4CAF50',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#45a049'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#4CAF50'}
+                        >
+                          {t('download') || 'Télécharger'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -171,7 +171,12 @@ export default function Preview() {
       
     } catch (err) {
       console.error('Failed to load file:', err);
-      setError(t('cannotLoadFile') + ' ' + (err.message || t('unknownError')));
+      // Si c'est une erreur 404, afficher un message spécifique
+      if (err.message && err.message.includes('404') || err.message && err.message.includes('not found')) {
+        setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré.');
+      } else {
+        setError(t('cannotLoadFile') + ' ' + (err.message || t('unknownError')));
+      }
     } finally {
       setLoading(false);
     }
