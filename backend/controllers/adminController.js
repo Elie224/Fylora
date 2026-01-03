@@ -1,5 +1,6 @@
 const UserModel = require('../models/userModel');
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 // Statistiques générales
 async function getStats(req, res, next) {
@@ -467,6 +468,7 @@ module.exports = {
   getUsers,
   getUser,
   updateUser,
+  extendStorage,
   deleteUser,
   setAdminUser
 };
