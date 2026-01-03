@@ -604,7 +604,10 @@ async function previewFile(req, res, next) {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const file = await FileModel.findById(id);
+    // Utiliser File directement pour avoir accès à tous les champs, y compris is_deleted
+    const File = require('../models/fileModel').File || require('mongoose').model('File');
+    const file = await File.findById(id).lean();
+    
     if (!file) {
       return res.status(404).json({ error: { message: 'File not found' } });
     }
@@ -618,12 +621,26 @@ async function previewFile(req, res, next) {
       return res.status(403).json({ error: { message: 'Access denied' } });
     }
 
+    // Vérifier que le fichier n'est pas supprimé (sauf si on veut prévisualiser depuis la corbeille)
+    if (file.is_deleted) {
+      return res.status(404).json({ error: { message: 'File has been deleted' } });
+    }
+
+    // Vérifier que le fichier existe physiquement
+    const filePath = path.resolve(file.file_path);
+    try {
+      await fs.access(filePath);
+    } catch (accessErr) {
+      logger.logError('File not found on disk', { fileId: id, filePath, error: accessErr.message });
+      return res.status(404).json({ error: { message: 'File not found on disk' } });
+    }
+
     // Pour les images, PDF, texte - servir directement
     if (file.mime_type?.startsWith('image/') || 
         file.mime_type === 'application/pdf' ||
         file.mime_type?.startsWith('text/')) {
       res.setHeader('Content-Type', file.mime_type);
-      res.setHeader('Content-Disposition', `inline; filename="${file.name}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name)}"`);
       
       // Tracker l'utilisation
       trackFileUsage(id, userId, 'preview', {
@@ -631,11 +648,12 @@ async function previewFile(req, res, next) {
         user_agent: req.get('user-agent'),
       }).catch(() => {}); // Ne pas bloquer si le tracking échoue
       
-      return res.sendFile(path.resolve(file.file_path));
+      return res.sendFile(filePath);
     }
 
     return res.status(400).json({ error: { message: 'Preview not available for this file type' } });
   } catch (err) {
+    logger.logError('Error in previewFile', { error: err.message, stack: err.stack, fileId: req.params.id });
     next(err);
   }
 }
