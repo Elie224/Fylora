@@ -171,10 +171,27 @@ if (process.env.REDIS_URL) {
       }
     });
     redisClient.on('error', (err) => {
-      // Erreur silencieuse, on utilisera MemoryStore en fallback
+      console.error('❌ Redis session store error:', {
+        message: err.message,
+        code: err.code,
+        redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
+      });
     });
-    redisClient.connect().catch(() => {
-      // Connexion échouée, MemoryStore sera utilisé
+    
+    redisClient.on('connect', () => {
+      console.log('🔄 Redis session store connecting...');
+    });
+    
+    redisClient.on('ready', () => {
+      console.log('✅ Redis session store ready');
+    });
+    
+    redisClient.connect().catch((err) => {
+      console.error('❌ Redis session store connection failed:', {
+        message: err.message,
+        code: err.code,
+        redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
+      });
     });
     sessionStore = new RedisStore({ client: redisClient });
     console.log('✅ Redis session store configured');

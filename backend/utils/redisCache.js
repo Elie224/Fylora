@@ -82,9 +82,24 @@ class RedisCache {
 
       await Promise.race([connectPromise, timeoutPromise]);
       
-      this.redis = client;
-      this.useRedis = true;
-      console.log('✅ Redis cache connected');
+      // Tester la connexion avant de l'utiliser
+      try {
+        await client.connect();
+        // Tester avec un ping
+        await client.ping();
+        this.redis = client;
+        this.useRedis = true;
+        console.log('✅ Redis cache connected successfully');
+      } catch (connectErr) {
+        console.error('❌ Redis connection test failed:', {
+          message: connectErr.message,
+          code: connectErr.code,
+          redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
+        });
+        await client.quit().catch(() => {});
+        this.useRedis = false;
+        this.connectionFailed = true;
+      }
     } catch (error) {
       if (!this.connectionFailed) {
         // Message plus informatif selon le contexte
