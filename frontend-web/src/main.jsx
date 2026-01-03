@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import performanceMetrics from './utils/performanceMetrics';
 import { viewPreloader } from './utils/viewPreloader';
+import { initKeyboardShortcuts } from './utils/keyboardShortcuts';
 import './styles.css';
 
 // Lazy loading des pages pour améliorer les performances
