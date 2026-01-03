@@ -58,7 +58,8 @@ export default function Sessions() {
     if (!window.confirm('Voulez-vous vraiment révoquer toutes les autres sessions ? Vous resterez connecté sur cet appareil.')) return;
 
     try {
-      await userService.revokeAllOtherSessions();
+      const refreshToken = localStorage.getItem('refresh_token');
+      await userService.revokeAllOtherSessions(refreshToken);
       showToast('Toutes les autres sessions ont été révoquées', 'success');
       loadSessions();
     } catch (err) {

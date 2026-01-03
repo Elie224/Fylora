@@ -273,6 +273,104 @@ async function listUsers(req, res, next) {
   }
 }
 
+// Lister les sessions actives de l'utilisateur
+async function getActiveSessions(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const mongoose = require('mongoose');
+    const Session = mongoose.models.Session || mongoose.model('Session');
+    
+    const sessions = await Session.find({
+      user_id: userId,
+      is_revoked: false,
+      expires_at: { $gt: new Date() },
+    })
+    .sort({ created_at: -1 })
+    .lean();
+
+    // Formater les sessions (on ne peut pas comparer le refresh token côté serveur pour des raisons de sécurité)
+    const formattedSessions = sessions.map(session => ({
+      id: session._id.toString(),
+      user_agent: session.user_agent || 'Inconnu',
+      ip_address: session.ip_address || 'Inconnu',
+      device_name: session.device_name || 'Appareil inconnu',
+      created_at: session.created_at,
+      expires_at: session.expires_at,
+      refresh_token: session.refresh_token, // Inclure pour comparaison côté client
+    }));
+
+    return res.status(200).json({ data: { sessions: formattedSessions } });
+  } catch (err) {
+    logger.logError(err, { context: 'getActiveSessions', userId: req.user?.id });
+    next(err);
+  }
+}
+
+// Révoquer une session
+async function revokeSession(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { sessionId } = req.params;
+    const mongoose = require('mongoose');
+    const Session = mongoose.models.Session || mongoose.model('Session');
+    
+    const session = await Session.findById(sessionId).lean();
+    
+    if (!session) {
+      return res.status(404).json({ error: { message: 'Session not found' } });
+    }
+
+    // Vérifier que la session appartient à l'utilisateur
+    if (session.user_id.toString() !== userId.toString()) {
+      return res.status(403).json({ error: { message: 'Access denied' } });
+    }
+
+    // Révoquer la session
+    await Session.findByIdAndUpdate(sessionId, { is_revoked: true });
+
+    logger.logInfo('Session revoked', { userId, sessionId });
+
+    return res.status(200).json({ data: { message: 'Session revoked successfully' } });
+  } catch (err) {
+    logger.logError(err, { context: 'revokeSession', userId: req.user?.id, sessionId: req.params?.sessionId });
+    next(err);
+  }
+}
+
+// Révoquer toutes les sessions sauf la session actuelle
+async function revokeAllOtherSessions(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const currentRefreshToken = req.body.refresh_token || null;
+    const mongoose = require('mongoose');
+    const Session = mongoose.models.Session || mongoose.model('Session');
+    
+    // Révoquer toutes les autres sessions
+    const query = {
+      user_id: userId,
+      is_revoked: false,
+    };
+    
+    if (currentRefreshToken) {
+      query.refresh_token = { $ne: currentRefreshToken };
+    }
+    
+    const result = await Session.updateMany(query, { is_revoked: true });
+
+    logger.logInfo('All other sessions revoked', { userId, revokedCount: result.modifiedCount });
+
+    return res.status(200).json({ 
+      data: { 
+        message: 'All other sessions revoked successfully',
+        revokedCount: result.modifiedCount,
+      }
+    });
+  } catch (err) {
+    logger.logError(err, { context: 'revokeAllOtherSessions', userId: req.user?.id });
+    next(err);
+  }
+}
+
 module.exports = {
   getMe,
   updateProfile,
@@ -280,5 +378,8 @@ module.exports = {
   changePassword,
   updatePreferences,
   listUsers,
+  getActiveSessions,
+  revokeSession,
+  revokeAllOtherSessions,
 };
 
