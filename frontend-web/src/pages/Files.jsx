@@ -80,11 +80,11 @@ export default function Files() {
           setCurrentFolder(response.data.data);
           setError(null);
         } else {
-          throw new Error('Structure de réponse invalide');
+          throw new Error(t('invalidResponseStructure'));
         }
       }).catch(err => {
         console.error('Failed to load folder:', err);
-        setError('Impossible de charger le dossier: ' + (err.response?.data?.error?.message || err.message || 'Erreur inconnue'));
+        setError(t('cannotLoadFolder') + ' ' + (err.response?.data?.error?.message || err.message || t('unknownError')));
       });
     } else if (!folderId) {
       // Si pas de folderId dans l'URL, réinitialiser le dossier courant
@@ -116,7 +116,7 @@ export default function Files() {
 
   const downloadBatch = async () => {
     if (selectedItems.size === 0) {
-      alert('Veuillez sélectionner au moins un fichier ou dossier');
+      alert(t('selectAtLeastOne'));
       return;
     }
 
@@ -162,14 +162,14 @@ export default function Files() {
       
       // Vérifier la structure de réponse avant d'accéder aux données
       if (!response || !response.data) {
-        throw new Error('Réponse invalide du serveur');
+        throw new Error(t('invalidServerResponse'));
       }
       
       const items = response.data?.data?.items || response.data?.items || [];
       setItems(items);
     } catch (err) {
       console.error('Failed to load files:', err);
-      const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur inconnue';
+      const errorMessage = err.response?.data?.error?.message || err.message || t('unknownError');
       const statusCode = err.response?.status;
       
       // Si c'est une erreur 401, ne pas afficher d'erreur car la redirection est gérée par l'intercepteur
@@ -182,11 +182,11 @@ export default function Files() {
       let userMessage = t('loadError') || 'Erreur lors du chargement des fichiers';
       
       if (statusCode === 403) {
-        userMessage = 'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
+        userMessage = t('accessDenied');
       } else if (statusCode === 404) {
-        userMessage = 'Dossier non trouvé.';
+        userMessage = t('folderNotFound');
       } else if (!err.response) {
-        userMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+        userMessage = t('cannotConnectToServer') || 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
       } else {
         userMessage += ': ' + errorMessage;
       }
@@ -325,7 +325,7 @@ export default function Files() {
       setItems(prevItems => prevItems.filter(item => !item.isTemp));
       
       // Construire un message d'erreur détaillé
-      let errorMessage = 'Erreur inconnue';
+      let errorMessage = t('unknownError');
       if (err.response?.data?.error) {
         if (err.response.data.error.details && Array.isArray(err.response.data.error.details)) {
           errorMessage = err.response.data.error.details.map(d => d.message).join('\n');
@@ -363,14 +363,14 @@ export default function Files() {
     
     if (!item) {
       console.error('❌ No item provided');
-      alert('Erreur: aucun élément sélectionné');
+      alert(t('errorNoItemSelected'));
       return;
     }
     
     const itemId = item.id || item._id;
     if (!itemId) {
       console.error('❌ Item has no id:', item);
-      alert('Erreur: l\'élément n\'a pas d\'identifiant');
+      alert(t('errorNoItemId'));
       return;
     }
     
@@ -400,7 +400,7 @@ export default function Files() {
       const token = localStorage.getItem('access_token');
       
       if (!token) {
-        throw new Error('Vous devez être connecté pour supprimer');
+        throw new Error(t('mustBeConnectedToDelete'));
       }
       
       const endpoint = itemType === 'folder' 
@@ -439,7 +439,7 @@ export default function Files() {
       // Recharger la liste après suppression (forcer le rechargement sans cache)
       await loadFiles(true);
       
-      alert(`✅ "${itemName}" a été supprimé avec succès\n\nVous pouvez le restaurer depuis la corbeille si nécessaire.`);
+      alert(`✅ "${itemName}" ${t('deletedSuccessfully')}`);
     } catch (err) {
       console.error('❌ Deletion error:', err);
       console.error('Error details:', {
@@ -561,16 +561,16 @@ export default function Files() {
         setSharePassword('');
         setShareExpiresAt('');
       } else {
-        throw new Error('Réponse invalide du serveur');
+        throw new Error(t('invalidServerResponse'));
       }
     } catch (err) {
       console.error('Failed to share:', err);
       console.error('Error response:', err.response?.data);
-      const errorMsg = err.response?.data?.error?.message || err.response?.data?.error?.details?.[0]?.message || err.message || 'Erreur lors de la création du partage';
+      const errorMsg = err.response?.data?.error?.message || err.response?.data?.error?.details?.[0]?.message || err.message || t('errorCreatingShare');
       
       // Si c'est une erreur 401, rediriger vers login
       if (err.response?.status === 401) {
-        alert('Votre session a expiré. Veuillez vous reconnecter.');
+        alert(t('sessionExpired'));
         navigate('/login');
       } else {
         alert(errorMsg);
@@ -898,7 +898,7 @@ export default function Files() {
                         value={sharePassword}
                         onChange={(e) => setSharePassword(e.target.value)}
                         style={{ padding: 8, width: '100%' }}
-                        placeholder={t('language') === 'en' ? 'Leave empty for public sharing' : 'Laissez vide pour un partage public'}
+                        placeholder={t('leaveEmptyForPublic')}
                       />
                       <small style={{ color: '#666', fontSize: '12px' }}>{t('passwordMinLength')}</small>
                     </div>
@@ -924,7 +924,7 @@ export default function Files() {
                       value={shareUserSearch}
                       onChange={(e) => setShareUserSearch(e.target.value)}
                       style={{ padding: 8, width: '100%' }}
-                      placeholder={t('language') === 'en' ? 'Type an email or name...' : 'Tapez un email ou un nom...'}
+                      placeholder={t('typeEmailOrName')}
                     />
                     {shareUsers.length > 0 && (
                       <div style={{ marginTop: 8, border: '1px solid #ddd', borderRadius: 4, maxHeight: 200, overflow: 'auto' }}>
@@ -972,14 +972,14 @@ export default function Files() {
                     }} 
                     style={{ padding: '8px 16px', border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
                   >
-                    Annuler
+                    {t('cancel')}
                   </button>
                 </div>
               </>
             ) : (
               <>
                 <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-                  <label style={{ display: 'block', marginBottom: 4 }}>Lien de partage :</label>
+                  <label style={{ display: 'block', marginBottom: 4 }}>{t('shareLinkLabel')}</label>
                   <input
                     type="text"
                     value={shareLink}
@@ -990,18 +990,18 @@ export default function Files() {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(shareLink);
-                      alert('Lien copié dans le presse-papiers !');
+                      alert(t('linkCopied'));
                     }}
                     style={{ marginTop: 8, padding: '4px 8px', fontSize: '12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
                   >
-                    Copier le lien
+                    {t('copyLink')}
                   </button>
                 </div>
                 <button 
                   onClick={() => { setShowShareModal(null); setShareLink(''); setSharePassword(''); setShareExpiresAt(''); }} 
                   style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
                 >
-                  Fermer
+                  {t('close')}
                 </button>
               </>
             )}
@@ -1018,7 +1018,7 @@ export default function Files() {
           border: `1px solid ${borderColor}`,
           color: textColor
         }}>
-          <div style={{ color: textColor }}>Upload en cours...</div>
+          <div style={{ color: textColor }}>{t('uploadInProgress')}</div>
           {Object.keys(uploadProgress).map(fileName => (
             <div key={fileName} style={{ marginTop: 4, color: textColor }}>
               {fileName}: {uploadProgress[fileName]}%
@@ -1082,7 +1082,7 @@ export default function Files() {
                 fontWeight: '500'
               }}
             >
-              Réessayer
+              {t('retry')}
             </button>
           </div>
         ) : items.length === 0 ? (
@@ -1090,7 +1090,7 @@ export default function Files() {
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📁</div>
             <p style={{ fontSize: '16px', marginBottom: '8px', color: textColor }}>{t('emptyFolder') || 'Aucun fichier ou dossier'}</p>
             <p style={{ fontSize: '14px', color: textSecondary }}>
-              Glissez-déposez des fichiers ici ou cliquez sur "Uploader"
+              {t('dragDropFiles')}
             </p>
           </div>
         ) : (

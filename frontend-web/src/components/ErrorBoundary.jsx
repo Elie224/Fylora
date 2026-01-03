@@ -2,6 +2,7 @@
 // Améliore la stabilité de l'application
 
 import React from 'react';
+import { t, getCurrentLanguage } from '../utils/i18n';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -37,6 +38,8 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const language = getCurrentLanguage();
+      
       return (
         <div style={{
           display: 'flex',
@@ -56,10 +59,10 @@ class ErrorBoundary extends React.Component {
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}>
             <h1 style={{ fontSize: '24px', color: '#d32f2f', marginBottom: '16px' }}>
-              ⚠️ Une erreur s'est produite
+              ⚠️ {t('errorOccurred', language)}
             </h1>
             <p style={{ fontSize: '16px', color: '#666', marginBottom: '24px' }}>
-              Désolé, une erreur inattendue s'est produite. Veuillez réessayer.
+              {t('unexpectedError', language)}
             </p>
             
             {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -75,7 +78,7 @@ class ErrorBoundary extends React.Component {
                 overflow: 'auto',
               }}>
                 <summary style={{ cursor: 'pointer', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Détails de l'erreur (développement uniquement)
+                  {t('errorDetails', language)}
                 </summary>
                 <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {this.state.error.toString()}
@@ -102,7 +105,7 @@ class ErrorBoundary extends React.Component {
                 fontWeight: '500',
               }}
             >
-              Recharger la page
+              {t('reloadPage', language)}
             </button>
           </div>
         </div>

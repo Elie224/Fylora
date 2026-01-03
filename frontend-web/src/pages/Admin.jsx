@@ -11,6 +11,16 @@ export default function Admin() {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
+  
+  // Variables de thème
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#64748b';
+  const bgColor = theme === 'dark' ? '#121212' : '#f8fafc';
+  const tableHeaderBg = theme === 'dark' ? '#2d2d2d' : '#f8f9fa';
+  const tableRowBg = theme === 'dark' ? '#252525' : '#fafafa';
+  const inputBg = theme === 'dark' ? '#2d2d2d' : '#ffffff';
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
@@ -46,7 +56,7 @@ export default function Admin() {
       const response = await fetch(`${API_URL}/api/admin/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Erreur lors du chargement des statistiques');
+      if (!response.ok) throw new Error(t('errorLoadingStats'));
       const data = await response.json();
       setStats(data.data);
     } catch (err) {
@@ -67,7 +77,7 @@ export default function Admin() {
       const response = await fetch(`${API_URL}/api/admin/users?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Erreur lors du chargement des utilisateurs');
+      if (!response.ok) throw new Error(t('errorLoadingUsers'));
       const data = await response.json();
       setUsers(data.data.users);
       setPagination(data.data.pagination);
@@ -110,7 +120,7 @@ export default function Admin() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Erreur lors de la mise à jour');
+        throw new Error(error.error?.message || t('errorUpdatingUser'));
       }
 
       showMessage('success', t('userUpdated'));
@@ -134,7 +144,7 @@ export default function Admin() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Erreur lors de la suppression');
+        throw new Error(error.error?.message || t('errorDeletingUser'));
       }
 
       showMessage('success', t('userDeleted'));
@@ -175,7 +185,9 @@ export default function Admin() {
         <div style={{
           padding: '12px 16px',
           marginBottom: '24px',
-          backgroundColor: message.type === 'error' ? '#ffebee' : '#e8f5e9',
+          backgroundColor: message.type === 'error' 
+            ? (theme === 'dark' ? '#3d1f1f' : '#ffebee')
+            : (theme === 'dark' ? '#1f3d1f' : '#e8f5e9'),
           color: message.type === 'error' ? '#c62828' : '#2e7d32',
           borderRadius: '8px',
           border: `1px solid ${message.type === 'error' ? '#ef5350' : '#66bb6a'}`
@@ -194,48 +206,48 @@ export default function Admin() {
         }}>
           <div style={{
             padding: '20px',
-            backgroundColor: '#ffffff',
+            backgroundColor: cardBg,
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            border: '1px solid #e0e0e0'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${borderColor}`
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalUsers')}</div>
+            <div style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>{t('totalUsers')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#2196F3' }}>{stats.users.total}</div>
-            <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: textSecondary, marginTop: '4px' }}>
               {stats.users.active} {t('active')}, {stats.users.inactive} {t('inactive')}
             </div>
           </div>
 
           <div style={{
             padding: '20px',
-            backgroundColor: '#ffffff',
+            backgroundColor: cardBg,
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            border: '1px solid #e0e0e0'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${borderColor}`
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalFiles')}</div>
+            <div style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>{t('totalFiles')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#4CAF50' }}>{stats.files.total}</div>
           </div>
 
           <div style={{
             padding: '20px',
-            backgroundColor: '#ffffff',
+            backgroundColor: cardBg,
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            border: '1px solid #e0e0e0'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${borderColor}`
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalFolders')}</div>
+            <div style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>{t('totalFolders')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#FF9800' }}>{stats.folders.total}</div>
           </div>
 
           <div style={{
             padding: '20px',
-            backgroundColor: '#ffffff',
+            backgroundColor: cardBg,
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            border: '1px solid #e0e0e0'
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${borderColor}`
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalStorage')}</div>
+            <div style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>{t('totalStorage')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#9C27B0' }}>{formatBytes(stats.storage.total_used)}</div>
           </div>
         </div>
@@ -243,14 +255,14 @@ export default function Admin() {
 
       {/* Liste des utilisateurs */}
       <div style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: cardBg,
         borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        border: '1px solid #e0e0e0',
+        boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+        border: `1px solid ${borderColor}`,
         padding: '24px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333', margin: 0 }}>{t('userManagement')}</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: textColor, margin: 0 }}>{t('userManagement')}</h2>
           <input
             type="text"
             placeholder={t('searchUsers')}
@@ -258,7 +270,9 @@ export default function Admin() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               padding: '10px 16px',
-              border: '1px solid #ddd',
+              backgroundColor: inputBg,
+              color: textColor,
+              border: `1px solid ${borderColor}`,
               borderRadius: '8px',
               fontSize: '14px',
               minWidth: '250px'
@@ -267,21 +281,21 @@ export default function Admin() {
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>{t('loading')}</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>{t('loading')}</div>
         ) : users.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>{t('noResults')}</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>{t('noResults')}</div>
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #e0e0e0' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('email')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('displayName')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('storageSpace')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('status')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('admin')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('actions')}</th>
+                  <tr style={{ backgroundColor: tableHeaderBg, borderBottom: `2px solid ${borderColor}` }}>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('email')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('displayName')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('storageSpace')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('status')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('admin')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -289,13 +303,13 @@ export default function Admin() {
                     <tr 
                       key={u.id}
                       style={{
-                        borderBottom: index < users.length - 1 ? '1px solid #f0f0f0' : 'none',
-                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa'
+                        borderBottom: index < users.length - 1 ? `1px solid ${borderColor}` : 'none',
+                        backgroundColor: index % 2 === 0 ? cardBg : tableRowBg
                       }}
                     >
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#333' }}>{u.email}</td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#666' }}>{u.display_name || '-'}</td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#666' }}>
+                      <td style={{ padding: '12px', fontSize: '14px', color: textColor }}>{u.email}</td>
+                      <td style={{ padding: '12px', fontSize: '14px', color: textSecondary }}>{u.display_name || '-'}</td>
+                      <td style={{ padding: '12px', fontSize: '14px', color: textSecondary }}>
                         {formatBytes(u.quota_used)} / {formatBytes(u.quota_limit)}
                       </td>
                       <td style={{ padding: '12px' }}>
@@ -304,7 +318,9 @@ export default function Admin() {
                           borderRadius: '12px',
                           fontSize: '12px',
                           fontWeight: '600',
-                          backgroundColor: u.is_active ? '#e8f5e9' : '#ffebee',
+                          backgroundColor: u.is_active 
+                            ? (theme === 'dark' ? '#1f3d1f' : '#e8f5e9')
+                            : (theme === 'dark' ? '#3d1f1f' : '#ffebee'),
                           color: u.is_active ? '#2e7d32' : '#c62828'
                         }}>
                           {u.is_active ? t('active') : t('inactive')}
@@ -317,7 +333,7 @@ export default function Admin() {
                             borderRadius: '12px',
                             fontSize: '12px',
                             fontWeight: '600',
-                            backgroundColor: '#e3f2fd',
+                            backgroundColor: theme === 'dark' ? '#1e3a5f' : '#e3f2fd',
                             color: '#1976D2'
                           }}>
                             Admin
@@ -372,7 +388,7 @@ export default function Admin() {
                   disabled={pagination.page === 1}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: pagination.page === 1 ? '#f5f5f5' : '#2196F3',
+                    backgroundColor: pagination.page === 1 ? (theme === 'dark' ? '#2d2d2d' : '#f5f5f5') : '#2196F3',
                     color: pagination.page === 1 ? '#999' : 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -389,7 +405,7 @@ export default function Admin() {
                   disabled={pagination.page === pagination.pages}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: pagination.page === pagination.pages ? '#f5f5f5' : '#2196F3',
+                    backgroundColor: pagination.page === pagination.pages ? (theme === 'dark' ? '#2d2d2d' : '#f5f5f5') : '#2196F3',
                     color: pagination.page === pagination.pages ? '#999' : 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -420,7 +436,8 @@ export default function Admin() {
           padding: '20px'
         }}>
           <div style={{
-            backgroundColor: 'white',
+            backgroundColor: cardBg,
+            color: textColor,
             borderRadius: '12px',
             padding: '24px',
             maxWidth: '500px',

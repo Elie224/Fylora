@@ -332,12 +332,91 @@ const translations = {
     resourceType: 'Type de ressource',
     dateFrom: 'Date de début',
     dateTo: 'Date de fin',
+    date: 'Date',
+    details: 'Détails',
     filter: 'Filtrer',
     clearFilters: 'Effacer les filtres',
     export: 'Exporter',
     exportActivities: 'Exporter les activités',
     errorLoadingActivities: 'Erreur lors du chargement des activités',
-    errorExportingActivities: 'Erreur lors de l\'exportation des activités'
+    errorExportingActivities: 'Erreur lors de l\'exportation des activités',
+    
+    // ErrorBoundary
+    errorOccurred: 'Une erreur s\'est produite',
+    unexpectedError: 'Désolé, une erreur inattendue s\'est produite. Veuillez réessayer.',
+    errorDetails: 'Détails de l\'erreur (développement uniquement)',
+    reloadPage: 'Recharger la page',
+    
+    // AdvancedFilters
+    advancedFilters: 'Filtres Avancés',
+    reset: 'Réinitialiser',
+    files: 'Fichiers',
+    images: 'Images',
+    videos: 'Vidéos',
+    pdf: 'PDF',
+    text: 'Texte',
+    other: 'Autres',
+    minSize: 'Taille min (MB)',
+    maxSize: 'Taille max (MB)',
+    tags: 'Tags',
+    activeFilters: 'Filtres actifs:',
+    since: 'Depuis:',
+    until: 'Jusqu\'à:',
+    fileNamePlaceholder: 'Nom du fichier...',
+    applyFilters: 'Appliquer les filtres',
+    
+    // Files page additional
+    retry: 'Réessayer',
+    dragDropFiles: 'Glissez-déposez des fichiers ici ou cliquez sur "Uploader"',
+    shareLinkLabel: 'Lien de partage :',
+    unknownError: 'Erreur inconnue',
+    cannotLoadFolder: 'Impossible de charger le dossier:',
+    selectAtLeastOne: 'Veuillez sélectionner au moins un fichier ou dossier',
+    invalidResponseStructure: 'Structure de réponse invalide',
+    invalidServerResponse: 'Réponse invalide du serveur',
+    mustBeConnectedToDelete: 'Vous devez être connecté pour supprimer',
+    errorNoItemSelected: 'Erreur: aucun élément sélectionné',
+    errorNoItemId: 'Erreur: l\'élément n\'a pas d\'identifiant',
+    sessionExpired: 'Votre session a expiré. Veuillez vous reconnecter.',
+    errorCreatingShare: 'Erreur lors de la création du partage',
+    deletedSuccessfully: 'a été supprimé avec succès\n\nVous pouvez le restaurer depuis la corbeille si nécessaire.',
+    leaveEmptyForPublic: 'Laissez vide pour un partage public',
+    typeEmailOrName: 'Tapez un email ou un nom...',
+    
+    // Preview
+    saving: 'Sauvegarde...',
+    unsavedChanges: 'Modifications non sauvegardées',
+    typeYourTextHere: 'Tapez votre texte ici...',
+    split: 'Split',
+    preview: 'Prévisualiser',
+    cannotPreviewFileType: 'Ce type de fichier ne peut pas être prévisualisé.',
+    
+    // OAuth
+    redirecting: 'Redirection...',
+    pleaseWaitRedirecting: 'Veuillez patienter pendant que nous vous redirigeons.',
+    pleaseWaitConnecting: 'Veuillez patienter pendant que nous vous connectons.',
+    
+    // ProtectedRoute
+    checkingAuth: 'Vérification de l\'authentification...',
+    
+    // Settings additional
+    profileUpdatedSuccess: 'Profil mis à jour avec succès',
+    selectImage: 'Veuillez sélectionner une image',
+    imageMaxSize: 'L\'image ne doit pas dépasser 5 MB',
+    avatarUpdatedSuccess: 'Avatar mis à jour avec succès',
+    passwordChangedSuccess: 'Mot de passe changé avec succès',
+    errorLoadingData: 'Erreur lors du chargement des données',
+    youCanLogoutAnytime: 'Vous pouvez vous déconnecter de votre compte à tout moment.',
+    
+    // Admin additional
+    errorDeletingUser: 'Erreur lors de la suppression',
+    cannotConnectToServer: 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.',
+    mustBeConnectedToView: 'Vous devez être connecté pour voir ce fichier',
+    cannotLoadFile: 'Impossible de charger le fichier:',
+    cannotLoadImage: 'Impossible de charger l\'image',
+    cannotLoadPDF: 'Impossible de charger le PDF',
+    accessDenied: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.',
+    folderNotFound: 'Dossier non trouvé.'
   },
   en: {
     // Navigation
@@ -672,6 +751,8 @@ const translations = {
     resourceType: 'Resource type',
     dateFrom: 'Date from',
     dateTo: 'Date to',
+    date: 'Date',
+    details: 'Details',
     filter: 'Filter',
     clearFilters: 'Clear filters',
     export: 'Export',
@@ -683,7 +764,86 @@ const translations = {
     next: 'Next',
     page: 'Page',
     of: 'of',
-    accountActive: 'Account active'
+    accountActive: 'Account active',
+    premium: 'Premium',
+    free: 'Free',
+    
+    // ErrorBoundary
+    errorOccurred: 'An error occurred',
+    unexpectedError: 'Sorry, an unexpected error occurred. Please try again.',
+    errorDetails: 'Error details (development only)',
+    reloadPage: 'Reload page',
+    
+    // AdvancedFilters
+    advancedFilters: 'Advanced Filters',
+    reset: 'Reset',
+    files: 'Files',
+    images: 'Images',
+    videos: 'Videos',
+    pdf: 'PDF',
+    text: 'Text',
+    other: 'Other',
+    minSize: 'Min size (MB)',
+    maxSize: 'Max size (MB)',
+    tags: 'Tags',
+    activeFilters: 'Active filters:',
+    since: 'Since:',
+    until: 'Until:',
+    fileNamePlaceholder: 'File name...',
+    applyFilters: 'Apply filters',
+    
+    // Files page additional
+    retry: 'Retry',
+    dragDropFiles: 'Drag and drop files here or click "Upload"',
+    shareLinkLabel: 'Share link:',
+    unknownError: 'Unknown error',
+    cannotLoadFolder: 'Cannot load folder:',
+    selectAtLeastOne: 'Please select at least one file or folder',
+    invalidResponseStructure: 'Invalid response structure',
+    invalidServerResponse: 'Invalid server response',
+    mustBeConnectedToDelete: 'You must be logged in to delete',
+    errorNoItemSelected: 'Error: no item selected',
+    errorNoItemId: 'Error: item has no identifier',
+    sessionExpired: 'Your session has expired. Please log in again.',
+    errorCreatingShare: 'Error creating share',
+    deletedSuccessfully: 'has been deleted successfully\n\nYou can restore it from trash if needed.',
+    leaveEmptyForPublic: 'Leave empty for public sharing',
+    typeEmailOrName: 'Type an email or name...',
+    
+    // Preview
+    saving: 'Saving...',
+    unsavedChanges: 'Unsaved changes',
+    typeYourTextHere: 'Type your text here...',
+    split: 'Split',
+    preview: 'Preview',
+    cannotPreviewFileType: 'This file type cannot be previewed.',
+    
+    // OAuth
+    redirecting: 'Redirecting...',
+    pleaseWaitRedirecting: 'Please wait while we redirect you.',
+    pleaseWaitConnecting: 'Please wait while we connect you.',
+    
+    // ProtectedRoute
+    checkingAuth: 'Checking authentication...',
+    
+    // Settings additional
+    profileUpdatedSuccess: 'Profile updated successfully',
+    selectImage: 'Please select an image',
+    imageMaxSize: 'Image must not exceed 5 MB',
+    avatarUpdatedSuccess: 'Avatar updated successfully',
+    passwordChangedSuccess: 'Password changed successfully',
+    errorLoadingData: 'Error loading data',
+    youCanLogoutAnytime: 'You can log out of your account at any time.',
+    
+    // Admin additional
+    errorDeletingUser: 'Error deleting user',
+    cannotConnectToServer: 'Cannot connect to server. Check your internet connection.',
+    mustBeConnectedToView: 'You must be logged in to view this file',
+    cannotLoadFile: 'Cannot load file:',
+    cannotLoadImage: 'Cannot load image',
+    cannotLoadPDF: 'Cannot load PDF',
+    accessDenied: 'Access denied. You do not have the necessary permissions.',
+    folderNotFound: 'Folder not found.'
   }
 };
 

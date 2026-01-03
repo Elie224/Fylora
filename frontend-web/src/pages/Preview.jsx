@@ -28,7 +28,7 @@ export default function Preview() {
       const token = localStorage.getItem('access_token');
       
       if (!token) {
-        throw new Error('Vous devez être connecté pour voir ce fichier');
+        throw new Error(t('mustBeConnectedToView') || 'Vous devez être connecté pour voir ce fichier');
       }
       
       // Récupérer tous les fichiers pour trouver celui avec cet ID
@@ -133,7 +133,7 @@ export default function Preview() {
       
     } catch (err) {
       console.error('Failed to load file:', err);
-      setError('Impossible de charger le fichier: ' + (err.message || 'Erreur inconnue'));
+      setError(t('cannotLoadFile') + ' ' + (err.message || t('unknownError')));
     } finally {
       setLoading(false);
     }
@@ -188,7 +188,7 @@ export default function Preview() {
         gap: 16
       }}>
         <div style={{ fontSize: '48px' }}>⚠️</div>
-        <h2 style={{ color: textColor, margin: 0 }}>Erreur</h2>
+        <h2 style={{ color: textColor, margin: 0 }}>{t('error')}</h2>
         <p style={{ color: textSecondary, maxWidth: '600px' }}>{error}</p>
         <a 
           href={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/files/${id}/download`} 
@@ -205,7 +205,7 @@ export default function Preview() {
           onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
           onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
         >
-          ⬇️ Télécharger le fichier
+          ⬇️ {t('downloadFile')}
         </a>
       </div>
     );
@@ -319,7 +319,7 @@ export default function Preview() {
 
         {previewType === 'download' && (
           <div style={{ padding: 48, textAlign: 'center' }}>
-            <p>Ce type de fichier ne peut pas être prévisualisé.</p>
+            <p>{t('cannotPreviewFileType')}</p>
             <a
               href={downloadUrl}
               download
@@ -332,7 +332,7 @@ export default function Preview() {
                 display: 'inline-block',
               }}
             >
-              Télécharger le fichier
+              {t('downloadFile')}
             </a>
           </div>
         )}
@@ -531,7 +531,7 @@ function ImagePreview({ url, token }) {
         });
         
         if (!response.ok) {
-          throw new Error('Impossible de charger l\'image');
+          throw new Error(t('cannotLoadImage') || 'Impossible de charger l\'image');
         }
         
         const blob = await response.blob();
@@ -553,7 +553,7 @@ function ImagePreview({ url, token }) {
   }, [url, token]);
 
   if (error) {
-    return <div style={{ padding: 24, color: 'red' }}>Erreur: {error}</div>;
+    return <div style={{ padding: 24, color: 'red' }}>{t('error')}: {error}</div>;
   }
 
   if (!imageUrl) {
@@ -584,7 +584,7 @@ function PdfPreview({ url, token }) {
         });
         
         if (!response.ok) {
-          throw new Error('Impossible de charger le PDF');
+          throw new Error(t('cannotLoadPDF') || 'Impossible de charger le PDF');
         }
         
         const blob = await response.blob();
@@ -606,7 +606,7 @@ function PdfPreview({ url, token }) {
   }, [url, token]);
 
   if (error) {
-    return <div style={{ padding: 24, color: 'red' }}>Erreur: {error}</div>;
+    return <div style={{ padding: 24, color: 'red' }}>{t('error')}: {error}</div>;
   }
 
   if (!pdfUrl) {
@@ -731,7 +731,7 @@ function VideoPreview({ url, token }) {
   };
 
   if (error) {
-    return <div style={{ padding: 24, color: 'red' }}>Erreur: {error}</div>;
+    return <div style={{ padding: 24, color: 'red' }}>{t('error')}: {error}</div>;
   }
 
   if (!videoUrl) {
@@ -922,7 +922,7 @@ function AudioPreview({ url, token }) {
   }, [url, token]);
 
   if (error) {
-    return <div style={{ padding: 24, color: 'red' }}>Erreur: {error}</div>;
+    return <div style={{ padding: 24, color: 'red' }}>{t('error')}: {error}</div>;
   }
 
   if (!audioUrl) {
@@ -1039,7 +1039,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
   }
 
   if (error) {
-    return <div style={{ padding: 24, color: 'red' }}>Erreur: {error}</div>;
+    return <div style={{ padding: 24, color: 'red' }}>{t('error')}: {error}</div>;
   }
 
   return (
@@ -1070,7 +1070,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
                   fontSize: '12px',
                 }}
               >
-                ✏️ Éditer
+                ✏️ {t('edit')}
               </button>
               <button
                 onClick={() => setViewMode('preview')}
@@ -1084,7 +1084,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
                   fontSize: '12px',
                 }}
               >
-                👁️ Prévisualiser
+                👁️ {t('preview')}
               </button>
               <button
                 onClick={() => setViewMode('split')}
@@ -1098,14 +1098,14 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
                   fontSize: '12px',
                 }}
               >
-                ⚡ Split
+                ⚡ {t('split')}
               </button>
             </>
           )}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {hasChanges && (
-            <span style={{ fontSize: '12px', color: '#FF9800' }}>● Modifications non sauvegardées</span>
+            <span style={{ fontSize: '12px', color: '#FF9800' }}>● {t('unsavedChanges')}</span>
           )}
           <button
             onClick={handleSave}
@@ -1121,7 +1121,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
               fontWeight: '600',
             }}
           >
-            {isSaving ? '💾 Sauvegarde...' : '💾 Sauvegarder'}
+            {isSaving ? `💾 ${t('saving')}` : `💾 ${t('save')}`}
           </button>
         </div>
       </div>
@@ -1157,7 +1157,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
                 resize: 'none',
                 outline: 'none',
               }}
-              placeholder="Tapez votre texte ici..."
+              placeholder={t('typeYourTextHere')}
             />
           </div>
         )}

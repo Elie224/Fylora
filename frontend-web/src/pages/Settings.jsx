@@ -80,7 +80,7 @@ export default function Settings() {
         setUser({ ...userData, preferences: userData.preferences });
       }
     } catch (err) {
-      showMessage('error', 'Erreur lors du chargement des données');
+      showMessage('error', t('errorLoadingData'));
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function Settings() {
     setMessage({ type: '', text: '' });
     try {
       const response = await userService.updateProfile({ email, display_name: displayName });
-      showMessage('success', 'Profil mis à jour avec succès');
+      showMessage('success', t('profileUpdatedSuccess'));
       if (setUser && response.data.data) {
         setUser({ ...user, ...response.data.data });
       }
@@ -121,12 +121,12 @@ export default function Settings() {
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
-      showMessage('error', 'Veuillez sélectionner une image');
+      showMessage('error', t('selectImage'));
       return;
     }
     
     if (file.size > 5 * 1024 * 1024) {
-      showMessage('error', 'L\'image ne doit pas dépasser 5 MB');
+      showMessage('error', t('imageMaxSize'));
       return;
     }
     
@@ -147,13 +147,13 @@ export default function Settings() {
       });
       
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: { message: 'Erreur lors de l\'upload' } }));
-        throw new Error(error.error?.message || 'Erreur lors de l\'upload');
+        const error = await response.json().catch(() => ({ error: { message: t('uploadError') } }));
+        throw new Error(error.error?.message || t('uploadError'));
       }
       
       const data = await response.json();
       setAvatarUrl(data.data.avatar_url);
-      showMessage('success', 'Avatar mis à jour avec succès');
+      showMessage('success', t('avatarUpdatedSuccess'));
       loadUserData();
     } catch (err) {
       showMessage('error', err.message);
@@ -167,12 +167,12 @@ export default function Settings() {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      showMessage('error', 'Les mots de passe ne correspondent pas');
+      showMessage('error', t('passwordsDontMatch'));
       return;
     }
     
     if (newPassword.length < 8) {
-      showMessage('error', 'Le mot de passe doit contenir au moins 8 caractères');
+      showMessage('error', t('passwordMinLength'));
       return;
     }
     
@@ -180,7 +180,7 @@ export default function Settings() {
     setMessage({ type: '', text: '' });
     try {
       await userService.changePassword(currentPassword, newPassword);
-      showMessage('success', 'Mot de passe changé avec succès');
+      showMessage('success', t('passwordChangedSuccess'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -633,7 +633,7 @@ export default function Settings() {
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🚪 {t('logout')}</h2>
         <p style={{ marginBottom: 16, color: textSecondary }}>
-          Vous pouvez vous déconnecter de votre compte à tout moment.
+          {t('youCanLogoutAnytime')}
         </p>
         <button
           onClick={logout}

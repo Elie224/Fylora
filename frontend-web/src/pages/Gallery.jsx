@@ -6,9 +6,143 @@ import { useAuthStore } from '../services/authStore';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../components/Toast';
 
+// Composant pour charger et afficher les miniatures avec authentification
+function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const { theme } = useTheme();
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#64748b';
+
+  useEffect(() => {
+    if (!isImage || !fileId) {
+      setLoading(false);
+      return;
+    }
+
+    const loadThumbnail = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const token = localStorage.getItem('access_token');
+        
+        if (!token) {
+          throw new Error('No token');
+        }
+
+        const response = await fetch(`${apiUrl}/api/files/${fileId}/preview`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load');
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageUrl(objectUrl);
+      } catch (err) {
+        console.error('Failed to load thumbnail:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadThumbnail();
+
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [fileId, isImage]);
+
+  if (!isImage) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+        position: 'relative',
+        ...style
+      }}>
+        <div style={{ fontSize: '48px' }}>🎬</div>
+        <div style={{
+          position: 'absolute',
+          bottom: '8px',
+          right: '8px',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          fontSize: '12px',
+        }}>
+          ▶️
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+        color: textSecondary,
+        ...style
+      }}>
+        <div>⏳</div>
+      </div>
+    );
+  }
+
+  if (error || !imageUrl) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+        color: textSecondary,
+        ...style
+      }}>
+        🖼️ {fileName}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={fileName}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        ...style
+      }}
+      onError={() => {
+        setError(true);
+        if (onError) onError();
+      }}
+    />
+  );
+}
+
 export default function Gallery() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { theme } = useTheme();
   const { showToast, ToastContainer } = useToast();
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -33,7 +167,7 @@ export default function Gallery() {
       // Charger TOUS les fichiers de l'utilisateur (pas seulement ceux du dossier actuel)
       // Utiliser l'endpoint de recherche avec un filtre pour images et vidéos
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('access_token');
       
       if (!token) {
         throw new Error('Non authentifié');
@@ -196,7 +330,7 @@ export default function Gallery() {
     });
   }, [language]);
 
-  const getThumbnailUrl = useCallback((fileId) => {
+  const getPreviewUrl = useCallback((fileId) => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     return `${apiUrl}/api/files/${fileId}/preview`;
   }, []);
@@ -329,7 +463,6 @@ export default function Gallery() {
             if (!fileId) return null;
             
             const isImage = (file.mime_type || '').startsWith('image/');
-            const thumbnailUrl = getThumbnailUrl(fileId);
 
             return (
               <div
@@ -359,50 +492,11 @@ export default function Gallery() {
                     : '0 2px 8px rgba(0,0,0,0.1)';
                 }}
               >
-                {isImage ? (
-                  <img
-                    src={thumbnailUrl}
-                    alt={file.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: ${textSecondary};">
-                          🖼️ Image
-                        </div>
-                      `;
-                    }}
-                    crossOrigin="anonymous"
-                  />
-                ) : (
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
-                    position: 'relative',
-                  }}>
-                    <div style={{ fontSize: '48px' }}>🎬</div>
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '8px',
-                      right: '8px',
-                      backgroundColor: 'rgba(0,0,0,0.7)',
-                      color: 'white',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                    }}>
-                      ▶️
-                    </div>
-                  </div>
-                )}
+                <ThumbnailImage
+                  fileId={fileId}
+                  fileName={file.name}
+                  isImage={isImage}
+                />
                 <div style={{
                   position: 'absolute',
                   bottom: 0,
@@ -457,7 +551,6 @@ export default function Gallery() {
                       if (!fileId) return null;
                       
                       const isImage = (file.mime_type || '').startsWith('image/');
-                      const thumbnailUrl = getThumbnailUrl(fileId);
                       const fileIndex = filteredFiles.findIndex(f => 
                         f && (f.id || f._id) === fileId
                       );
@@ -483,28 +576,11 @@ export default function Gallery() {
                             e.currentTarget.style.transform = 'scale(1)';
                           }}
                         >
-                          {isImage ? (
-                            <img
-                              src={thumbnailUrl}
-                              alt={file.name}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                              }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: '100%',
-                              height: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
-                            }}>
-                              <div style={{ fontSize: '32px' }}>🎬</div>
-                            </div>
-                          )}
+                          <ThumbnailImage
+                            fileId={fileId}
+                            fileName={file.name}
+                            isImage={isImage}
+                          />
                         </div>
                       );
                     })}
@@ -515,133 +591,131 @@ export default function Gallery() {
       )}
 
       {/* Lightbox */}
-      {selectedFile && (
-        <div
-          onClick={closeLightbox}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.95)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-        >
+      {selectedFile && (() => {
+        const fileId = selectedFile.id || selectedFile._id;
+        const previewUrl = getPreviewUrl(fileId);
+        const token = localStorage.getItem('access_token');
+        const isImage = selectedFile.mime_type?.startsWith('image/');
+        
+        return (
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={closeLightbox}
             style={{
-              position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.95)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
             }}
           >
-            {selectedFile.mime_type?.startsWith('image/') ? (
-              <img
-                src={getThumbnailUrl(selectedFile.id || selectedFile._id)}
-                alt={selectedFile.name}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '90vh',
-                  objectFit: 'contain',
-                  borderRadius: '8px',
-                }}
-              />
-            ) : (
-              <video
-                controls
-                src={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/files/${selectedFile.id || selectedFile._id}/stream`}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '90vh',
-                  borderRadius: '8px',
-                }}
-              />
-            )}
-            
-            {/* Contrôles */}
-            <div style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              display: 'flex',
-              gap: '8px',
-            }}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateLightbox('prev');
-                }}
-                style={{
-                  padding: '12px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '20px',
-                }}
-              >
-                ⬅️
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateLightbox('next');
-                }}
-                style={{
-                  padding: '12px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '20px',
-                }}
-              >
-                ➡️
-              </button>
-              <button
-                onClick={closeLightbox}
-                style={{
-                  padding: '12px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '20px',
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Informations */}
-            <div style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              right: '20px',
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              color: 'white',
-              padding: '16px',
-              borderRadius: '8px',
-            }}>
-              <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                {selectedFile.name}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'relative',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+              }}
+            >
+              {isImage ? (
+                <ImagePreview url={previewUrl} token={token} />
+              ) : (
+                <video
+                  controls
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/files/${fileId}/stream`}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '90vh',
+                    borderRadius: '8px',
+                  }}
+                />
+              )}
+              
+              {/* Contrôles */}
+              <div style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                display: 'flex',
+                gap: '8px',
+              }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateLightbox('prev');
+                  }}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                  }}
+                >
+                  ⬅️
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateLightbox('next');
+                  }}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                  }}
+                >
+                  ➡️
+                </button>
+                <button
+                  onClick={closeLightbox}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                  }}
+                >
+                  ✕
+                </button>
               </div>
-              <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                {formatDate(selectedFile.created_at)} • {currentIndex + 1} / {filteredFiles.length}
+
+              {/* Informations */}
+              <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                left: '20px',
+                right: '20px',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: '16px',
+                borderRadius: '8px',
+              }}>
+                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                  {selectedFile.name}
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                  {formatDate(selectedFile.created_at)} • {currentIndex + 1} / {filteredFiles.length}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {filteredFiles.length === 0 && (
         <div style={{
@@ -666,3 +740,65 @@ export default function Gallery() {
   );
 }
 
+// Composant pour prévisualiser les images dans le lightbox
+function ImagePreview({ url, token }) {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load image');
+        }
+        
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageUrl(objectUrl);
+      } catch (err) {
+        console.error('Failed to load image:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (url && token) {
+      loadImage();
+    }
+    
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [url, token]);
+
+  if (loading) {
+    return <div style={{ padding: 24, textAlign: 'center', color: 'white' }}>⏳ Chargement...</div>;
+  }
+
+  if (error || !imageUrl) {
+    return <div style={{ padding: 24, textAlign: 'center', color: 'white' }}>❌ Erreur de chargement</div>;
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt="Preview"
+      style={{
+        maxWidth: '100%',
+        maxHeight: '90vh',
+        objectFit: 'contain',
+        borderRadius: '8px',
+      }}
+    />
+  );
+}

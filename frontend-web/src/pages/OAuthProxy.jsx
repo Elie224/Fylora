@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function OAuthProxy({ provider }) {
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Récupérer tous les paramètres de l'URL
@@ -34,8 +36,8 @@ export default function OAuthProxy({ provider }) {
         borderRadius: '8px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
-        <h2>Redirection...</h2>
-        <p>Veuillez patienter pendant que nous vous redirigeons.</p>
+        <h2>{t('redirecting')}</h2>
+        <p>{t('pleaseWaitRedirecting')}</p>
       </div>
     </div>
   );

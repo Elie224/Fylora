@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function Activity() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { theme } = useTheme();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,7 @@ export default function Activity() {
   const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
   const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
   const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f5f5f5';
 
   useEffect(() => {
     loadActivities();
@@ -117,7 +118,7 @@ export default function Activity() {
             alignItems: 'center',
             gap: '12px'
           }}>
-            📋 Historique des activités
+            📋 {t('activity')}
           </h1>
           <button
             onClick={exportActivities}
@@ -135,7 +136,7 @@ export default function Activity() {
               gap: '8px'
             }}
           >
-            📥 Exporter en CSV
+            📥 {t('exportActivities')}
           </button>
         </div>
       </div>
@@ -168,11 +169,11 @@ export default function Activity() {
               }}
             >
               <option value="">{t('all')}</option>
-              <option value="file_upload">Upload</option>
-              <option value="file_download">Téléchargement</option>
-              <option value="file_delete">Suppression</option>
-              <option value="file_share">Partage</option>
-              <option value="login">Connexion</option>
+              <option value="file_upload">{t('upload')}</option>
+              <option value="file_download">{t('download')}</option>
+              <option value="file_delete">{t('delete')}</option>
+              <option value="file_share">{t('share')}</option>
+              <option value="login">{t('login')}</option>
             </select>
           </div>
           <div>
@@ -276,10 +277,10 @@ export default function Activity() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa', borderBottom: `2px solid ${borderColor}` }}>
-                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>Action</th>
-                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>Type</th>
-                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>Date</th>
-                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>Détails</th>
+                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('actionType')}</th>
+                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('resourceType')}</th>
+                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('date')}</th>
+                <th style={{ textAlign: 'left', padding: '16px', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('details')}</th>
               </tr>
             </thead>
             <tbody>
@@ -337,10 +338,10 @@ export default function Activity() {
                   fontSize: '14px'
                 }}
               >
-                Précédent
+                {t('previous')}
               </button>
               <span style={{ padding: '8px 16px', color: textColor, display: 'flex', alignItems: 'center' }}>
-                Page {page} / {totalPages}
+                {t('page')} {page} / {totalPages}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
@@ -355,7 +356,7 @@ export default function Activity() {
                   fontSize: '14px'
                 }}
               >
-                Suivant
+                {t('next')}
               </button>
             </div>
           )}

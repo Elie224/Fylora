@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AdvancedFilters({ filters, onFiltersChange, onReset, availableTags = [] }) {
   const { theme } = useTheme();
+  const { t, language } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters || {
     type: 'all',
@@ -93,7 +95,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               gap: '8px',
             }}
           >
-            🔍 Filtres Avancés
+            🔍 {t('advancedFilters')}
             {activeFilterCount > 0 && (
               <span style={{
                 backgroundColor: isExpanded ? 'rgba(255,255,255,0.3)' : activeBg,
@@ -120,7 +122,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
                 fontSize: '12px',
               }}
             >
-              ✕ Réinitialiser
+              ✕ {t('reset')}
             </button>
           )}
         </div>
@@ -143,13 +145,13 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               color: textSecondary,
               textTransform: 'uppercase',
             }}>
-              Recherche
+              {t('search')}
             </label>
             <input
               type="text"
               value={localFilters.search || ''}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              placeholder="Nom du fichier..."
+              placeholder={t('fileNamePlaceholder')}
               style={{
                 width: '100%',
                 padding: '10px',
@@ -190,9 +192,9 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
                 outline: 'none',
               }}
             >
-              <option value="all">Tous</option>
-              <option value="file">Fichiers</option>
-              <option value="folder">Dossiers</option>
+              <option value="all">{t('all')}</option>
+              <option value="file">{t('files')}</option>
+              <option value="folder">{t('folders')}</option>
             </select>
           </div>
 
@@ -223,13 +225,13 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
                 outline: 'none',
               }}
             >
-              <option value="">Tous les formats</option>
-              <option value="image/">Images</option>
-              <option value="video/">Vidéos</option>
-              <option value="audio/">Audio</option>
-              <option value="application/pdf">PDF</option>
-              <option value="text/">Texte</option>
-              <option value="application/">Autres</option>
+              <option value="">{t('allFormats')}</option>
+              <option value="image/">{t('images')}</option>
+              <option value="video/">{t('videos')}</option>
+              <option value="audio/">{t('audio')}</option>
+              <option value="application/pdf">{t('pdf')}</option>
+              <option value="text/">{t('text')}</option>
+              <option value="application/">{t('other')}</option>
             </select>
           </div>
 
@@ -243,7 +245,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               color: textSecondary,
               textTransform: 'uppercase',
             }}>
-              Date début
+              {t('startDate')}
             </label>
             <input
               type="date"
@@ -272,7 +274,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               color: textSecondary,
               textTransform: 'uppercase',
             }}>
-              Date fin
+              {t('endDate')}
             </label>
             <input
               type="date"
@@ -301,7 +303,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               color: textSecondary,
               textTransform: 'uppercase',
             }}>
-              Taille min (MB)
+              {t('minSize')}
             </label>
             <input
               type="number"
@@ -332,7 +334,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               color: textSecondary,
               textTransform: 'uppercase',
             }}>
-              Taille max (MB)
+              {t('maxSize')}
             </label>
             <input
               type="number"
@@ -417,7 +419,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
             color: textSecondary,
             fontWeight: '600',
           }}>
-            Filtres actifs:
+            {t('activeFilters')}
           </span>
           {localFilters.type !== 'all' && (
             <span style={{
@@ -427,7 +429,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               borderRadius: '16px',
               fontSize: '12px',
             }}>
-              Type: {localFilters.type}
+              {t('type')}: {localFilters.type}
             </span>
           )}
           {localFilters.mime_type && (
@@ -438,7 +440,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               borderRadius: '16px',
               fontSize: '12px',
             }}>
-              Format: {localFilters.mime_type}
+              {t('mimeType')}: {localFilters.mime_type}
             </span>
           )}
           {localFilters.date_from && (
@@ -449,7 +451,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               borderRadius: '16px',
               fontSize: '12px',
             }}>
-              Depuis: {new Date(localFilters.date_from).toLocaleDateString('fr-FR')}
+              {t('since')} {new Date(localFilters.date_from).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}
             </span>
           )}
           {localFilters.date_to && (
@@ -460,7 +462,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               borderRadius: '16px',
               fontSize: '12px',
             }}>
-              Jusqu'à: {new Date(localFilters.date_to).toLocaleDateString('fr-FR')}
+              {t('until')} {new Date(localFilters.date_to).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}
             </span>
           )}
           {localFilters.tags.length > 0 && (
@@ -471,7 +473,7 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset, ava
               borderRadius: '16px',
               fontSize: '12px',
             }}>
-              Tags: {localFilters.tags.length}
+              {t('tags')}: {localFilters.tags.length}
             </span>
           )}
         </div>

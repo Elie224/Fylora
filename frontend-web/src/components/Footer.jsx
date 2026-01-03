@@ -1,9 +1,11 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   
   const footerBg = theme === 'dark' ? '#1e1e1e' : '#f8f9fa';
   const footerBorder = theme === 'dark' ? '#333333' : '#e0e0e0';
@@ -24,7 +26,7 @@ export default function Footer() {
         fontSize: '14px',
         color: footerText
       }}>
-        © {currentYear} Fylora. Tous droits réservés.
+        © {currentYear} Fylora. {t('copyright')}
       </div>
     </footer>
   );

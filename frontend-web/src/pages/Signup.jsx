@@ -105,7 +105,7 @@ export default function Signup() {
             onMouseEnter={(e) => e.target.style.opacity = '0.8'}
             onMouseLeave={(e) => e.target.style.opacity = '1'}
           >
-            ← {language === 'fr' ? 'Retour à l\'accueil' : 'Back to home'}
+            ← {t('backToHome')}
           </Link>
         </div>
         <h1 style={{ marginBottom: '24px', textAlign: 'center', color: textColor }}>

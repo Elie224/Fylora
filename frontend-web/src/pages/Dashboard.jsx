@@ -173,7 +173,7 @@ export default function Dashboard() {
               }}
             >
               <span style={{ fontSize: '20px' }}>⚙️</span>
-              Administration
+              {t('administration')}
             </button>
           )}
           <button

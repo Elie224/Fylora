@@ -57,12 +57,12 @@ export default function Layout({ children }) {
   const navLinks = [
     { path: '/files', label: t('files'), icon: '📁' },
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
-    { path: '/gallery', label: 'Galerie', icon: '📸' },
+    { path: '/gallery', label: t('gallery'), icon: '📸' },
     { path: '/search', label: t('search'), icon: '🔍' },
     { path: '/trash', label: t('trash'), icon: '🗑️' },
-    { path: '/activity', label: t('activity') || 'Activité', icon: '📋' },
+    { path: '/activity', label: t('activity'), icon: '📋' },
     { path: '/settings', label: t('settings'), icon: '⚙️' },
-    ...(user?.is_admin ? [{ path: '/admin', label: '⚙️ Administration', icon: '🔐' }] : []),
+    ...(user?.is_admin ? [{ path: '/admin', label: t('administration'), icon: '🔐' }] : []),
   ];
 
   return (
@@ -504,7 +504,7 @@ export default function Layout({ children }) {
                 borderRadius: '6px',
                 display: 'inline-block'
               }}>
-                💾 {user.is_premium ? '⭐ Premium' : '🆓 Gratuit'}
+                💾 {user.is_premium ? `⭐ ${t('premium')}` : `🆓 ${t('free')}`}
               </div>
             </div>
           </div>

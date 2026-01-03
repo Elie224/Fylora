@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function ProtectedRoute({ children }) {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const initialize = useAuthStore((s) => s.initialize);
   const [isChecking, setIsChecking] = useState(true);
+  const { t } = useLanguage();
 
   // Vérifier l'authentification au montage
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function ProtectedRoute({ children }) {
         alignItems: 'center',
         minHeight: '100vh'
       }}>
-        <div>Vérification de l'authentification...</div>
+        <div>{t('checkingAuth')}</div>
       </div>
     );
   }

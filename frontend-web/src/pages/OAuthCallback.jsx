@@ -66,8 +66,8 @@ export default function OAuthCallback() {
         borderRadius: '8px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
-        <h2>{t('language') === 'en' ? 'Connecting...' : 'Connexion en cours...'}</h2>
-        <p>{t('language') === 'en' ? 'Please wait while we connect you.' : 'Veuillez patienter pendant que nous vous connectons.'}</p>
+        <h2>{t('connecting')}</h2>
+        <p>{t('pleaseWaitConnecting')}</p>
       </div>
     </div>
   );
