@@ -208,7 +208,11 @@ async function uploadFile(req, res, next) {
     const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
 
     // OPTIMISATION: Utiliser quota_used stocké au lieu de recalculer (beaucoup plus rapide)
-    const user = await UserModel.findById(userId).select('quota_used quota_limit').lean();
+    const user = await UserModel.findById(userId, 'quota_used quota_limit').lean();
+    if (!user) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ error: { message: 'User not found' } });
+    }
     const currentUsed = user.quota_used || 0;
     const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
 
