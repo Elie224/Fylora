@@ -88,7 +88,7 @@ export default function Files() {
   useEffect(() => {
     loadFiles();
     loadTags();
-  }, [currentFolder]);
+  }, [loadFiles]);
 
   const loadTags = async () => {
     try {
