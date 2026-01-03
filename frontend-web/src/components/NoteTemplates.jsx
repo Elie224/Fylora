@@ -188,68 +188,115 @@ export default function NoteTemplates({ onClose, onSelect }) {
             gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
             gap: '16px',
           }}>
-            {templates.map((template) => (
+            {templates.map((template) => {
+              const category = template.category || 'general';
+              const background = categoryBackgrounds[category] || categoryBackgrounds.general;
+              const icon = categoryIcons[category] || '📋';
+              
+              return (
               <div
                 key={template._id || template.id}
                 onClick={() => createFromTemplate(template._id || template.id)}
                 style={{
-                  padding: '16px',
-                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f7fafc',
-                  borderRadius: '8px',
+                  padding: '20px',
+                  background: theme === 'dark' 
+                    ? `linear-gradient(135deg, rgba(30, 30, 30, 0.85) 0%, rgba(45, 45, 45, 0.85) 100%), ${background}`
+                    : background,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  borderRadius: '12px',
                   border: `1px solid ${borderColor}`,
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.3s ease',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  minHeight: '160px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: theme === 'dark' 
+                    ? '0 4px 12px rgba(0, 0, 0, 0.5)' 
+                    : '0 4px 12px rgba(0, 0, 0, 0.15)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = theme === 'dark' ? '#333333' : '#e2e8f0';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = theme === 'dark' 
+                    ? '0 8px 20px rgba(0, 0, 0, 0.7)' 
+                    : '0 8px 20px rgba(0, 0, 0, 0.25)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = theme === 'dark' 
+                    ? '0 4px 12px rgba(0, 0, 0, 0.5)' 
+                    : '0 4px 12px rgba(0, 0, 0, 0.15)';
                 }}
               >
+                {/* Overlay pour améliorer la lisibilité */}
                 <div style={{
-                  fontSize: '32px',
-                  marginBottom: '8px',
-                  textAlign: 'center',
-                }}>
-                  {getCategoryIcon(template.category)}
-                </div>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: textColor,
-                  marginBottom: '6px',
-                  textAlign: 'center',
-                }}>
-                  {template.name}
-                </div>
-                {template.description && (
-                  <div style={{
-                    fontSize: '12px',
-                    color: textSecondary,
-                    marginBottom: '8px',
-                    textAlign: 'center',
-                    lineHeight: '1.4',
-                  }}>
-                    {template.description}
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: theme === 'dark' 
+                    ? 'rgba(0, 0, 0, 0.4)' 
+                    : 'rgba(255, 255, 255, 0.6)',
+                  zIndex: 0,
+                }}></div>
+                
+                {/* Contenu du template */}
+                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '10px',
+                      marginBottom: '12px'
+                    }}>
+                      <span style={{ fontSize: '32px' }}>{icon}</span>
+                      <h3 style={{ 
+                        fontSize: '18px', 
+                        fontWeight: '600',
+                        margin: 0,
+                        color: theme === 'dark' ? '#ffffff' : '#1a202c',
+                        textShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.3)' : '0 1px 2px rgba(255,255,255,0.8)'
+                      }}>
+                        {template.name}
+                      </h3>
+                    </div>
+                    
+                    {template.description && (
+                      <p style={{ 
+                        fontSize: '13px',
+                        color: theme === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(26,32,44,0.8)',
+                        margin: 0,
+                        lineHeight: '1.5',
+                        textShadow: theme === 'dark' ? '0 1px 2px rgba(0,0,0,0.2)' : '0 1px 2px rgba(255,255,255,0.8)'
+                      }}>
+                        {template.description}
+                      </p>
+                    )}
                   </div>
-                )}
-                <div style={{
-                  fontSize: '11px',
-                  color: textSecondary,
-                  textAlign: 'center',
-                  padding: '4px 8px',
-                  backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-                  borderRadius: '4px',
-                  display: 'inline-block',
-                  width: '100%',
-                }}>
-                  {template.usage_count || 0} {template.usage_count === 1 ? 'utilisation' : 'utilisations'}
+                  
+                  <div style={{
+                    fontSize: '11px',
+                    color: theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(26,32,44,0.7)',
+                    textAlign: 'center',
+                    padding: '6px 10px',
+                    backgroundColor: theme === 'dark' 
+                      ? 'rgba(0, 0, 0, 0.3)' 
+                      : 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: '6px',
+                    marginTop: '12px',
+                    fontWeight: '500',
+                    textShadow: theme === 'dark' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'
+                  }}>
+                    {template.usage_count || 0} {template.usage_count === 1 ? 'utilisation' : 'utilisations'}
+                  </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
