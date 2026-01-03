@@ -609,16 +609,15 @@ async function previewFile(req, res, next) {
     const mongoose = require('mongoose');
     const File = mongoose.models.File;
     
-    let file;
-    if (File) {
-      file = await File.findById(id).lean();
-    } else {
-      // Fallback vers FileModel
-      file = await FileModel.findById(id);
-      if (file && typeof file.toObject === 'function') {
-        file = file.toObject();
-      }
+    if (!File) {
+      // Si le modèle n'est pas chargé, le charger via le schema
+      const FileSchema = require('../models/fileModel');
+      // Le modèle File est déjà créé dans fileModel.js, on doit juste l'importer
+      // Mais comme il est dans mongoose.models, on peut l'utiliser directement
+      return res.status(500).json({ error: { message: 'File model not available' } });
     }
+    
+    const file = await File.findById(id).lean();
     
     if (!file) {
       return res.status(404).json({ error: { message: 'File not found' } });
