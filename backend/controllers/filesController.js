@@ -230,7 +230,9 @@ async function uploadFile(req, res, next) {
     let folderResult;
 
     if (folderId) {
-      folderResult = await FolderModel.findById(folderId).lean();
+      // Utiliser mongoose directement pour avoir accès à .lean()
+      const Folder = mongoose.models.Folder || mongoose.model('Folder');
+      folderResult = await Folder.findById(folderId).lean();
       if (!folderResult) {
         await fs.unlink(req.file.path).catch(() => {});
         return res.status(404).json({ error: { message: 'Folder not found' } });
