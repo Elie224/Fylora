@@ -678,38 +678,31 @@ async function previewFile(req, res, next) {
         mimeType: file.mime_type
       });
       
-      // Vérifier si le fichier pourrait être dans un autre emplacement
-      // Par exemple, si le chemin contient "user_", essayer de le trouver
-      let alternativePath = null;
-      if (file.file_path.includes('user_')) {
-        // Le chemin pourrait être stocké avec un chemin relatif différent
-        const fileName = path.basename(file.file_path);
-        const userDir = path.dirname(file.file_path);
-        const baseUserDir = path.join(config.upload.uploadDir, userDir);
-        alternativePath = path.join(baseUserDir, fileName);
-        
-        try {
-          await fs.access(alternativePath);
-          filePath = alternativePath; // Utiliser le chemin alternatif trouvé
-          logger.logInfo('File found at alternative path', { fileId: id, alternativePath, userId });
-        } catch (altErr) {
-          // Le fichier n'existe vraiment nulle part
-          return res.status(404).json({ 
-            error: { 
-              message: 'File not found on disk. The file may have been deleted or moved.',
-              details: 'The file record exists in the database but the physical file is missing.'
-            } 
-          });
-        }
-      } else {
-        // Pas de chemin alternatif possible
-        return res.status(404).json({ 
-          error: { 
-            message: 'File not found on disk. The file may have been deleted or moved.',
-            details: 'The file record exists in the database but the physical file is missing.'
-          } 
-        });
-      }
+      // Le fichier n'existe pas physiquement
+      // Cela peut arriver si le fichier a été supprimé manuellement ou si le serveur a été redémarré
+      // et que les fichiers temporaires ont été perdus (sur Render, les fichiers peuvent être perdus)
+      
+      logger.logError('File not found on disk', { 
+        fileId: id, 
+        filePath, 
+        originalPath: file.file_path, 
+        error: accessErr.message, 
+        userId,
+        fileName: file.name,
+        mimeType: file.mime_type,
+        uploadDir: config.upload.uploadDir
+      });
+      
+      // Retourner une erreur claire avec suggestion de supprimer l'entrée
+      return res.status(404).json({ 
+        error: { 
+          message: 'File not found on disk',
+          details: 'The file record exists in the database but the physical file is missing. This can happen if the file was manually deleted or if the server was restarted and temporary files were lost.',
+          suggestion: 'You may want to delete this file entry from your file list.',
+          fileId: id,
+          fileName: file.name
+        } 
+      });
     }
 
     // Pour les images, PDF, texte - servir directement
