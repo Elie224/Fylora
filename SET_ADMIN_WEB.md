@@ -4,9 +4,24 @@
 
 Puisque Node.js n'est pas installé localement, vous pouvez définir l'administrateur directement via l'API.
 
-### Option 1 : Via la Console du Navigateur (Recommandé)
+### Option 1 : Via la Page Web (Le plus simple - Recommandé)
 
 1. **Connectez-vous** à votre application Fylora avec le compte `kouroumaelisee@gmail.com`
+   - URL : https://fylor-frontend.onrender.com
+
+2. **Allez sur cette page** :
+   ```
+   https://fylor-frontend.onrender.com/set-admin
+   ```
+
+3. **Cliquez sur le bouton** "✅ Définir comme Administrateur"
+
+4. La page se rechargera automatiquement et vous verrez le lien "⚙️ Administration" dans le menu
+
+### Option 2 : Via la Console du Navigateur
+
+1. **Connectez-vous** à votre application Fylora avec le compte `kouroumaelisee@gmail.com`
+   - URL : https://fylor-frontend.onrender.com
 
 2. **Ouvrez la console du navigateur** (F12 ou Clic droit > Inspecter > Console)
 
@@ -56,6 +71,8 @@ curl -X POST https://fylora-1.onrender.com/api/admin/set-admin \
   -H "Authorization: Bearer VOTRE_TOKEN_ACCESS" \
   -d '{"email":"kouroumaelisee@gmail.com"}'
 ```
+
+**Note** : Remplacez `VOTRE_TOKEN_ACCESS` par le token que vous pouvez trouver dans la console du navigateur : `localStorage.getItem('access_token')`
 
 ## ⚠️ Important
 
