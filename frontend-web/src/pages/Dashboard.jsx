@@ -853,6 +853,7 @@ export default function Dashboard() {
               position: 'relative',
               zIndex: 1
             }}>
+              {/* Total fichiers */}
               <div style={{
                 padding: '24px',
                 background: theme === 'dark' 
@@ -865,7 +866,9 @@ export default function Dashboard() {
                   ? '0 4px 12px rgba(0,0,0,0.3)'
                   : '0 4px 12px rgba(0,0,0,0.08)',
                 transition: 'all 0.3s ease',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -880,18 +883,33 @@ export default function Dashboard() {
                   : '0 4px 12px rgba(0,0,0,0.08)';
               }}
               >
+                <div style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  right: '-20px',
+                  width: '80px',
+                  height: '80px',
+                  background: 'radial-gradient(circle, rgba(33,150,243,0.2) 0%, transparent 70%)',
+                  pointerEvents: 'none'
+                }}></div>
+                <div style={{ fontSize: '28px', marginBottom: '12px' }}>📄</div>
                 <div style={{ 
-                  fontSize: '32px', 
+                  fontSize: '36px', 
                   fontWeight: '700', 
                   background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: '8px'
+                  marginBottom: '8px',
+                  lineHeight: '1.2'
                 }}>
-                  {stats.total_files}
+                  {stats?.total_files ?? 0}
                 </div>
-                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>{t('totalFiles')}</div>
+                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>
+                  {t('totalFiles') || 'Fichiers'}
+                </div>
               </div>
+
+              {/* Total dossiers */}
               <div style={{
                 padding: '24px',
                 background: theme === 'dark' 
@@ -904,7 +922,9 @@ export default function Dashboard() {
                   ? '0 4px 12px rgba(0,0,0,0.3)'
                   : '0 4px 12px rgba(0,0,0,0.08)',
                 transition: 'all 0.3s ease',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -919,18 +939,147 @@ export default function Dashboard() {
                   : '0 4px 12px rgba(0,0,0,0.08)';
               }}
               >
+                <div style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  right: '-20px',
+                  width: '80px',
+                  height: '80px',
+                  background: 'radial-gradient(circle, rgba(76,175,80,0.2) 0%, transparent 70%)',
+                  pointerEvents: 'none'
+                }}></div>
+                <div style={{ fontSize: '28px', marginBottom: '12px' }}>📁</div>
                 <div style={{ 
-                  fontSize: '32px', 
+                  fontSize: '36px', 
                   fontWeight: '700', 
                   background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: '8px'
+                  marginBottom: '8px',
+                  lineHeight: '1.2'
                 }}>
-                  {stats.total_folders}
+                  {stats?.total_folders ?? 0}
                 </div>
-                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>{t('totalFolders')}</div>
+                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>
+                  {t('totalFolders') || 'Dossiers'}
+                </div>
               </div>
+
+              {/* Fichiers récents */}
+              <div style={{
+                padding: '24px',
+                background: theme === 'dark' 
+                  ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                  : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                borderRadius: '16px',
+                textAlign: 'center',
+                border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                boxShadow: theme === 'dark' 
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.08)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = theme === 'dark' 
+                  ? '0 8px 20px rgba(255,152,0,0.4)'
+                  : '0 8px 20px rgba(255,152,0,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = theme === 'dark' 
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.08)';
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  right: '-20px',
+                  width: '80px',
+                  height: '80px',
+                  background: 'radial-gradient(circle, rgba(255,152,0,0.2) 0%, transparent 70%)',
+                  pointerEvents: 'none'
+                }}></div>
+                <div style={{ fontSize: '28px', marginBottom: '12px' }}>🕒</div>
+                <div style={{ 
+                  fontSize: '36px', 
+                  fontWeight: '700', 
+                  background: 'linear-gradient(135deg, #FF9800 0%, #f57c00 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: '8px',
+                  lineHeight: '1.2'
+                }}>
+                  {stats?.recent_files?.length ?? 0}
+                </div>
+                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>
+                  {t('recentFiles') || 'Fichiers récents'}
+                </div>
+              </div>
+
+              {/* Espace utilisé */}
+              {stats?.quota && (
+                <div style={{
+                  padding: '24px',
+                  background: theme === 'dark' 
+                    ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                  borderRadius: '16px',
+                  textAlign: 'center',
+                  border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                  boxShadow: theme === 'dark' 
+                    ? '0 4px 12px rgba(0,0,0,0.3)'
+                    : '0 4px 12px rgba(0,0,0,0.08)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = theme === 'dark' 
+                    ? '0 8px 20px rgba(156,39,176,0.4)'
+                    : '0 8px 20px rgba(156,39,176,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = theme === 'dark' 
+                    ? '0 4px 12px rgba(0,0,0,0.3)'
+                    : '0 4px 12px rgba(0,0,0,0.08)';
+                }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '-20px',
+                    right: '-20px',
+                    width: '80px',
+                    height: '80px',
+                    background: 'radial-gradient(circle, rgba(156,39,176,0.2) 0%, transparent 70%)',
+                    pointerEvents: 'none'
+                  }}></div>
+                  <div style={{ fontSize: '28px', marginBottom: '12px' }}>💾</div>
+                  <div style={{ 
+                    fontSize: '24px', 
+                    fontWeight: '700', 
+                    background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    marginBottom: '8px',
+                    lineHeight: '1.2'
+                  }}>
+                    {stats.quota.percentage < 1 
+                      ? stats.quota.percentage.toFixed(2) 
+                      : stats.quota.percentage}%
+                  </div>
+                  <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>
+                    {t('used') || 'Utilisé'}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>
