@@ -57,11 +57,31 @@ exports.listTemplates = async (req, res, next) => {
 
     const templates = await NoteTemplate.find(query)
       .populate('created_by', 'email display_name')
-      .sort({ usage_count: -1, created_at: -1 });
+      .sort({ usage_count: -1, created_at: -1 })
+      .lean();
+
+    // Formater les templates pour le frontend
+    const formattedTemplates = templates.map(template => ({
+      id: template._id.toString(),
+      _id: template._id.toString(),
+      name: template.name,
+      description: template.description,
+      content: template.content,
+      category: template.category,
+      is_public: template.is_public,
+      created_by: template.created_by ? {
+        id: template.created_by._id?.toString(),
+        email: template.created_by.email,
+        display_name: template.created_by.display_name
+      } : null,
+      usage_count: template.usage_count || 0,
+      created_at: template.created_at ? (template.created_at instanceof Date ? template.created_at.toISOString() : template.created_at) : new Date().toISOString(),
+      updated_at: template.updated_at ? (template.updated_at instanceof Date ? template.updated_at.toISOString() : template.updated_at) : new Date().toISOString(),
+    }));
 
     return successResponse(res, {
-      templates,
-      total: templates.length,
+      templates: formattedTemplates,
+      total: formattedTemplates.length,
     });
   } catch (error) {
     logger.logError(error, { context: 'listTemplates' });
