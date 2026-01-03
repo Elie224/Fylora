@@ -112,17 +112,18 @@ async function getDashboard(req, res, next) {
         .sort({ updated_at: -1 })
         .limit(5)
         .select('name size mime_type updated_at _id')
-        .lean(),
+        .lean()
+        .maxTimeMS(2000), // Timeout de 2 secondes
       // Compter les fichiers avec countDocuments (plus rapide)
       File.countDocuments({ 
         owner_id: ownerObjectId, 
         is_deleted: false 
-      }),
+      }).maxTimeMS(2000), // Timeout de 2 secondes
       // Compter les dossiers avec countDocuments (plus rapide)
       Folder.countDocuments({ 
         owner_id: ownerObjectId, 
         is_deleted: false 
-      })
+      }).maxTimeMS(2000) // Timeout de 2 secondes
     ]);
 
     const breakdown = breakdownAggregation[0] || {
