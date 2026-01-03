@@ -326,7 +326,7 @@ exports.updateNote = async (req, res, next) => {
 };
 
 /**
- * Supprimer une note (corbeille)
+ * Supprimer définitivement une note
  */
 exports.deleteNote = async (req, res, next) => {
   try {
@@ -344,18 +344,17 @@ exports.deleteNote = async (req, res, next) => {
       return errorResponse(res, 'Access denied', 403);
     }
 
-    note.is_deleted = true;
-    note.deleted_at = new Date();
-    await note.save();
+    // Supprimer définitivement la note
+    await Note.findByIdAndDelete(id);
 
-    await logActivity(req, 'note_delete', 'note', note._id, { title: note.title });
+    await logActivity(req, 'note_permanent_delete', 'note', id, { title: note.title });
 
-    logger.logInfo('Note deleted', { userId, note_id: id });
+    logger.logInfo('Note permanently deleted', { userId, note_id: id });
 
     // Invalider le cache des notes
     invalidateUserCache(userId);
 
-    return successResponse(res, { message: 'Note deleted successfully' });
+    return successResponse(res, { message: 'Note supprimée définitivement' });
   } catch (error) {
     logger.logError(error, { context: 'deleteNote' });
     next(error);

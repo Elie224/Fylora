@@ -373,11 +373,11 @@ export default function Notes() {
   }, [title, content, currentNote?.id, currentNote?.title, currentNote?.content, loading, saving, accessToken]);
 
   const deleteNote = useCallback(async (noteId) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer cette note ?')) return;
+    if (!window.confirm('⚠️ Attention : Cette action est irréversible !\n\nVoulez-vous vraiment supprimer définitivement cette note ?')) return;
 
     try {
       await notesService.deleteNote(noteId);
-      showToast('Note supprimée avec succès', 'success');
+      showToast('Note supprimée définitivement', 'success');
       if (currentNote && getNoteId(currentNote) === noteId) {
         navigate('/notes');
       }
