@@ -29,23 +29,101 @@ export default function Gallery() {
   const loadMediaFiles = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fileService.list();
       
-      // Vérifier la structure de réponse
-      if (!response || !response.data) {
-        throw new Error('Réponse invalide du serveur');
+      // Charger TOUS les fichiers de l'utilisateur (pas seulement ceux du dossier actuel)
+      // Utiliser l'endpoint de recherche avec un filtre pour images et vidéos
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        throw new Error('Non authentifié');
       }
-      
-      const allFiles = response.data?.data?.items || response.data?.items || [];
-      
-      // Filtrer uniquement les images et vidéos
-      const media = allFiles.filter(file => {
-        if (!file) return false;
-        const mimeType = file.mime_type || '';
-        return mimeType.startsWith('image/') || mimeType.startsWith('video/');
+
+      // Récupérer tous les fichiers images et vidéos via l'API de recherche
+      // On fait plusieurs requêtes pour récupérer tous les fichiers (pagination)
+      let allMediaFiles = [];
+      let skip = 0;
+      const limit = 100; // Récupérer 100 fichiers à la fois
+      let hasMore = true;
+
+      while (hasMore) {
+        // Rechercher les images
+        const imagesResponse = await fetch(
+          `${apiUrl}/api/search?mime_type=image&limit=${limit}&skip=${skip}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // Rechercher les vidéos
+        const videosResponse = await fetch(
+          `${apiUrl}/api/search?mime_type=video&limit=${limit}&skip=${skip}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!imagesResponse.ok && !videosResponse.ok) {
+          throw new Error('Erreur lors du chargement des médias');
+        }
+
+        const imagesData = imagesResponse.ok ? await imagesResponse.json() : { data: { items: [] } };
+        const videosData = videosResponse.ok ? await videosResponse.json() : { data: { items: [] } };
+
+        const images = imagesData?.data?.items || imagesData?.items || [];
+        const videos = videosData?.data?.items || videosData?.items || [];
+
+        // Filtrer pour ne garder que les images et vidéos
+        const mediaBatch = [...images, ...videos].filter(file => {
+          if (!file) return false;
+          const mimeType = file.mime_type || '';
+          return mimeType.startsWith('image/') || mimeType.startsWith('video/');
+        });
+
+        allMediaFiles = [...allMediaFiles, ...mediaBatch];
+
+        // Si on a récupéré moins de fichiers que la limite, on a tout récupéré
+        if (mediaBatch.length < limit) {
+          hasMore = false;
+        } else {
+          skip += limit;
+        }
+
+        // Limite de sécurité : ne pas faire plus de 10 requêtes (1000 fichiers max)
+        if (skip >= 1000) {
+          hasMore = false;
+        }
+      }
+
+      // Alternative : Si la recherche ne fonctionne pas, utiliser fileService.list() sans folder_id
+      // pour récupérer tous les fichiers de la racine, puis chercher récursivement
+      if (allMediaFiles.length === 0) {
+        // Fallback : charger depuis la racine
+        const response = await fileService.list(null, { limit: 1000 });
+        const allFiles = response?.data?.data?.items || response?.data?.items || [];
+        
+        // Filtrer uniquement les images et vidéos
+        allMediaFiles = allFiles.filter(file => {
+          if (!file) return false;
+          const mimeType = file.mime_type || '';
+          return mimeType.startsWith('image/') || mimeType.startsWith('video/');
+        });
+      }
+
+      // Trier par date de création (plus récent en premier)
+      allMediaFiles.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.updated_at || 0);
+        const dateB = new Date(b.created_at || b.updated_at || 0);
+        return dateB - dateA;
       });
 
-      setMediaFiles(media);
+      setMediaFiles(allMediaFiles);
 
       // Grouper par date pour la vue timeline
       const grouped = {};
