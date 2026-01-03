@@ -167,11 +167,23 @@ async function listFiles(req, res, next) {
     // OPTIMISATION: Ne pas compter si on n'a pas besoin (skip=0 et limit suffisant)
     const needCount = skipNum === 0 && limitNum >= 100; // Compter seulement si nécessaire
     
+    // Optimisation: Utiliser lean() et limiter les champs récupérés
     const promises = [
-      FileModel.findByOwner(userId, actualFolderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
-      FolderModel.findByOwner(userId, folderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
+      FileModel.findByOwner(userId, actualFolderId, false, { 
+        skip: skipNum, 
+        limit: limitNum, 
+        sortBy: sort_by, 
+        sortOrder: sort_order 
+      }).lean(),
+      FolderModel.findByOwner(userId, folderId, false, { 
+        skip: skipNum, 
+        limit: limitNum, 
+        sortBy: sort_by, 
+        sortOrder: sort_order 
+      }).lean(),
     ];
     
+    // Optimisation: Ne compter que si vraiment nécessaire (pagination)
     if (needCount) {
       promises.push(
         FileModel.countByOwner(userId, actualFolderId, false),

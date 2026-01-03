@@ -202,10 +202,12 @@ exports.getNote = async (req, res, next) => {
       return errorResponse(res, 'Invalid note ID format', 400);
     }
 
+    // Optimisation: Utiliser lean() et limiter les champs populés
     const note = await Note.findById(id)
       .populate('owner_id', 'email display_name avatar_url')
       .populate('last_modified_by', 'email display_name')
-      .populate('shared_with.user_id', 'email display_name avatar_url');
+      .populate('shared_with.user_id', 'email display_name avatar_url')
+      .lean();
 
     if (!note) {
       return errorResponse(res, 'Note not found', 404);
@@ -215,8 +217,7 @@ exports.getNote = async (req, res, next) => {
       return errorResponse(res, 'Note has been deleted', 404);
     }
 
-    // Vérifier les permissions
-    // Convertir userId en ObjectId si nécessaire pour la comparaison
+    // Vérifier les permissions - Optimisation: vérifier d'abord si c'est le propriétaire
     const userIdObj = mongoose.Types.ObjectId.isValid(userId) 
       ? new mongoose.Types.ObjectId(userId) 
       : userId;
@@ -225,13 +226,10 @@ exports.getNote = async (req, res, next) => {
     const ownerIdStr = ownerId?.toString();
     const userIdStr = userIdObj?.toString();
     
-    // Le propriétaire a toujours accès
-    let hasAccess = false;
-    if (ownerIdStr === userIdStr) {
-      hasAccess = true;
-    } else {
-      // Vérifier les permissions partagées
-      const hasSharedAccess = note.shared_with.some(share => {
+    // Le propriétaire a toujours accès - vérifier en premier (cas le plus fréquent)
+    if (ownerIdStr !== userIdStr) {
+      // Vérifier les permissions partagées seulement si ce n'est pas le propriétaire
+      const hasSharedAccess = note.shared_with && note.shared_with.some(share => {
         const shareUserId = share.user_id?._id || share.user_id;
         return shareUserId?.toString() === userIdStr;
       });
@@ -240,17 +238,10 @@ exports.getNote = async (req, res, next) => {
         logger.logWarn('Access denied to note', { 
           userId: userIdStr, 
           noteId: id, 
-          ownerId: ownerIdStr,
-          ownerIdType: typeof ownerId,
-          userIdType: typeof userId,
-          sharedWith: note.shared_with.map(s => ({
-            userId: (s.user_id?._id || s.user_id)?.toString(),
-            permission: s.permission
-          }))
+          ownerId: ownerIdStr
         });
         return errorResponse(res, 'Access denied', 403);
       }
-      hasAccess = true;
     }
 
     // S'assurer que l'ID est retourné comme string

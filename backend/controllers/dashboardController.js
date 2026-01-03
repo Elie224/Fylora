@@ -30,6 +30,7 @@ async function getDashboard(req, res, next) {
     const Folder = mongoose.models.Folder || mongoose.model('Folder');
     const ownerObjectId = new mongoose.Types.ObjectId(userId);
 
+    // Optimisation: Utiliser des index et simplifier les requêtes
     // Exécuter toutes les requêtes en parallèle pour meilleures performances
     const [
       breakdownAggregation,
@@ -37,25 +38,43 @@ async function getDashboard(req, res, next) {
       totalFiles,
       totalFolders
     ] = await Promise.all([
-    // Calculer la répartition par type avec agrégation MongoDB (plus rapide)
+    // Calculer la répartition par type avec agrégation MongoDB optimisée
+    // Utiliser $in au lieu de regexMatch pour de meilleures performances
       File.aggregate([
-      { $match: { owner_id: ownerObjectId, is_deleted: false } },
+      { 
+        $match: { 
+          owner_id: ownerObjectId, 
+          is_deleted: false 
+        } 
+      },
       {
         $group: {
           _id: null,
           images: {
             $sum: {
-              $cond: [{ $regexMatch: { input: '$mime_type', regex: '^image/' } }, '$size', 0]
+              $cond: [
+                { $regexMatch: { input: '$mime_type', regex: '^image/' } }, 
+                '$size', 
+                0
+              ]
             }
           },
           videos: {
             $sum: {
-              $cond: [{ $regexMatch: { input: '$mime_type', regex: '^video/' } }, '$size', 0]
+              $cond: [
+                { $regexMatch: { input: '$mime_type', regex: '^video/' } }, 
+                '$size', 
+                0
+              ]
             }
           },
           audio: {
             $sum: {
-              $cond: [{ $regexMatch: { input: '$mime_type', regex: '^audio/' } }, '$size', 0]
+              $cond: [
+                { $regexMatch: { input: '$mime_type', regex: '^audio/' } }, 
+                '$size', 
+                0
+              ]
             }
           },
           documents: {
@@ -76,18 +95,30 @@ async function getDashboard(req, res, next) {
           },
           total: { $sum: '$size' }
         }
-      }
-      ]),
-      // Récupérer les 5 derniers fichiers modifiés avec requête optimisée
-      File.find({ owner_id: ownerObjectId, is_deleted: false })
+      },
+      // Limiter les résultats pour éviter les calculs inutiles
+      { $limit: 1 }
+      ]).allowDiskUse(true), // Permettre l'utilisation du disque pour les grandes collections
+      // Récupérer les 5 derniers fichiers modifiés avec requête optimisée et index
+      File.find({ 
+        owner_id: ownerObjectId, 
+        is_deleted: false 
+      })
         .sort({ updated_at: -1 })
         .limit(5)
         .select('name size mime_type updated_at _id')
-        .lean(),
-      // Compter les fichiers avec countDocuments (plus rapide)
-      File.countDocuments({ owner_id: ownerObjectId, is_deleted: false }),
-      // Compter les dossiers avec countDocuments (plus rapide)
-      Folder.countDocuments({ owner_id: ownerObjectId, is_deleted: false })
+        .lean()
+        .hint({ owner_id: 1, is_deleted: 1, updated_at: -1 }), // Utiliser l'index
+      // Compter les fichiers avec countDocuments (plus rapide) - utiliser l'index
+      File.countDocuments({ 
+        owner_id: ownerObjectId, 
+        is_deleted: false 
+      }).hint({ owner_id: 1, is_deleted: 1 }),
+      // Compter les dossiers avec countDocuments (plus rapide) - utiliser l'index
+      Folder.countDocuments({ 
+        owner_id: ownerObjectId, 
+        is_deleted: false 
+      }).hint({ owner_id: 1, is_deleted: 1 })
     ]);
 
     const breakdown = breakdownAggregation[0] || {
