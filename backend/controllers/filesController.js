@@ -675,20 +675,42 @@ async function previewFile(req, res, next) {
         file.mime_type === 'application/pdf' ||
         file.mime_type?.startsWith('text/')) {
       res.setHeader('Content-Type', file.mime_type);
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name)}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name || 'file')}"`);
       
-      // Tracker l'utilisation
-      trackFileUsage(id, userId, 'preview', {
-        ip_address: req.ip,
-        user_agent: req.get('user-agent'),
-      }).catch(() => {}); // Ne pas bloquer si le tracking échoue
+      // Tracker l'utilisation (ne pas bloquer si le tracking échoue)
+      try {
+        trackFileUsage(id, userId, 'preview', {
+          ip_address: req.ip,
+          user_agent: req.get('user-agent'),
+        }).catch((trackErr) => {
+          logger.logError('Failed to track file usage', { error: trackErr.message, fileId: id, userId });
+        });
+      } catch (trackErr) {
+        logger.logError('Failed to track file usage', { error: trackErr.message, fileId: id, userId });
+      }
       
-      return res.sendFile(filePath);
+      // Utiliser sendFile avec gestion d'erreur
+      try {
+        return res.sendFile(filePath, (err) => {
+          if (err) {
+            logger.logError('Error sending file', { error: err.message, filePath, fileId: id, userId });
+            if (!res.headersSent) {
+              res.status(500).json({ error: { message: 'Error sending file' } });
+            }
+          }
+        });
+      } catch (sendErr) {
+        logger.logError('Error in sendFile', { error: sendErr.message, filePath, fileId: id, userId });
+        return res.status(500).json({ error: { message: 'Error sending file' } });
+      }
     }
 
     return res.status(400).json({ error: { message: 'Preview not available for this file type' } });
   } catch (err) {
-    logger.logError('Error in previewFile', { error: err.message, stack: err.stack, fileId: req.params.id, userId: req.user?.id });
+    logger.logError('Error in previewFile', { error: err.message, stack: err.stack, fileId: req.params?.id, userId: req.user?.id });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: { message: 'Internal server error' } });
+    }
     next(err);
   }
 }
