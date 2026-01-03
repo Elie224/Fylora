@@ -94,7 +94,7 @@ class SearchEngine {
     }
 
     const files = await File.find(matchQuery)
-      .select('name size mime_type updated_at folder_id')
+      .select('_id name size mime_type updated_at folder_id owner_id file_path created_at is_deleted')
       .lean()
       .limit(options.limit || 50)
       .skip(options.offset || 0)
@@ -130,7 +130,7 @@ class SearchEngine {
       _id: { $in: fileIds },
       is_deleted: false,
     })
-      .select('name size mime_type updated_at folder_id')
+      .select('_id name size mime_type updated_at folder_id owner_id file_path created_at is_deleted')
       .lean();
 
     return files.map(f => FileModel.toDTO(f));
