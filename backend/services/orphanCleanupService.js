@@ -105,7 +105,7 @@ class OrphanCleanupService {
               try {
                 // Marquer comme supprimé plutôt que de supprimer complètement
                 // pour permettre une récupération si nécessaire
-                await File.updateOne(
+                const updateResult = await File.updateOne(
                   { _id: file._id },
                   { 
                     $set: { 
@@ -114,18 +114,22 @@ class OrphanCleanupService {
                     }
                   }
                 );
-                deleted++;
                 
-                logger.logInfo('Orphan file marked as deleted', {
-                  fileId: file._id,
-                  fileName: file.name,
-                  reason: checkResult.reason
-                });
+                if (updateResult.modifiedCount > 0) {
+                  deleted++;
+                  
+                  logger.logInfo('Orphan file marked as deleted', {
+                    fileId: file._id,
+                    fileName: file.name,
+                    reason: checkResult.reason
+                  });
+                }
               } catch (deleteErr) {
                 errors++;
                 logger.logError('Error deleting orphan file', {
                   fileId: file._id,
-                  error: deleteErr.message
+                  error: deleteErr.message,
+                  stack: deleteErr.stack
                 });
               }
             } else {

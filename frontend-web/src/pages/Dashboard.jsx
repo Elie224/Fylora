@@ -41,14 +41,52 @@ export default function Dashboard() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Vérifier que l'utilisateur est bien chargé
+      if (!user) {
+        // Attendre un peu que l'utilisateur soit chargé
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser) {
+          setError(t('mustBeConnected') || 'Vous devez être connecté');
+          setLoading(false);
+          return;
+        }
+      }
+      
       const response = await dashboardService.getStats();
-      setStats(response.data.data);
+      
+      // Vérifier la structure de la réponse
+      if (!response || !response.data) {
+        throw new Error('Invalid response structure');
+      }
+      
+      setStats(response.data.data || response.data);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       
-      // Si c'est une erreur 401, ne pas afficher d'erreur car la redirection est gérée par l'intercepteur
+      // Si c'est une erreur 401, essayer de rafraîchir le token
       if (err.response?.status === 401) {
-        // L'intercepteur va gérer la redirection
+        try {
+          // L'intercepteur devrait gérer cela, mais on peut essayer de recharger
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (refreshToken) {
+            // Attendre que l'intercepteur rafraîchisse le token
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Réessayer une fois
+            try {
+              const retryResponse = await dashboardService.getStats();
+              setStats(retryResponse.data.data || retryResponse.data);
+              return;
+            } catch (retryErr) {
+              // Si ça échoue encore, laisser l'intercepteur gérer
+              return;
+            }
+          }
+        } catch (refreshErr) {
+          // Laisser l'intercepteur gérer la redirection
+          return;
+        }
         return;
       }
       
@@ -57,7 +95,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, user]);
 
   useEffect(() => {
     loadDashboard();
