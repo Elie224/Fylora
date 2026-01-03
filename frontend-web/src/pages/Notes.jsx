@@ -134,7 +134,7 @@ export default function Notes() {
   }, [navigate, showToast]);
 
   const saveNote = useCallback(async () => {
-    if (!currentNote) return;
+    if (!currentNote || saving) return;
 
     const noteId = getNoteId(currentNote);
     if (!noteId) {
@@ -143,16 +143,38 @@ export default function Notes() {
       return;
     }
 
+    // Nettoyer le timeout d'auto-save pour éviter les sauvegardes en double
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
     try {
       setSaving(true);
-      await notesService.updateNote(noteId, {
+      const response = await notesService.updateNote(noteId, {
         title,
         content,
         version: currentNote.version,
       });
+      
+      // Mettre à jour currentNote avec la réponse pour éviter les rechargements inutiles
+      if (response?.data?.note) {
+        setCurrentNote(response.data.note);
+      } else {
+        // Recharger la note si la réponse ne contient pas la note complète
+        await loadNote(noteId);
+      }
+      
       setLastSaved(new Date());
       showToast('Note enregistrée avec succès', 'success', 2000);
-      await loadNote(noteId);
+      
+      // Envoyer les changements via WebSocket
+      if (accessToken) {
+        sendNoteChange(noteId, {
+          title,
+          content,
+        });
+      }
     } catch (err) {
       console.error('Failed to save note:', err);
       if (err.response?.status === 409) {
@@ -164,7 +186,7 @@ export default function Notes() {
     } finally {
       setSaving(false);
     }
-  }, [currentNote, title, content, getNoteId, loadNote, showToast]);
+  }, [currentNote, title, content, getNoteId, loadNote, showToast, saving, accessToken]);
 
   const createNote = useCallback(async () => {
     try {
@@ -184,14 +206,15 @@ export default function Notes() {
     }
   }, [getNoteId, navigate, showToast]);
 
-  // Recharger les notes quand les filtres changent (avec debounce)
+  // Charger les notes au montage et quand les filtres changent (avec debounce)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       loadNotes();
     }, 300); // Debounce de 300ms pour éviter trop de requêtes
     
     return () => clearTimeout(timeoutId);
-  }, [filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder, loadNotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder]);
 
   // Les notes sont déjà filtrées et triées côté serveur, on les utilise directement
   const filteredAndSortedNotes = useMemo(() => {
@@ -211,85 +234,125 @@ export default function Notes() {
       setTitle('');
       setContent('');
     }
-  }, [id, loadNote]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // WebSocket pour collaboration en temps réel
   useEffect(() => {
-    if (currentNote && accessToken) {
-      const socket = connectWebSocket(accessToken);
-      const noteId = getNoteId(currentNote);
-      if (!noteId) return;
-      
-      joinNote(noteId, {
-        onUserJoined: (data) => {
-          console.log('User joined:', data);
-          setActiveUsers(prev => {
-            if (!prev.find(u => u.user_id === data.user_id)) {
-              return [...prev, data.user];
-            }
-            return prev;
-          });
-        },
-        onUserLeft: (data) => {
-          console.log('User left:', data);
-          setActiveUsers(prev => prev.filter(u => u.user_id !== data.user_id));
-        },
-        onNoteChanged: (data) => {
-          // Appliquer les changements si ce n'est pas l'utilisateur actuel
-          if (user && data.user_id !== user.id) {
-            if (data.changes.title) {
-              setTitle(data.changes.title);
-            }
-            if (data.changes.content) {
-              setContent(data.changes.content);
-            }
-          }
-        },
-        onActiveUsers: (data) => {
-          setActiveUsers(data.users || []);
-        },
-        onError: (error) => {
-          console.error('WebSocket error:', error);
-        },
-      });
-
-      return () => {
-        const noteId = getNoteId(currentNote);
-        if (noteId) {
-          leaveNote(noteId);
-        }
-      };
+    if (!currentNote || !accessToken) {
+      setActiveUsers([]);
+      return;
     }
-  }, [currentNote, accessToken, user, getNoteId]);
+
+    const noteId = getNoteId(currentNote);
+    if (!noteId) {
+      setActiveUsers([]);
+      return;
+    }
+
+    // Connecter WebSocket une seule fois
+    const socket = connectWebSocket(accessToken);
+    
+    // Joindre la note avec les callbacks
+    joinNote(noteId, {
+      onUserJoined: (data) => {
+        console.log('User joined:', data);
+        setActiveUsers(prev => {
+          if (!prev.find(u => u.user_id === data.user_id)) {
+            return [...prev, data.user];
+          }
+          return prev;
+        });
+      },
+      onUserLeft: (data) => {
+        console.log('User left:', data);
+        setActiveUsers(prev => prev.filter(u => u.user_id !== data.user_id));
+      },
+      onNoteChanged: (data) => {
+        // Appliquer les changements si ce n'est pas l'utilisateur actuel
+        if (user && data.user_id !== user.id) {
+          if (data.changes.title !== undefined) {
+            setTitle(data.changes.title);
+          }
+          if (data.changes.content !== undefined) {
+            setContent(data.changes.content);
+          }
+        }
+      },
+      onActiveUsers: (data) => {
+        setActiveUsers(data.users || []);
+      },
+      onError: (error) => {
+        console.error('WebSocket error:', error);
+      },
+    });
+
+    return () => {
+      leaveNote(noteId);
+      setActiveUsers([]);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentNote, accessToken, user?.id]);
 
   // Sauvegarde automatique après 2 secondes d'inactivité
   useEffect(() => {
-    if (currentNote && (title !== currentNote.title || content !== currentNote.content)) {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      saveTimeoutRef.current = setTimeout(() => {
-        saveNote();
-        // Envoyer les changements via WebSocket
-        if (currentNote && accessToken) {
-          const noteId = getNoteId(currentNote);
-          if (noteId) {
-            sendNoteChange(noteId, {
-              title,
-              content,
-            });
-          }
-        }
-      }, 2000);
+    // Ne pas sauvegarder si on est en train de charger ou de sauvegarder
+    if (!currentNote || loading || saving) {
+      return;
     }
+
+    const currentTitle = currentNote.title || '';
+    const currentContent = currentNote.content || '';
+    
+    // Vérifier si quelque chose a changé
+    if (title === currentTitle && content === currentContent) {
+      return;
+    }
+
+    // Nettoyer le timeout précédent
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Créer un nouveau timeout pour la sauvegarde
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Vérifier à nouveau que la note existe toujours
+      if (!currentNote) return;
+      
+      const noteId = getNoteId(currentNote);
+      if (!noteId) return;
+
+      try {
+        setSaving(true);
+        await notesService.updateNote(noteId, {
+          title,
+          content,
+          version: currentNote.version,
+        });
+        setLastSaved(new Date());
+        
+        // Envoyer les changements via WebSocket
+        if (accessToken) {
+          sendNoteChange(noteId, {
+            title,
+            content,
+          });
+        }
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+        // Ne pas afficher d'erreur pour l'auto-save silencieux
+      } finally {
+        setSaving(false);
+      }
+    }, 2000);
 
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, content, currentNote, accessToken, saveNote, getNoteId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, content, currentNote?.id, currentNote?.title, currentNote?.content, loading, saving, accessToken]);
 
   const deleteNote = useCallback(async (noteId) => {
     if (!window.confirm('Voulez-vous vraiment supprimer cette note ?')) return;
@@ -392,14 +455,16 @@ export default function Notes() {
       // Ctrl+S ou Cmd+S pour sauvegarder
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (currentNote && !saving) {
+        if (currentNote && !saving && !loading) {
           saveNote();
         }
       }
       // Ctrl+N ou Cmd+N pour nouvelle note
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
-        createNote();
+        if (!loading) {
+          createNote();
+        }
       }
       // Ctrl+F ou Cmd+F pour focus recherche (si pas dans un input)
       if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
@@ -411,7 +476,8 @@ export default function Notes() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentNote, saving, saveNote, createNote]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentNote, saving, loading]);
 
   return (
     <div style={{
