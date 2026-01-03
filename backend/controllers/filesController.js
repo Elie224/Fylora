@@ -275,14 +275,31 @@ async function uploadFile(req, res, next) {
     }
 
     // Créer l'entrée en base de données
-    const file = await FileModel.create({
-      name: req.file.originalname,
-      mimeType: req.file.mimetype,
-      size: fileSize,
-      folderId,
-      ownerId: userId,
-      filePath: finalFilePath,
-    });
+    let file;
+    try {
+      file = await FileModel.create({
+        name: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: fileSize,
+        folderId,
+        ownerId: userId,
+        filePath: finalFilePath,
+      });
+    } catch (dbError) {
+      logger.logError(dbError, { 
+        context: 'file_creation_db', 
+        userId,
+        fileName: req.file.originalname,
+        folderId
+      });
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(500).json({ 
+        error: { 
+          message: 'Failed to create file record in database',
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        } 
+      });
+    }
 
     // OPTIMISATION: Mettre à jour le quota de manière asynchrone (ne pas attendre)
     if (!isDuplicate) {
@@ -345,6 +362,20 @@ async function uploadFile(req, res, next) {
     if (req.file?.path) {
       await fs.unlink(req.file.path).catch(() => {});
     }
+    // Logger l'erreur pour le débogage
+    logger.logError(err, { 
+      context: 'uploadFile', 
+      userId: req.user?.id,
+      fileName: req.file?.originalname,
+      fileSize: req.file?.size,
+      folderId: req.body?.folder_id
+    });
+    console.error('Upload error details:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.user?.id,
+      fileName: req.file?.originalname
+    });
     next(err);
   }
 }
