@@ -74,27 +74,29 @@ class RedisCache {
         this.useRedis = false;
       });
 
-      // Timeout pour la connexion initiale
+      // Timeout pour la connexion initiale (augmenté à 5 secondes)
       const connectPromise = client.connect();
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 2000)
+        setTimeout(() => reject(new Error('Connection timeout')), 5000)
       );
 
       await Promise.race([connectPromise, timeoutPromise]);
       
-      // Tester la connexion avant de l'utiliser
+      // Tester la connexion avec un ping pour vérifier qu'elle fonctionne vraiment
       try {
-        await client.connect();
-        // Tester avec un ping
-        await client.ping();
-        this.redis = client;
-        this.useRedis = true;
-        console.log('✅ Redis cache connected successfully');
-      } catch (connectErr) {
+        const pong = await client.ping();
+        if (pong === 'PONG') {
+          this.redis = client;
+          this.useRedis = true;
+          console.log('✅ Redis cache connected successfully');
+        } else {
+          throw new Error('Redis ping returned unexpected value: ' + pong);
+        }
+      } catch (pingErr) {
         console.error('❌ Redis connection test failed:', {
-          message: connectErr.message,
-          code: connectErr.code,
-          redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
+          message: pingErr.message,
+          code: pingErr.code,
+          redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set (but connection failed)' : 'REDIS_URL is NOT set'
         });
         await client.quit().catch(() => {});
         this.useRedis = false;
