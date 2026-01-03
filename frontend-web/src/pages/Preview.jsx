@@ -102,6 +102,7 @@ export default function Preview() {
       
       // Récupérer le Content-Type depuis l'endpoint preview pour déterminer le type
       let contentType = '';
+      let previewError = null;
       try {
         const previewHeadResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
           method: 'HEAD',
@@ -112,9 +113,20 @@ export default function Preview() {
         
         if (previewHeadResponse.ok) {
           contentType = previewHeadResponse.headers.get('content-type') || '';
+        } else if (previewHeadResponse.status === 404) {
+          // Le fichier n'existe pas physiquement
+          const errorData = await previewHeadResponse.json().catch(() => ({}));
+          previewError = errorData.error?.message || t('fileNotFound') || 'File not found';
         }
       } catch (headErr) {
         console.warn('Could not fetch preview headers:', headErr);
+      }
+      
+      // Si le fichier n'existe pas physiquement, afficher un message d'erreur
+      if (previewError && previewError.includes('not found')) {
+        setError(t('fileNotFoundOnDisk') || 'The file exists in the database but the physical file is missing. This can happen if the server was restarted.');
+        setLoading(false);
+        return;
       }
       
       // Construire les métadonnées du fichier

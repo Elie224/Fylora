@@ -390,6 +390,8 @@ const translations = {
     split: 'Split',
     preview: 'Prévisualiser',
     cannotPreviewFileType: 'Ce type de fichier ne peut pas être prévisualisé.',
+    fileNotFound: 'Fichier non trouvé',
+    fileNotFoundOnDisk: 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré. Vous pouvez supprimer cette entrée de votre liste de fichiers.',
     
     // OAuth
     redirecting: 'Redirection...',
@@ -817,6 +819,8 @@ const translations = {
     split: 'Split',
     preview: 'Preview',
     cannotPreviewFileType: 'This file type cannot be previewed.',
+    fileNotFound: 'File not found',
+    fileNotFoundOnDisk: 'The file exists in the database but the physical file is missing. This can happen if the server was restarted. You can delete this entry from your file list.',
     
     // OAuth
     redirecting: 'Redirecting...',
