@@ -55,8 +55,7 @@
     "socket.io-client": "^4.8.1",
     "speakeasy": "^2.0.0",
     "uuid": "^9.0.1",
-    "winston": "^3.15.0",
-    "aws-sdk": "^2.1691.0"
+    "winston": "^3.15.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
