@@ -27,7 +27,11 @@ services:
     rootDir: frontend-web
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    # Configuration pour le routing SPA
+    # Configuration pour le routing SPA - toutes les routes pointent vers index.html
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     headers:
       - path: /*
         name: X-Content-Type-Options
