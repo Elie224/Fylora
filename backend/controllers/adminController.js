@@ -227,11 +227,65 @@ async function deleteUser(req, res, next) {
   }
 }
 
+// Route temporaire pour définir l'admin (à supprimer après utilisation)
+// ⚠️ Cette fonction doit être supprimée après avoir défini l'admin pour des raisons de sécurité
+async function setAdminUser(req, res, next) {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        error: { message: 'Email requis' }
+      });
+    }
+
+    const User = mongoose.models.User || mongoose.model('User');
+    
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    
+    if (!user) {
+      return res.status(404).json({
+        error: { message: `Utilisateur ${email} non trouvé` }
+      });
+    }
+
+    if (user.is_admin) {
+      return res.status(200).json({
+        data: { 
+          message: `${email} est déjà administrateur`,
+          user: {
+            id: user._id.toString(),
+            email: user.email,
+            is_admin: user.is_admin
+          }
+        }
+      });
+    }
+
+    user.is_admin = true;
+    await user.save();
+
+    return res.status(200).json({
+      data: {
+        message: `${email} est maintenant administrateur`,
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          is_admin: user.is_admin
+        }
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getStats,
   getUsers,
   getUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  setAdminUser
 };
 
