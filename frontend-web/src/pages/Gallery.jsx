@@ -113,7 +113,7 @@ export default function Gallery() {
 
       // Grouper par date pour la vue timeline
       const grouped = {};
-      media.forEach(file => {
+      allMediaFiles.forEach(file => {
         try {
           const date = new Date(file.created_at || file.uploaded_at || Date.now());
           if (isNaN(date.getTime())) return; // Ignorer les dates invalides
