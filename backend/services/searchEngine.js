@@ -74,7 +74,17 @@ class SearchEngine {
     }
 
     if (options.mimeType) {
-      matchQuery.mime_type = options.mimeType;
+      // Gérer les filtres génériques pour images et vidéos
+      if (options.mimeType === 'image' || options.mimeType === 'image/') {
+        matchQuery.mime_type = { $regex: '^image/' };
+      } else if (options.mimeType === 'video' || options.mimeType === 'video/') {
+        matchQuery.mime_type = { $regex: '^video/' };
+      } else if (options.mimeType === 'audio' || options.mimeType === 'audio/') {
+        matchQuery.mime_type = { $regex: '^audio/' };
+      } else {
+        // Filtre exact ou regex personnalisé
+        matchQuery.mime_type = options.mimeType;
+      }
     }
 
     if (options.dateFrom || options.dateTo) {
