@@ -35,15 +35,27 @@ function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
           }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to load');
+        if (response.ok) {
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          setImageUrl(objectUrl);
+          setError(false);
+        } else if (response.status === 404) {
+          // Fichier orphelin - n'existe pas physiquement
+          setError(true);
+          // Ne pas logger car c'est attendu pour les fichiers orphelins
+        } else if (response.status === 401) {
+          // Erreur d'authentification - laisser l'intercepteur gérer
+          setError(true);
+        } else {
+          console.warn('Failed to load thumbnail:', response.status);
+          setError(true);
         }
-
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        setImageUrl(objectUrl);
       } catch (err) {
-        console.error('Failed to load thumbnail:', err);
+        // Ne pas logger les erreurs 401 - l'intercepteur gère
+        if (err.message && !err.message.includes('401')) {
+          console.error('Failed to load thumbnail:', err);
+        }
         setError(true);
       } finally {
         setLoading(false);

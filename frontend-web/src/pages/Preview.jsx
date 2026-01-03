@@ -114,9 +114,16 @@ export default function Preview() {
         if (previewHeadResponse.ok) {
           contentType = previewHeadResponse.headers.get('content-type') || '';
         } else if (previewHeadResponse.status === 404) {
-          // Le fichier n'existe pas physiquement
-          const errorData = await previewHeadResponse.json().catch(() => ({}));
-          previewError = errorData.error?.message || t('fileNotFound') || 'File not found';
+          // Le fichier n'existe pas physiquement - c'est un fichier orphelin
+          try {
+            const errorData = await previewHeadResponse.json().catch(() => ({}));
+            previewError = errorData.error?.message || errorData.error?.details || t('fileNotFound') || 'File not found';
+          } catch (parseErr) {
+            previewError = t('fileNotFound') || 'File not found';
+          }
+        } else if (previewHeadResponse.status === 401) {
+          // Erreur d'authentification - laisser l'intercepteur gérer
+          previewError = 'Unauthorized';
         }
       } catch (headErr) {
         console.warn('Could not fetch preview headers:', headErr);
