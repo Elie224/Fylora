@@ -58,21 +58,14 @@ const FolderModel = {
       const sortObj = {};
       sortObj[sortBy] = sortOrder;
       
-      const queryBuilder = Folder.find(query)
+      // Construire la requête optimisée - MongoDB utilisera automatiquement les index disponibles
+      // Limiter les champs récupérés pour améliorer les performances
+      const folders = await Folder.find(query)
+        .select('name owner_id parent_id is_deleted created_at updated_at _id')
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
         .lean();
-      
-      // Essayer d'utiliser le hint seulement si l'index existe
-      try {
-        queryBuilder.hint({ owner_id: 1, parent_id: 1, is_deleted: 1 });
-      } catch (hintError) {
-        // Si le hint échoue, continuer sans hint
-        console.warn('Hint failed for folders, continuing without hint:', hintError.message);
-      }
-      
-      const folders = await queryBuilder;
       return folders.map(f => this.toDTO(f));
     } catch (err) {
       console.error('Error in findByOwner (folders):', err);

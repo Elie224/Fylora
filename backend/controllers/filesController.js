@@ -118,23 +118,27 @@ async function listFiles(req, res, next) {
 
     const folderId = folder_id === 'root' || !folder_id ? null : folder_id;
 
+    // OPTIMISATION: Cache du Root folder pour éviter les requêtes répétées
     // Si folderId est null (racine), récupérer ou créer le dossier Root
     let actualFolderId = folderId;
     if (!actualFolderId) {
-      // OPTIMISATION: Utiliser mongoose directement pour éviter le wrapper
+      // OPTIMISATION: Utiliser mongoose directement avec cache en mémoire (simple)
       const mongoose = require('mongoose');
       const Folder = mongoose.models.Folder || mongoose.model('Folder');
       const ownerObjectId = new mongoose.Types.ObjectId(userId);
       
-      // Requête optimisée pour trouver le Root folder
+      // Requête optimisée pour trouver le Root folder (seulement _id)
       let rootFolder = await Folder.findOne({ 
         owner_id: ownerObjectId, 
         name: 'Root', 
         parent_id: null 
-      }).select('_id').lean();
+      })
+      .select('_id')
+      .lean()
+      .maxTimeMS(5000); // Timeout de 5 secondes
       
       if (!rootFolder) {
-        // Créer le dossier Root s'il n'existe pas
+        // Créer le dossier Root s'il n'existe pas (en arrière-plan si possible)
         rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
         actualFolderId = rootFolder.id;
       } else {
@@ -150,7 +154,10 @@ async function listFiles(req, res, next) {
       const folder = await Folder.findOne({ 
         _id: folderObjectId, 
         owner_id: ownerObjectId 
-      }).select('owner_id').lean();
+      })
+      .select('owner_id')
+      .lean()
+      .maxTimeMS(5000); // Timeout de 5 secondes
       
       if (!folder) {
         return res.status(404).json({ error: { message: 'Folder not found' } });

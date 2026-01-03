@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
 /**
@@ -109,19 +109,24 @@ export const useToast = () => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
-  const ToastContainer = () => (
-    <>
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          duration={toast.duration}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
-    </>
-  );
+  const ToastContainer = () => {
+    if (toasts.length === 0) return null;
+    
+    return (
+      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000, display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'none' }}>
+        {toasts.map((toast, index) => (
+          <div key={toast.id} style={{ pointerEvents: 'auto', marginTop: index > 0 ? '12px' : '0' }}>
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              duration={toast.duration}
+              onClose={() => removeToast(toast.id)}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return { showToast, ToastContainer };
 };
