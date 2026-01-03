@@ -153,16 +153,34 @@ export default function Notes() {
   };
 
   const loadNote = async (noteId) => {
+    // Vérifier que noteId est valide
+    if (!noteId || noteId === 'undefined' || noteId === '[object Object]') {
+      console.error('Invalid note ID:', noteId);
+      alert('Erreur: ID de note invalide');
+      navigate('/notes');
+      return;
+    }
+    
     try {
       setLoading(true);
       const response = await notesService.getNote(noteId);
       const note = response.data?.note;
+      
+      if (!note) {
+        console.error('Note not found:', noteId);
+        alert('Note non trouvée');
+        navigate('/notes');
+        return;
+      }
+      
       setCurrentNote(note);
-      setTitle(note.title);
+      setTitle(note.title || '');
       setContent(note.content || '');
     } catch (err) {
       console.error('Failed to load note:', err);
-      alert('Erreur lors du chargement de la note');
+      const errorMsg = err.response?.data?.error?.message || err.message || 'Erreur lors du chargement de la note';
+      alert(`Erreur lors du chargement de la note: ${errorMsg}`);
+      navigate('/notes');
     } finally {
       setLoading(false);
     }
