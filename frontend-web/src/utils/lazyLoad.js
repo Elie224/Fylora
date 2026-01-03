@@ -7,7 +7,6 @@ import React, { lazy } from 'react';
 export const LazyDashboard = lazy(() => import('../pages/Dashboard'));
 export const LazyFiles = lazy(() => import('../pages/Files'));
 export const LazyPreview = lazy(() => import('../pages/Preview'));
-export const LazyNotes = lazy(() => import('../pages/Notes'));
 export const LazySettings = lazy(() => import('../pages/Settings'));
 
 // Composant de suspense avec fallback

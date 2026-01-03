@@ -286,7 +286,6 @@ export { fileVersionsService } from './fileVersionsService';
 export { notificationsService } from './notificationsService';
 export { activityService } from './activityService';
 export { tagsService } from './tagsService';
-export { notesService } from './notesService';
 export { twoFactorService } from './twoFactorService';
 export { teamsService } from './teamsService';
 export { scheduledBackupsService } from './scheduledBackupsService';

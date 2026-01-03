@@ -57,7 +57,6 @@ export default function Layout({ children }) {
   const navLinks = [
     { path: '/files', label: t('files'), icon: '📁' },
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
-    { path: '/notes', label: t('notes') || 'Notes', icon: '📝' },
     { path: '/search', label: t('search'), icon: '🔍' },
     { path: '/trash', label: t('trash'), icon: '🗑️' },
     { path: '/activity', label: t('activity') || 'Activité', icon: '📋' },

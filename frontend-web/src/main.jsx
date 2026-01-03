@@ -25,7 +25,6 @@ const Share = lazy(() => import('./pages/Share'));
 const Search = lazy(() => import('./pages/Search'));
 const Trash = lazy(() => import('./pages/Trash'));
 const Activity = lazy(() => import('./pages/Activity'));
-const Notes = lazy(() => import('./pages/Notes'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 // Composant de chargement
@@ -176,30 +175,19 @@ function App() {
             </Layout>
           }
         />
-        <Route
-          path="/notes"
-          element={
-            <Layout>
-              <ProtectedRoute>
-                <Notes />
-              </ProtectedRoute>
-            </Layout>
-          }
-        />
         {/* Redirection pour l'ancienne route /favorites (supprimée) */}
         <Route
           path="/favorites"
           element={<Navigate to="/files" replace />}
         />
+        {/* Redirection pour l'ancienne route /notes (supprimée) */}
+        <Route
+          path="/notes"
+          element={<Navigate to="/files" replace />}
+        />
         <Route
           path="/notes/:id"
-          element={
-            <Layout>
-              <ProtectedRoute>
-                <Notes />
-              </ProtectedRoute>
-            </Layout>
-          }
+          element={<Navigate to="/files" replace />}
         />
             </Routes>
           </Suspense>
