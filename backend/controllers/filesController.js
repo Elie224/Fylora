@@ -205,7 +205,10 @@ async function listFiles(req, res, next) {
       });
     }
 
-    const total = totalFiles + totalFolders;
+    // Calculer le total (si on n'a pas compté, utiliser la longueur des résultats)
+    const total = needCount 
+      ? (totalFiles + totalFolders)
+      : (files.length + folders.length);
 
     res.status(200).json({
       data: {
@@ -214,7 +217,7 @@ async function listFiles(req, res, next) {
           total,
           skip: skipNum,
           limit: limitNum,
-          hasMore: (skipNum + limitNum) < total,
+          hasMore: needCount ? (skipNum + limitNum) < total : items.length >= limitNum,
         },
       },
     });
