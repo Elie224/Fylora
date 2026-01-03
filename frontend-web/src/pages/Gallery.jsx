@@ -30,7 +30,7 @@ export default function Gallery() {
     try {
       setLoading(true);
       const response = await fileService.list();
-      const allFiles = response.data?.items || [];
+      const allFiles = response.data?.data?.items || response.data?.items || [];
       
       // Filtrer uniquement les images et vidéos
       const media = allFiles.filter(file => {

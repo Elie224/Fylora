@@ -53,6 +53,7 @@ export default function Files() {
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [error, setError] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(new Set());
   const [viewMode, setViewMode] = useState(() => {
     const saved = localStorage.getItem('filesViewMode');
     return saved || 'list'; // 'list' ou 'grid'
@@ -87,7 +88,7 @@ export default function Files() {
   useEffect(() => {
     loadFiles();
     loadTags();
-  }, [currentFolder, filters]);
+  }, [currentFolder]);
 
   const loadTags = async () => {
     try {
