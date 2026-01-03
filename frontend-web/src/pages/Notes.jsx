@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -11,6 +11,7 @@ import NoteVersions from '../components/NoteVersions';
 import NoteTemplates from '../components/NoteTemplates';
 import { connectWebSocket, joinNote, leaveNote, sendNoteChange, disconnectWebSocket } from '../services/websocketService';
 import { noteVersionsService } from '../services/noteVersionsService';
+import { useToast } from '../components/Toast';
 
 export default function Notes() {
   const navigate = useNavigate();
@@ -18,6 +19,9 @@ export default function Notes() {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const { user } = useAuthStore();
+  const { accessToken } = useAuthStore();
+  const { showToast, ToastContainer } = useToast();
+  
   const [notes, setNotes] = useState([]);
   const [currentNote, setCurrentNote] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,8 +35,12 @@ export default function Notes() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [activeUsers, setActiveUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredNotes, setFilteredNotes] = useState([]);
-  const { accessToken } = useAuthStore();
+  const [sortBy, setSortBy] = useState('updated'); // 'updated', 'title', 'created'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterFavorite, setFilterFavorite] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
@@ -45,20 +53,26 @@ export default function Notes() {
 
   useEffect(() => {
     loadNotes();
-  }, []);
+  }, [loadNotes]);
 
-  // Filtrer les notes selon la recherche
+  // Recharger les notes quand les filtres changent (avec debounce)
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredNotes(notes);
-    } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredNotes(notes.filter(note => 
-        note.title.toLowerCase().includes(query) ||
-        (note.content && note.content.toLowerCase().includes(query))
-      ));
-    }
-  }, [searchQuery, notes]);
+    const timeoutId = setTimeout(() => {
+      loadNotes();
+    }, 300); // Debounce de 300ms pour éviter trop de requêtes
+    
+    return () => clearTimeout(timeoutId);
+  }, [filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder, loadNotes]);
+
+  // Les notes sont déjà filtrées et triées côté serveur, on les utilise directement
+  const filteredAndSortedNotes = useMemo(() => {
+    // Trier les favoris en premier si nécessaire
+    return [...notes].sort((a, b) => {
+      if (a.is_favorite && !b.is_favorite) return -1;
+      if (!a.is_favorite && b.is_favorite) return 1;
+      return 0;
+    });
+  }, [notes]);
 
   useEffect(() => {
     if (id) {
@@ -68,7 +82,7 @@ export default function Notes() {
       setTitle('');
       setContent('');
     }
-  }, [id]);
+  }, [id, loadNote]);
 
   // WebSocket pour collaboration en temps réel
   useEffect(() => {
@@ -117,7 +131,7 @@ export default function Notes() {
         }
       };
     }
-  }, [currentNote, accessToken, user.id]);
+  }, [currentNote, accessToken, user.id, getNoteId]);
 
   // Sauvegarde automatique après 2 secondes d'inactivité
   useEffect(() => {
@@ -146,21 +160,30 @@ export default function Notes() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, content, currentNote, accessToken]);
+  }, [title, content, currentNote, accessToken, saveNote, getNoteId]);
 
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await notesService.listNotes();
+      const filters = {};
+      if (filterFavorite) filters.is_favorite = 'true';
+      if (dateFrom) filters.date_from = dateFrom;
+      if (dateTo) filters.date_to = dateTo;
+      if (searchQuery.trim()) filters.search = searchQuery.trim();
+      filters.sort_by = sortBy === 'updated' ? 'updated_at' : sortBy === 'created' ? 'created_at' : 'title';
+      filters.sort_order = sortOrder;
+      
+      const response = await notesService.listNotes(null, false, filters);
       setNotes(response.data?.notes || []);
     } catch (err) {
       console.error('Failed to load notes:', err);
+      showToast('Erreur lors du chargement des notes', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder]);
 
-  const loadNote = async (noteId) => {
+  const loadNote = useCallback(async (noteId) => {
     // Vérifier que noteId est valide et le convertir en string
     if (!noteId) {
       console.error('Invalid note ID: null or undefined');
@@ -184,7 +207,7 @@ export default function Notes() {
       
       if (!note) {
         console.error('Note not found:', noteIdString);
-        alert('Note non trouvée');
+        showToast('Note non trouvée', 'error');
         navigate('/notes');
         return;
       }
@@ -195,19 +218,20 @@ export default function Notes() {
     } catch (err) {
       console.error('Failed to load note:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || 'Erreur lors du chargement de la note';
-      alert(`Erreur lors du chargement de la note: ${errorMsg}`);
+      showToast(`Erreur: ${errorMsg}`, 'error');
       navigate('/notes');
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, showToast]);
 
-  const saveNote = async () => {
+  const saveNote = useCallback(async () => {
     if (!currentNote) return;
 
     const noteId = getNoteId(currentNote);
     if (!noteId) {
       console.error('Cannot save note: invalid ID');
+      showToast('Erreur: ID de note invalide', 'error');
       return;
     }
 
@@ -219,20 +243,23 @@ export default function Notes() {
         version: currentNote.version,
       });
       setLastSaved(new Date());
+      showToast('Note enregistrée avec succès', 'success', 2000);
       await loadNote(noteId);
     } catch (err) {
       console.error('Failed to save note:', err);
       if (err.response?.status === 409) {
-        alert('La note a été modifiée par un autre utilisateur. Rechargement...');
+        showToast('La note a été modifiée par un autre utilisateur. Rechargement...', 'warning');
         await loadNote(noteId);
+      } else {
+        showToast('Erreur lors de l\'enregistrement', 'error');
       }
     } finally {
       setSaving(false);
     }
-  };
+  }, [currentNote, title, content, getNoteId, loadNote, showToast]);
 
-  // Fonction utilitaire pour extraire l'ID de manière sécurisée
-  const getNoteId = (note) => {
+  // Fonction utilitaire pour extraire l'ID de manière sécurisée (mémorisée)
+  const getNoteId = useCallback((note) => {
     if (!note) return null;
     if (note.id) {
       return typeof note.id === 'string' ? note.id : String(note.id);
@@ -241,50 +268,147 @@ export default function Notes() {
       return typeof note._id === 'string' ? note._id : String(note._id);
     }
     return null;
-  };
+  }, []);
 
-  const createNote = async () => {
+  const createNote = useCallback(async () => {
     try {
       const response = await notesService.createNote('Nouvelle note');
       const note = response.data?.note;
       const noteId = getNoteId(note);
       if (noteId) {
+        showToast('Note créée avec succès', 'success');
         navigate(`/notes/${noteId}`);
       } else {
         console.error('Failed to get note ID from created note:', note);
-        alert('Erreur: Impossible de récupérer l\'ID de la note créée');
+        showToast('Erreur: Impossible de récupérer l\'ID de la note créée', 'error');
       }
     } catch (err) {
       console.error('Failed to create note:', err);
-      alert('Erreur lors de la création de la note');
+      showToast('Erreur lors de la création de la note', 'error');
     }
-  };
+  }, [getNoteId, navigate, showToast]);
 
-  const deleteNote = async (noteId) => {
-    if (!confirm('Voulez-vous vraiment supprimer cette note ?')) return;
+  const deleteNote = useCallback(async (noteId) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer cette note ?')) return;
 
     try {
       await notesService.deleteNote(noteId);
-      if (currentNote && (currentNote.id || currentNote._id) === noteId) {
+      showToast('Note supprimée avec succès', 'success');
+      if (currentNote && getNoteId(currentNote) === noteId) {
         navigate('/notes');
       }
       loadNotes();
     } catch (err) {
       console.error('Failed to delete note:', err);
-      alert('Erreur lors de la suppression');
+      showToast('Erreur lors de la suppression', 'error');
     }
-  };
+  }, [currentNote, getNoteId, navigate, loadNotes, showToast]);
 
-  const formatDate = (dateString) => {
+  const toggleFavorite = useCallback(async (noteId, e) => {
+    e?.stopPropagation(); // Empêcher la navigation
+    try {
+      const response = await notesService.toggleFavorite(noteId);
+      const isFavorite = response.data?.is_favorite;
+      showToast(isFavorite ? 'Note ajoutée aux favoris' : 'Note retirée des favoris', 'success', 2000);
+      
+      // Mettre à jour la note dans la liste
+      setNotes(prev => prev.map(note => {
+        const noteIdStr = getNoteId(note);
+        if (noteIdStr === noteId) {
+          return { ...note, is_favorite: isFavorite };
+        }
+        return note;
+      }));
+      
+      // Mettre à jour la note actuelle si nécessaire
+      if (currentNote && getNoteId(currentNote) === noteId) {
+        setCurrentNote(prev => ({ ...prev, is_favorite: isFavorite }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+      showToast('Erreur lors de la mise à jour', 'error');
+    }
+  }, [getNoteId, currentNote, showToast]);
+
+  const exportNote = useCallback(async (noteId, format, e) => {
+    e?.stopPropagation(); // Empêcher la navigation
+    try {
+      await notesService.exportNote(noteId, format);
+      showToast(`Note exportée en ${format.toUpperCase()}`, 'success', 2000);
+    } catch (err) {
+      console.error('Failed to export note:', err);
+      showToast('Erreur lors de l\'export', 'error');
+    }
+  }, [showToast]);
+
+  const saveNoteFromList = useCallback(async (noteId, e) => {
+    e?.stopPropagation(); // Empêcher la navigation
+    const note = notes.find(n => getNoteId(n) === noteId);
+    if (!note) return;
+    
+    try {
+      await notesService.updateNote(noteId, {
+        title: note.title,
+        content: note.content,
+        version: note.version,
+      });
+      showToast('Note sauvegardée', 'success', 2000);
+      loadNotes();
+    } catch (err) {
+      console.error('Failed to save note:', err);
+      showToast('Erreur lors de la sauvegarde', 'error');
+    }
+  }, [notes, getNoteId, loadNotes, showToast]);
+
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleString('fr-FR', {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'À l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    if (diffDays < 7) return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    
+    return date.toLocaleString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
+
+  // Raccourcis clavier
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl+S ou Cmd+S pour sauvegarder
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (currentNote && !saving) {
+          saveNote();
+        }
+      }
+      // Ctrl+N ou Cmd+N pour nouvelle note
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        createNote();
+      }
+      // Ctrl+F ou Cmd+F pour focus recherche (si pas dans un input)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[placeholder*="Rechercher"]');
+        if (searchInput) searchInput.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentNote, saving, saveNote, createNote]);
 
   return (
     <div style={{
@@ -425,6 +549,87 @@ export default function Notes() {
               📋 Templates
             </button>
           </div>
+
+          {/* Filtres avancés */}
+          <div style={{ marginBottom: '12px' }}>
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8fafc',
+                color: textColor,
+                border: `1px solid ${theme === 'dark' ? borderColor : '#e2e8f0'}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>🔍 Filtres avancés</span>
+              <span>{showAdvancedFilters ? '▲' : '▼'}</span>
+            </button>
+            
+            {showAdvancedFilters && (
+              <div style={{
+                marginTop: '8px',
+                padding: '12px',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8fafc',
+                borderRadius: '6px',
+                border: `1px solid ${theme === 'dark' ? borderColor : '#e2e8f0'}`,
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '12px', color: textColor }}>
+                  <input
+                    type="checkbox"
+                    checked={filterFavorite}
+                    onChange={(e) => setFilterFavorite(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  ⭐ Favoris uniquement
+                </label>
+                <div style={{ marginBottom: '8px' }}>
+                  <label style={{ fontSize: '11px', color: textSecondary, display: 'block', marginBottom: '4px' }}>
+                    Du
+                  </label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+                      color: textColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: textSecondary, display: 'block', marginBottom: '4px' }}>
+                    Au
+                  </label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+                      color: textColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{
@@ -437,13 +642,57 @@ export default function Notes() {
             <div style={{ textAlign: 'center', padding: '20px', color: textSecondary }}>
               Chargement...
             </div>
-          ) : filteredNotes.length === 0 ? (
+          ) : filteredAndSortedNotes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', color: textSecondary }}>
               {searchQuery ? 'Aucune note trouvée' : 'Aucune note'}
             </div>
           ) : (
             <>
-              {filteredNotes.map((note, index) => {
+              {/* Options de tri */}
+              <div style={{
+                padding: '8px 12px',
+                borderBottom: `1px solid ${theme === 'dark' ? borderColor : '#e2e8f0'}`,
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'center',
+                fontSize: '12px',
+                color: textSecondary,
+              }}>
+                <span>Trier par:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                    color: textColor,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="updated">Date de modification</option>
+                  <option value="created">Date de création</option>
+                  <option value="title">Titre</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                    color: textColor,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                  title={sortOrder === 'asc' ? 'Tri croissant' : 'Tri décroissant'}
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+              {filteredAndSortedNotes.map((note, index) => {
               const noteId = getNoteId(note) || `note-${index}`;
               const currentNoteId = getNoteId(currentNote);
               const isSelected = currentNoteId && currentNoteId === noteId;
@@ -492,15 +741,50 @@ export default function Notes() {
                   }}
                 >
                   <div style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: textColor,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: '4px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
                   }}>
-                    {note.title}
+                    <div style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: textColor,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                    }}>
+                      {note.is_favorite && <span style={{ marginRight: '4px' }}>⭐</span>}
+                      {note.title}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      gap: '4px',
+                      alignItems: 'center',
+                    }}>
+                      <button
+                        onClick={(e) => toggleFavorite(noteId, e)}
+                        style={{
+                          padding: '4px 6px',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: note.is_favorite ? '#FFD700' : textSecondary,
+                          borderRadius: '4px',
+                        }}
+                        title={note.is_favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = theme === 'dark' ? '#333333' : '#f1f5f9';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        ⭐
+                      </button>
+                    </div>
                   </div>
                   <div style={{
                     fontSize: '12px',
@@ -515,11 +799,111 @@ export default function Notes() {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    marginBottom: '8px',
                   }}
                   dangerouslySetInnerHTML={{
                     __html: note.content?.replace(new RegExp('<[^>]*>', 'g'), '').substring(0, 50) || ''
                   }}
                   />
+                  {/* Boutons d'action */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '4px',
+                    justifyContent: 'flex-end',
+                    marginTop: '8px',
+                  }}>
+                    <button
+                      onClick={(e) => saveNoteFromList(noteId, e)}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e3f2fd',
+                        color: theme === 'dark' ? textColor : '#1976d2',
+                        border: `1px solid ${theme === 'dark' ? borderColor : '#90caf9'}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                      }}
+                      title="Sauvegarder"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#333333' : '#bbdefb';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#e3f2fd';
+                      }}
+                    >
+                      💾
+                    </button>
+                    <button
+                      onClick={(e) => exportNote(noteId, 'txt', e)}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f3e5f5',
+                        color: theme === 'dark' ? textColor : '#7b1fa2',
+                        border: `1px solid ${theme === 'dark' ? borderColor : '#ce93d8'}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                      }}
+                      title="Exporter (TXT)"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#333333' : '#e1bee7';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#f3e5f5';
+                      }}
+                    >
+                      📥
+                    </button>
+                    <button
+                      onClick={(e) => exportNote(noteId, 'md', e)}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#fff3e0',
+                        color: theme === 'dark' ? textColor : '#e65100',
+                        border: `1px solid ${theme === 'dark' ? borderColor : '#ffcc80'}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                      }}
+                      title="Exporter (Markdown)"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#333333' : '#ffe0b2';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#fff3e0';
+                      }}
+                    >
+                      📄
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNote(noteId);
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffebee',
+                        color: theme === 'dark' ? '#e57373' : '#c62828',
+                        border: `1px solid ${theme === 'dark' ? borderColor : '#ef9a9a'}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                      }}
+                      title="Supprimer"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#333333' : '#ffcdd2';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffebee';
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               );
               })}
@@ -997,6 +1381,7 @@ export default function Notes() {
           }}
         />
       )}
+      <ToastContainer />
     </div>
   );
 }

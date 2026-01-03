@@ -57,6 +57,11 @@ const noteSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  is_favorite: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   is_deleted: {
     type: Boolean,
     default: false,

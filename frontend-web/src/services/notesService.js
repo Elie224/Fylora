@@ -17,15 +17,15 @@ export const notesService = {
   },
 
   /**
-   * Lister les notes
+   * Lister les notes avec filtres avancés
    */
-  async listNotes(folderId = null, sharedWithMe = false) {
-    const response = await apiClient.get('/notes', {
-      params: {
-        folder_id: folderId,
-        shared_with_me: sharedWithMe,
-      },
-    });
+  async listNotes(folderId = null, sharedWithMe = false, filters = {}) {
+    const params = {
+      folder_id: folderId,
+      shared_with_me: sharedWithMe,
+      ...filters,
+    };
+    const response = await apiClient.get('/notes', { params });
     return response.data;
   },
 
@@ -104,6 +104,47 @@ export const notesService = {
   async getPublicNote(token) {
     const response = await apiClient.get(`/notes/public/${token}`);
     return response.data;
+  },
+
+  /**
+   * Basculer le statut favori d'une note
+   */
+  async toggleFavorite(noteId) {
+    const response = await apiClient.post(`/notes/${noteId}/favorite`);
+    return response.data;
+  },
+
+  /**
+   * Exporter une note
+   */
+  async exportNote(noteId, format = 'txt') {
+    const response = await apiClient.get(`/notes/${noteId}/export`, {
+      params: { format },
+      responseType: 'blob', // Important pour télécharger le fichier
+    });
+    
+    // Créer un lien de téléchargement
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Déterminer le nom du fichier depuis les headers ou utiliser un nom par défaut
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `note_${noteId}.${format}`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
   },
 };
 

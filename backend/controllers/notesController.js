@@ -97,7 +97,16 @@ exports.createNote = async (req, res, next) => {
 exports.listNotes = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { folder_id, shared_with_me } = req.query;
+    const { 
+      folder_id, 
+      shared_with_me, 
+      is_favorite,
+      date_from,
+      date_to,
+      search,
+      sort_by = 'updated_at',
+      sort_order = 'desc'
+    } = req.query;
 
     let query = { is_deleted: false };
 
@@ -114,27 +123,47 @@ exports.listNotes = async (req, res, next) => {
       query.folder_id = folder_id;
     }
 
+    // Filtre favoris
+    if (is_favorite === 'true') {
+      query.is_favorite = true;
+    }
+
+    // Filtres de date
+    if (date_from || date_to) {
+      query.updated_at = {};
+      if (date_from) {
+        query.updated_at.$gte = new Date(date_from);
+      }
+      if (date_to) {
+        query.updated_at.$lte = new Date(date_to);
+      }
+    }
+
+    // Recherche dans le titre et le contenu
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Tri
+    const sortOptions = {};
+    const validSortFields = ['updated_at', 'created_at', 'title'];
+    const sortField = validSortFields.includes(sort_by) ? sort_by : 'updated_at';
+    const sortDir = sort_order === 'asc' ? 1 : -1;
+    sortOptions[sortField] = sortDir;
+
     // Utiliser .lean() pour améliorer les performances et limiter les champs populés
     const notes = await Note.find(query)
       .populate('owner_id', 'email display_name')
       .populate('last_modified_by', 'email display_name')
-      .select('title content owner_id folder_id shared_with is_public version last_modified_by is_deleted created_at updated_at')
-      .sort({ updated_at: -1 })
+      .select('title content owner_id folder_id shared_with is_public version last_modified_by is_deleted is_favorite created_at updated_at')
+      .sort(sortOptions)
       .lean();
 
     // S'assurer que tous les IDs sont des strings
-    const notesWithStringIds = notes.map(note => ({
-      ...note,
-      _id: note._id ? String(note._id) : note._id,
-      id: note._id ? String(note._id) : note.id,
-      owner_id: note.owner_id?._id ? String(note.owner_id._id) : (note.owner_id ? String(note.owner_id) : note.owner_id),
-      folder_id: note.folder_id ? String(note.folder_id) : note.folder_id,
-      last_modified_by: note.last_modified_by?._id ? String(note.last_modified_by._id) : (note.last_modified_by ? String(note.last_modified_by) : note.last_modified_by),
-      shared_with: note.shared_with?.map(share => ({
-        ...share,
-        user_id: share.user_id?._id ? String(share.user_id._id) : (share.user_id ? String(share.user_id) : share.user_id),
-      })) || [],
-    }));
+    const notesWithStringIds = notes.map(note => normalizeNote(note));
 
     return successResponse(res, {
       notes: notesWithStringIds,
@@ -642,6 +671,137 @@ exports.getPublicNote = async (req, res, next) => {
     return successResponse(res, { note: noteResponse });
   } catch (error) {
     logger.logError(error, { context: 'getPublicNote' });
+    next(error);
+  }
+};
+
+/**
+ * Basculer le statut favori d'une note
+ */
+exports.toggleFavorite = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return errorResponse(res, 'Invalid note ID format', 400);
+    }
+
+    const note = await Note.findById(id);
+
+    if (!note || note.is_deleted) {
+      return errorResponse(res, 'Note not found', 404);
+    }
+
+    // Vérifier les permissions
+    if (!note.hasPermission(userId, 'read')) {
+      return errorResponse(res, 'Access denied', 403);
+    }
+
+    // Basculer le statut favori
+    note.is_favorite = !note.is_favorite;
+    await note.save();
+
+    await logActivity(req, 'note_favorite_toggle', 'note', note._id, { 
+      is_favorite: note.is_favorite 
+    });
+
+    logger.logInfo('Note favorite toggled', { 
+      userId, 
+      note_id: note._id, 
+      is_favorite: note.is_favorite 
+    });
+
+    invalidateUserCache(userId);
+
+    return successResponse(res, { 
+      note: normalizeNote(note),
+      is_favorite: note.is_favorite 
+    });
+  } catch (error) {
+    logger.logError(error, { context: 'toggleFavorite' });
+    next(error);
+  }
+};
+
+/**
+ * Exporter une note dans différents formats
+ */
+exports.exportNote = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { format = 'txt' } = req.query; // txt, md, pdf
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return errorResponse(res, 'Invalid note ID format', 400);
+    }
+
+    const note = await Note.findById(id)
+      .populate('owner_id', 'email display_name');
+
+    if (!note || note.is_deleted) {
+      return errorResponse(res, 'Note not found', 404);
+    }
+
+    // Vérifier les permissions
+    if (!note.hasPermission(userId, 'read')) {
+      return errorResponse(res, 'Access denied', 403);
+    }
+
+    // Convertir le contenu HTML en texte brut
+    const stripHtml = (html) => {
+      if (!html) return '';
+      return html
+        .replace(/<style[^>]*>.*?<\/style>/gi, '')
+        .replace(/<script[^>]*>.*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .trim();
+    };
+
+    const plainText = stripHtml(note.content || '');
+    const title = note.title || 'Sans titre';
+    const date = new Date(note.updated_at || Date.now()).toLocaleString('fr-FR');
+
+    let content, filename, contentType;
+
+    switch (format.toLowerCase()) {
+      case 'md':
+      case 'markdown':
+        // Export Markdown
+        content = `# ${title}\n\n*Exporté le ${date}*\n\n${plainText}`;
+        filename = `${title.replace(/[^a-z0-9]/gi, '_')}.md`;
+        contentType = 'text/markdown';
+        break;
+
+      case 'pdf':
+        // Pour PDF, on utilisera une bibliothèque comme pdfkit ou puppeteer
+        // Pour l'instant, on retourne une erreur indiquant que c'est à implémenter
+        return errorResponse(res, 'Export PDF non implémenté. Utilisez txt ou md.', 501);
+
+      case 'txt':
+      default:
+        // Export texte brut
+        content = `${title}\n${'='.repeat(title.length)}\n\nExporté le ${date}\n\n${plainText}`;
+        filename = `${title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+        contentType = 'text/plain';
+        break;
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(content);
+
+    await logActivity(req, 'note_export', 'note', note._id, { format });
+    logger.logInfo('Note exported', { userId, note_id: note._id, format });
+  } catch (error) {
+    logger.logError(error, { context: 'exportNote' });
     next(error);
   }
 };

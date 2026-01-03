@@ -40,6 +40,12 @@ router.post('/:id/unshare', notesController.unshareNote);
 // Créer un lien public
 router.post('/:id/public-link', notesController.createPublicLink);
 
+// Basculer le statut favori
+router.post('/:id/favorite', notesController.toggleFavorite);
+
+// Exporter une note
+router.get('/:id/export', notesController.exportNote);
+
 // Routes pour les versions
 const noteVersionsController = require('../controllers/noteVersionsController');
 router.post('/:note_id/versions', noteVersionsController.createVersion);
