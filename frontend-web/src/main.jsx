@@ -68,6 +68,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // initialize est stable avec Zustand
 
+  // Initialiser les raccourcis clavier globaux
+  useEffect(() => {
+    const cleanup = initKeyboardShortcuts();
+    return cleanup;
+  }, []);
+
   // Gérer la déconnexion automatique depuis l'intercepteur API
   useEffect(() => {
     const handleAuthLogout = async () => {
