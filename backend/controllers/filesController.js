@@ -137,7 +137,7 @@ async function listFiles(req, res, next) {
         const Folder = mongoose.models.Folder || mongoose.model('Folder');
         const ownerObjectId = new mongoose.Types.ObjectId(userId);
         
-        // Requête optimisée pour trouver le Root folder (seulement _id) avec index explicite
+        // Requête optimisée pour trouver le Root folder (seulement _id)
         let rootFolder = await Folder.findOne({ 
           owner_id: ownerObjectId, 
           name: 'Root', 
@@ -145,8 +145,7 @@ async function listFiles(req, res, next) {
         })
         .select('_id')
         .lean()
-        .maxTimeMS(2000) // Timeout réduit à 2 secondes
-        .hint({ owner_id: 1, name: 1, parent_id: 1 }); // Forcer l'utilisation d'un index
+        .maxTimeMS(2000); // Timeout réduit à 2 secondes
         
         if (!rootFolder) {
           // Créer le dossier Root s'il n'existe pas
