@@ -70,9 +70,13 @@ export default function NoteTemplates({ onClose, onSelect }) {
         const noteIdString = typeof noteId === 'string' ? noteId : (noteId.toString ? noteId.toString() : String(noteId));
         
         console.log('Navigating to note:', noteIdString);
-        navigate(`/notes/${noteIdString}`);
-        if (onSelect) onSelect();
+        
+        // Fermer le modal d'abord
         if (onClose) onClose();
+        if (onSelect) onSelect();
+        
+        // Naviguer vers la note (la note sera chargée automatiquement par useEffect dans Notes.jsx)
+        navigate(`/notes/${noteIdString}`, { replace: false });
       } else {
         console.error('No note in response:', response.data);
         alert('Erreur: Note non créée');
