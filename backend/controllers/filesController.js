@@ -260,14 +260,26 @@ async function uploadFile(req, res, next) {
     // OPTIMISATION: Pour les petits fichiers, vérifier la déduplication immédiatement
     // Pour les gros fichiers, faire en arrière-plan pour ne pas bloquer la réponse
     if (fileSize < LARGE_FILE_THRESHOLD) {
-      const duplicateCheck = await fileDeduplication.checkDuplicate(userId, req.file.path);
-      isDuplicate = duplicateCheck.isDuplicate;
+      try {
+        const duplicateCheck = await fileDeduplication.checkDuplicate(userId, req.file.path);
+        isDuplicate = duplicateCheck.isDuplicate;
 
-      if (duplicateCheck.isDuplicate) {
-        const newPath = path.join(config.upload.uploadDir, `user_${userId}`, `${uuidv4()}${path.extname(req.file.originalname)}`);
-        await fileDeduplication.createSymlink(duplicateCheck.existingFilePath, newPath);
-        finalFilePath = newPath;
-        actualSize = 0;
+        if (duplicateCheck.isDuplicate) {
+          try {
+            const newPath = path.join(config.upload.uploadDir, `user_${userId}`, `${uuidv4()}${path.extname(req.file.originalname)}`);
+            await fileDeduplication.createSymlink(duplicateCheck.existingFilePath, newPath);
+            finalFilePath = newPath;
+            actualSize = 0;
+          } catch (symlinkErr) {
+            logger.logError(symlinkErr, { context: 'create_symlink', userId, filePath: req.file.path });
+            // Continuer avec le fichier original si la création du symlink échoue
+            isDuplicate = false;
+          }
+        }
+      } catch (dedupErr) {
+        logger.logError(dedupErr, { context: 'deduplication_check', userId, filePath: req.file.path });
+        // Continuer avec l'upload si la déduplication échoue
+        isDuplicate = false;
       }
     } else {
       // Pour les gros fichiers, la déduplication sera faite en arrière-plan
