@@ -65,8 +65,8 @@ export default function Trash() {
       await fileService.restore(fileId);
       // Mise à jour optimiste : supprimer le fichier de la liste immédiatement
       setFiles(prevFiles => prevFiles.filter(file => (file.id || file._id) !== fileId));
-      // Recharger la liste
-      await loadTrash();
+      // Recharger la liste (forcer le rechargement)
+      await loadTrash(true);
       alert(t('file') + ' ' + t('restoreSuccess'));
     } catch (err) {
       console.error('Failed to restore file:', err);
@@ -101,8 +101,8 @@ export default function Trash() {
       await fileService.permanentDelete(fileId);
       // Mise à jour optimiste : supprimer le fichier de la liste immédiatement
       setFiles(prevFiles => prevFiles.filter(file => (file.id || file._id) !== fileId));
-      // Recharger la liste
-      await loadTrash();
+      // Recharger la liste (forcer le rechargement)
+      await loadTrash(true);
       alert(t('permanentDeleteSuccess') || 'Fichier supprimé définitivement');
     } catch (err) {
       console.error('Failed to permanently delete file:', err);
