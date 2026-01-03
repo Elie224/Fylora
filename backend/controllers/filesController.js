@@ -663,11 +663,53 @@ async function previewFile(req, res, next) {
       filePath = path.resolve(config.upload.uploadDir, file.file_path);
     }
     
+    // Vérifier que le fichier existe physiquement
     try {
       await fs.access(filePath);
     } catch (accessErr) {
-      logger.logError('File not found on disk', { fileId: id, filePath, originalPath: file.file_path, error: accessErr.message, userId });
-      return res.status(404).json({ error: { message: 'File not found on disk' } });
+      // Le fichier n'existe pas physiquement
+      logger.logError('File not found on disk', { 
+        fileId: id, 
+        filePath, 
+        originalPath: file.file_path, 
+        error: accessErr.message, 
+        userId,
+        fileName: file.name,
+        mimeType: file.mime_type
+      });
+      
+      // Vérifier si le fichier pourrait être dans un autre emplacement
+      // Par exemple, si le chemin contient "user_", essayer de le trouver
+      let alternativePath = null;
+      if (file.file_path.includes('user_')) {
+        // Le chemin pourrait être stocké avec un chemin relatif différent
+        const fileName = path.basename(file.file_path);
+        const userDir = path.dirname(file.file_path);
+        const baseUserDir = path.join(config.upload.uploadDir, userDir);
+        alternativePath = path.join(baseUserDir, fileName);
+        
+        try {
+          await fs.access(alternativePath);
+          filePath = alternativePath; // Utiliser le chemin alternatif trouvé
+          logger.logInfo('File found at alternative path', { fileId: id, alternativePath, userId });
+        } catch (altErr) {
+          // Le fichier n'existe vraiment nulle part
+          return res.status(404).json({ 
+            error: { 
+              message: 'File not found on disk. The file may have been deleted or moved.',
+              details: 'The file record exists in the database but the physical file is missing.'
+            } 
+          });
+        }
+      } else {
+        // Pas de chemin alternatif possible
+        return res.status(404).json({ 
+          error: { 
+            message: 'File not found on disk. The file may have been deleted or moved.',
+            details: 'The file record exists in the database but the physical file is missing.'
+          } 
+        });
+      }
     }
 
     // Pour les images, PDF, texte - servir directement
