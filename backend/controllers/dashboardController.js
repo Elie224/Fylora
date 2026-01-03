@@ -99,7 +99,7 @@ async function getDashboard(req, res, next) {
       // Limiter les résultats pour éviter les calculs inutiles
       { $limit: 1 }
       ]).allowDiskUse(true), // Permettre l'utilisation du disque pour les grandes collections
-      // Récupérer les 5 derniers fichiers modifiés avec requête optimisée et index
+      // Récupérer les 5 derniers fichiers modifiés avec requête optimisée
       File.find({ 
         owner_id: ownerObjectId, 
         is_deleted: false 
@@ -107,18 +107,17 @@ async function getDashboard(req, res, next) {
         .sort({ updated_at: -1 })
         .limit(5)
         .select('name size mime_type updated_at _id')
-        .lean()
-        .hint({ owner_id: 1, is_deleted: 1, updated_at: -1 }), // Utiliser l'index
-      // Compter les fichiers avec countDocuments (plus rapide) - utiliser l'index
+        .lean(),
+      // Compter les fichiers avec countDocuments (plus rapide)
       File.countDocuments({ 
         owner_id: ownerObjectId, 
         is_deleted: false 
-      }).hint({ owner_id: 1, is_deleted: 1 }),
-      // Compter les dossiers avec countDocuments (plus rapide) - utiliser l'index
+      }),
+      // Compter les dossiers avec countDocuments (plus rapide)
       Folder.countDocuments({ 
         owner_id: ownerObjectId, 
         is_deleted: false 
-      }).hint({ owner_id: 1, is_deleted: 1 })
+      })
     ]);
 
     const breakdown = breakdownAggregation[0] || {
