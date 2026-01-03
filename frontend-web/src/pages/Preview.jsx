@@ -31,27 +31,51 @@ export default function Preview() {
         throw new Error(t('mustBeConnectedToView') || 'Vous devez être connecté pour voir ce fichier');
       }
       
-      // Récupérer tous les fichiers pour trouver celui avec cet ID
-      // On récupère sans filtre pour trouver le fichier même s'il est dans un autre dossier
+      // Essayer d'abord d'obtenir les métadonnées directement depuis l'API
       let fileInfo = null;
       
       try {
-        // Essayer de récupérer depuis la liste des fichiers (tous les dossiers)
-        const fileListResponse = await fetch(`${apiUrl}/api/files`, {
+        // Utiliser l'endpoint de recherche pour trouver le fichier par ID
+        const searchResponse = await fetch(`${apiUrl}/api/search?q=${encodeURIComponent(id)}&limit=1000`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        if (fileListResponse.ok) {
-          const fileListData = await fileListResponse.json();
-          // Chercher dans tous les fichiers
-          fileInfo = fileListData.data?.items?.find(f => 
-            f.id === id || f._id === id || String(f.id) === String(id) || String(f._id) === String(id)
-          );
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          const items = searchData.data?.items || [];
+          // Chercher le fichier avec cet ID exact
+          fileInfo = items.find(f => {
+            const fileId = f.id || f._id;
+            return String(fileId) === String(id);
+          });
         }
-      } catch (listErr) {
-        console.warn('Could not fetch file list:', listErr);
+      } catch (searchErr) {
+        console.warn('Could not search file:', searchErr);
+      }
+      
+      // Si pas trouvé via la recherche, essayer la liste des fichiers
+      if (!fileInfo) {
+        try {
+          const fileListResponse = await fetch(`${apiUrl}/api/files?limit=1000`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (fileListResponse.ok) {
+            const fileListData = await fileListResponse.json();
+            const items = fileListData.data?.items || [];
+            // Chercher dans tous les fichiers
+            fileInfo = items.find(f => {
+              const fileId = f.id || f._id;
+              return String(fileId) === String(id);
+            });
+          }
+        } catch (listErr) {
+          console.warn('Could not fetch file list:', listErr);
+        }
       }
       
       // Si pas trouvé dans la liste, essayer aussi dans la corbeille
@@ -65,9 +89,11 @@ export default function Preview() {
           
           if (trashResponse.ok) {
             const trashData = await trashResponse.json();
-            fileInfo = trashData.data?.items?.find(f => 
-              f.id === id || f._id === id || String(f.id) === String(id) || String(f._id) === String(id)
-            );
+            const items = trashData.data?.items || [];
+            fileInfo = items.find(f => {
+              const fileId = f.id || f._id;
+              return String(fileId) === String(id);
+            });
           }
         } catch (trashErr) {
           console.warn('Could not fetch trash list:', trashErr);
