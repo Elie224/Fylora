@@ -57,15 +57,18 @@ export default function Gallery() {
       setGroupedByDate(grouped);
     } catch (err) {
       console.error('Failed to load media files:', err);
-      showToast('Erreur lors du chargement de la galerie', 'error');
+      if (showToast) {
+        showToast('Erreur lors du chargement de la galerie', 'error');
+      }
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []); // Retirer showToast des dépendances pour éviter les re-renders infinis
 
   useEffect(() => {
     loadMediaFiles();
-  }, [loadMediaFiles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Charger une seule fois au montage
 
   const filteredFiles = useMemo(() => {
     if (filterType === 'all') return mediaFiles;

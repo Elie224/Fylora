@@ -58,12 +58,9 @@ export default function Layout({ children }) {
     { path: '/files', label: t('files'), icon: '📁' },
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
     { path: '/gallery', label: 'Galerie', icon: '📸' },
-    { path: '/calendar', label: 'Calendrier', icon: '📅' },
-    { path: '/timeline', label: 'Timeline', icon: '⏱️' },
     { path: '/search', label: t('search'), icon: '🔍' },
     { path: '/trash', label: t('trash'), icon: '🗑️' },
     { path: '/activity', label: t('activity') || 'Activité', icon: '📋' },
-    { path: '/sessions', label: 'Sessions', icon: '🔐' },
     { path: '/settings', label: t('settings'), icon: '⚙️' },
     ...(user?.is_admin ? [{ path: '/admin', label: '⚙️ Administration', icon: '🔐' }] : []),
   ];
