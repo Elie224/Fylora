@@ -14,9 +14,13 @@ export default function ProtectedRoute({ children }) {
       const token = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
       
-      // Si on a des tokens mais pas d'utilisateur, initialiser
-      if ((token || refreshToken) && !user) {
-        await initialize();
+      // Toujours initialiser si on a des tokens (même si user existe, pour vérifier la validité)
+      if (token || refreshToken) {
+        try {
+          await initialize();
+        } catch (err) {
+          console.error('Auth initialization failed:', err);
+        }
       }
       
       setIsChecking(false);

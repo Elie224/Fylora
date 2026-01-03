@@ -110,8 +110,12 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        const response = await authService.refresh(refreshToken);
-        const { access_token, refresh_token } = response.data.data;
+        // Créer une requête de refresh sans utiliser apiClient pour éviter les intercepteurs
+        const refreshResponse = await axios.post(`${API_URL}/api/auth/refresh`, {
+          refresh_token: refreshToken
+        });
+        
+        const { access_token, refresh_token } = refreshResponse.data.data;
         
         localStorage.setItem('access_token', access_token);
         localStorage.setItem('refresh_token', refresh_token);
