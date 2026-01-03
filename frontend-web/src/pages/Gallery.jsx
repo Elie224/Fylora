@@ -385,10 +385,14 @@ export default function Gallery() {
                       return true;
                     })
                     .map((file, index) => {
+                      if (!file) return null;
+                      const fileId = file.id || file._id;
+                      if (!fileId) return null;
+                      
                       const isImage = (file.mime_type || '').startsWith('image/');
-                      const thumbnailUrl = getThumbnailUrl(file.id || file._id);
+                      const thumbnailUrl = getThumbnailUrl(fileId);
                       const fileIndex = filteredFiles.findIndex(f => 
-                        (f.id || f._id) === (file.id || file._id)
+                        f && (f.id || f._id) === fileId
                       );
 
                       return (
