@@ -159,9 +159,7 @@ export const fileService = {
       params: { 
         folder_id: folderId,
         ...additionalParams
-      },
-      // Invalider le cache pour forcer le rechargement
-      headers: additionalParams._t ? { 'Cache-Control': 'no-cache' } : {}
+      }
     }),
   upload: (file, folderId = null, onProgress = null) => {
     const formData = new FormData();
@@ -187,8 +185,7 @@ export const fileService = {
   restore: (fileId) => apiClient.post(`/files/${fileId}/restore`),
   permanentDelete: (fileId) => apiClient.delete(`/files/${fileId}/permanent`),
   listTrash: (params = {}) => apiClient.get('/files/trash', { 
-    params,
-    headers: params._t ? { 'Cache-Control': 'no-cache' } : {}
+    params
   }),
   rename: (fileId, newName) =>
     apiClient.patch(`/files/${fileId}`, { name: newName }),
@@ -218,8 +215,7 @@ export const folderService = {
   restore: (folderId) => apiClient.post(`/folders/${folderId}/restore`),
   permanentDelete: (folderId) => apiClient.delete(`/folders/${folderId}/permanent`),
   listTrash: (params = {}) => apiClient.get('/folders/trash', { 
-    params,
-    headers: params._t ? { 'Cache-Control': 'no-cache' } : {}
+    params
   }),
   downloadAsZip: (folderId) =>
     apiClient.get(`/folders/${folderId}/download`, { responseType: 'blob' }),
