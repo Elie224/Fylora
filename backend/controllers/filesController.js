@@ -356,11 +356,31 @@ async function uploadFile(req, res, next) {
       }
     }
 
-    // Vérifier que le fichier existe physiquement
+    // Vérifier que le fichier existe physiquement et est accessible
     try {
       await fs.access(req.file.path);
+      // Vérifier également que le fichier a une taille > 0
+      const stats = await fs.stat(req.file.path);
+      if (stats.size === 0) {
+        logger.logError('Uploaded file is empty', { filePath: req.file.path, userId });
+        await fs.unlink(req.file.path).catch(() => {});
+        return res.status(400).json({ error: { message: 'Uploaded file is empty' } });
+      }
+      // Vérifier que la taille correspond
+      if (stats.size !== req.file.size) {
+        logger.logWarn('File size mismatch', { 
+          expected: req.file.size, 
+          actual: stats.size, 
+          filePath: req.file.path, 
+          userId 
+        });
+      }
     } catch (accessErr) {
-      console.error('Uploaded file not accessible:', req.file.path);
+      logger.logError('Uploaded file not accessible', { 
+        filePath: req.file.path, 
+        error: accessErr.message, 
+        userId 
+      });
       await fs.unlink(req.file.path).catch(() => {});
       return res.status(500).json({ error: { message: 'Failed to save file' } });
     }
@@ -398,6 +418,23 @@ async function uploadFile(req, res, next) {
       // On continue avec le fichier tel quel pour répondre rapidement
     }
 
+    // Vérifier une dernière fois que le fichier existe avant de créer l'entrée en base
+    try {
+      await fs.access(finalFilePath);
+    } catch (finalCheckErr) {
+      logger.logError('File does not exist before database creation', { 
+        path: finalFilePath, 
+        error: finalCheckErr.message, 
+        userId 
+      });
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(500).json({ 
+        error: { 
+          message: 'File was not saved correctly. Please try again.',
+        } 
+      });
+    }
+
     // Créer l'entrée en base de données
     let file;
     try {
@@ -409,6 +446,32 @@ async function uploadFile(req, res, next) {
         ownerId: userId,
         filePath: finalFilePath,
       });
+      
+      // Vérifier que le fichier existe toujours après la création en base
+      try {
+        await fs.access(finalFilePath);
+        logger.logInfo('File uploaded and saved successfully', {
+          fileId: file.id,
+          fileName: req.file.originalname,
+          filePath: finalFilePath,
+          size: fileSize,
+          userId
+        });
+      } catch (postCreateErr) {
+        // Si le fichier n'existe plus après création en base, supprimer l'entrée
+        logger.logError('File disappeared after database creation', {
+          fileId: file.id,
+          filePath: finalFilePath,
+          error: postCreateErr.message,
+          userId
+        });
+        await FileModel.delete(file.id).catch(() => {});
+        return res.status(500).json({ 
+          error: { 
+            message: 'File was not saved correctly. Please try again.',
+          } 
+        });
+      }
     } catch (dbError) {
       logger.logError(dbError, { 
         context: 'file_creation_db', 
@@ -416,7 +479,8 @@ async function uploadFile(req, res, next) {
         fileName: req.file.originalname,
         folderId
       });
-      await fs.unlink(req.file.path).catch(() => {});
+      // Nettoyer le fichier physique si la création en base échoue
+      await fs.unlink(finalFilePath).catch(() => {});
       return res.status(500).json({ 
         error: { 
           message: 'Failed to create file record in database',
