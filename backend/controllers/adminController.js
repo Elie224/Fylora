@@ -463,6 +463,60 @@ async function setAdminUser(req, res, next) {
   }
 }
 
+// Nettoyer les fichiers orphelins
+async function cleanupOrphans(req, res, next) {
+  try {
+    const { dryRun = false, userId = null } = req.query;
+    const orphanCleanupService = require('../services/orphanCleanupService');
+
+    let stats;
+    if (userId) {
+      // Nettoyer pour un utilisateur spécifique
+      stats = await orphanCleanupService.cleanupUserOrphans(userId, { 
+        dryRun: dryRun === 'true' 
+      });
+    } else {
+      // Nettoyer pour tous les utilisateurs
+      stats = await orphanCleanupService.cleanupAllOrphans({ 
+        dryRun: dryRun === 'true' 
+      });
+    }
+
+    res.status(200).json({
+      data: {
+        stats,
+        message: dryRun === 'true' 
+          ? 'Dry run completed. No files were deleted.' 
+          : 'Orphan cleanup completed successfully'
+      }
+    });
+  } catch (err) {
+    logger.logError('Error in cleanupOrphans', {
+      error: err.message,
+      stack: err.stack
+    });
+    next(err);
+  }
+}
+
+// Obtenir les statistiques du nettoyage
+async function getCleanupStats(req, res, next) {
+  try {
+    const orphanCleanupService = require('../services/orphanCleanupService');
+    const stats = orphanCleanupService.getStats();
+
+    res.status(200).json({
+      data: stats
+    });
+  } catch (err) {
+    logger.logError('Error in getCleanupStats', {
+      error: err.message,
+      stack: err.stack
+    });
+    next(err);
+  }
+}
+
 module.exports = {
   getStats,
   getUsers,
@@ -470,6 +524,8 @@ module.exports = {
   updateUser,
   extendStorage,
   deleteUser,
-  setAdminUser
+  setAdminUser,
+  cleanupOrphans,
+  getCleanupStats,
 };
 

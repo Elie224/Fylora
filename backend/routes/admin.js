@@ -22,6 +22,10 @@ router.put('/users/:id', adminController.updateUser);
 router.post('/users/:id/extend-storage', adminController.extendStorage); // Route dédiée pour étendre le stockage
 router.delete('/users/:id', adminController.deleteUser);
 
+// Nettoyer les fichiers orphelins
+router.post('/cleanup-orphans', adminController.cleanupOrphans);
+router.get('/cleanup-stats', adminController.getCleanupStats);
+
 // Route temporaire pour définir l'admin (à supprimer après utilisation)
 // ⚠️ Cette route doit être supprimée après avoir défini l'admin pour des raisons de sécurité
 router.post('/set-admin', adminController.setAdminUser);

@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const ScheduledBackup = require('../models/ScheduledBackup');
 const logger = require('../utils/logger');
 const { executeBackup, calculateNextRun } = require('../controllers/scheduledBackupController');
+const orphanCleanupService = require('./orphanCleanupService');
 
 let scheduledTasks = new Map();
 
@@ -44,6 +45,37 @@ function startScheduler() {
       }
     } catch (error) {
       logger.logError(error, { context: 'scheduler cron job' });
+    }
+  });
+
+  // Nettoyage des fichiers orphelins - Tous les jours à 3h du matin
+  cron.schedule('0 3 * * *', async () => {
+    logger.logInfo('Starting scheduled orphan cleanup (daily)...');
+    try {
+      const stats = await orphanCleanupService.cleanupAllOrphans({ dryRun: false });
+      logger.logInfo('Scheduled orphan cleanup completed', stats);
+    } catch (err) {
+      logger.logError('Scheduled orphan cleanup failed', {
+        error: err.message,
+        stack: err.stack
+      });
+    }
+  });
+  
+  // Nettoyage des fichiers orphelins - Toutes les 6 heures (pour un nettoyage plus fréquent)
+  cron.schedule('0 */6 * * *', async () => {
+    logger.logInfo('Starting periodic orphan cleanup (every 6 hours)...');
+    try {
+      const stats = await orphanCleanupService.cleanupAllOrphans({ 
+        dryRun: false,
+        limit: 200 // Limiter pour ne pas surcharger
+      });
+      logger.logInfo('Periodic orphan cleanup completed', stats);
+    } catch (err) {
+      logger.logError('Periodic orphan cleanup failed', {
+        error: err.message,
+        stack: err.stack
+      });
     }
   });
 
