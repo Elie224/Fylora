@@ -23,9 +23,22 @@ export default function NoteTemplates({ onClose, onSelect }) {
     try {
       setLoading(true);
       const response = await noteTemplatesService.listTemplates(category || null);
-      setTemplates(response.data?.templates || []);
+      const templates = response.data?.templates || [];
+      
+      // Vérifier que tous les templates ont un ID
+      const validTemplates = templates.filter(t => {
+        const hasId = t.id || t._id;
+        if (!hasId) {
+          console.error('Template without ID:', t);
+        }
+        return hasId;
+      });
+      
+      console.log('Loaded templates:', validTemplates.length, 'valid out of', templates.length);
+      setTemplates(validTemplates);
     } catch (err) {
       console.error('Failed to load templates:', err);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
