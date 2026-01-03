@@ -30,10 +30,17 @@ export default function Gallery() {
     try {
       setLoading(true);
       const response = await fileService.list();
+      
+      // Vérifier la structure de réponse
+      if (!response || !response.data) {
+        throw new Error('Réponse invalide du serveur');
+      }
+      
       const allFiles = response.data?.data?.items || response.data?.items || [];
       
       // Filtrer uniquement les images et vidéos
       const media = allFiles.filter(file => {
+        if (!file) return false;
         const mimeType = file.mime_type || '';
         return mimeType.startsWith('image/') || mimeType.startsWith('video/');
       });
@@ -43,32 +50,46 @@ export default function Gallery() {
       // Grouper par date pour la vue timeline
       const grouped = {};
       media.forEach(file => {
-        const date = new Date(file.created_at || file.uploaded_at);
-        const dateKey = date.toLocaleDateString('fr-FR', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        });
-        if (!grouped[dateKey]) {
-          grouped[dateKey] = [];
+        try {
+          const date = new Date(file.created_at || file.uploaded_at || Date.now());
+          if (isNaN(date.getTime())) return; // Ignorer les dates invalides
+          
+          const dateKey = date.toLocaleDateString('fr-FR', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          if (!grouped[dateKey]) {
+            grouped[dateKey] = [];
+          }
+          grouped[dateKey].push(file);
+        } catch (dateErr) {
+          console.warn('Erreur lors du traitement de la date:', dateErr);
         }
-        grouped[dateKey].push(file);
       });
       setGroupedByDate(grouped);
     } catch (err) {
       console.error('Failed to load media files:', err);
-      if (showToast) {
-        showToast('Erreur lors du chargement de la galerie', 'error');
+      const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur inconnue';
+      setMediaFiles([]); // Vider la liste en cas d'erreur
+      setGroupedByDate({});
+      
+      // Afficher l'erreur avec showToast si disponible
+      try {
+        if (showToast && typeof showToast === 'function') {
+          showToast(`Erreur lors du chargement de la galerie: ${errorMessage}`, 'error');
+        }
+      } catch (toastErr) {
+        console.error('Erreur lors de l\'affichage du toast:', toastErr);
       }
     } finally {
       setLoading(false);
     }
-  }, []); // Retirer showToast des dépendances pour éviter les re-renders infinis
+  }, [showToast]); // Inclure showToast mais avec vérification dans le catch
 
   useEffect(() => {
     loadMediaFiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Charger une seule fois au montage
+  }, [loadMediaFiles]);
 
   const filteredFiles = useMemo(() => {
     if (filterType === 'all') return mediaFiles;
@@ -236,9 +257,12 @@ export default function Gallery() {
           gap: '16px',
         }}>
           {filteredFiles.map((file, index) => {
+            if (!file) return null;
+            const fileId = file.id || file._id;
+            if (!fileId) return null;
+            
             const isImage = (file.mime_type || '').startsWith('image/');
-            const thumbnailUrl = getThumbnailUrl(file.id || file._id);
-            const token = localStorage.getItem('access_token');
+            const thumbnailUrl = getThumbnailUrl(fileId);
 
             return (
               <div
