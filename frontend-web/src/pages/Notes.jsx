@@ -51,6 +51,18 @@ export default function Notes() {
   const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
   const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
 
+  // Fonction utilitaire pour extraire l'ID de manière sécurisée (définie en premier)
+  const getNoteId = useCallback((note) => {
+    if (!note) return null;
+    if (note.id) {
+      return typeof note.id === 'string' ? note.id : String(note.id);
+    }
+    if (note._id) {
+      return typeof note._id === 'string' ? note._id : String(note._id);
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     loadNotes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,18 +277,6 @@ export default function Notes() {
       setSaving(false);
     }
   }, [currentNote, title, content, getNoteId, loadNote, showToast]);
-
-  // Fonction utilitaire pour extraire l'ID de manière sécurisée (mémorisée)
-  const getNoteId = useCallback((note) => {
-    if (!note) return null;
-    if (note.id) {
-      return typeof note.id === 'string' ? note.id : String(note.id);
-    }
-    if (note._id) {
-      return typeof note._id === 'string' ? note._id : String(note._id);
-    }
-    return null;
-  }, []);
 
   const createNote = useCallback(async () => {
     try {
