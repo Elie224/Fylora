@@ -340,6 +340,55 @@ app.get('/', (req, res) => {
   });
 });
 
+// Route temporaire pour définir l'admin automatiquement au démarrage (à supprimer après utilisation)
+// ⚠️ Cette route doit être supprimée après avoir défini l'admin pour des raisons de sécurité
+app.get('/api/init-admin', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User || mongoose.model('User');
+    
+    const adminEmail = 'kouroumaelisee@gmail.com';
+    const user = await User.findOne({ email: adminEmail.toLowerCase().trim() });
+    
+    if (!user) {
+      return res.status(404).json({
+        error: { message: `Utilisateur ${adminEmail} non trouvé` }
+      });
+    }
+
+    if (user.is_admin) {
+      return res.status(200).json({
+        data: {
+          message: `${adminEmail} est déjà administrateur`,
+          user: {
+            id: user._id.toString(),
+            email: user.email,
+            is_admin: user.is_admin
+          }
+        }
+      });
+    }
+
+    user.is_admin = true;
+    await user.save();
+
+    return res.status(200).json({
+      data: {
+        message: `${adminEmail} est maintenant administrateur`,
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          is_admin: user.is_admin
+        }
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: { message: err.message }
+    });
+  }
+});
+
 // Health check (avant les autres routes pour monitoring)
 app.use('/api/health', require('./routes/health'));
 
