@@ -265,13 +265,42 @@ export default function Files() {
       
       console.log('Creating folder with:', { name: newFolderName.trim(), parent_id: normalizedParentId });
       
-      await folderService.create(newFolderName.trim(), normalizedParentId);
+      // Mise à jour optimiste : ajouter le dossier immédiatement à la liste
+      const folderName = newFolderName.trim();
+      const tempFolder = {
+        id: `temp-${Date.now()}`,
+        name: folderName,
+        type: 'folder',
+        parent_id: normalizedParentId,
+        created_at: new Date().toISOString(),
+        isTemp: true // Marquer comme temporaire
+      };
+      setItems(prevItems => [...prevItems, tempFolder]);
       setNewFolderName('');
       setShowNewFolder(false);
-      loadFiles();
+      
+      const response = await folderService.create(folderName, normalizedParentId);
+      
+      // Remplacer le dossier temporaire par le vrai dossier
+      if (response?.data?.data) {
+        const createdFolder = response.data.data;
+        setItems(prevItems => 
+          prevItems.map(item => 
+            item.id === tempFolder.id 
+              ? { ...createdFolder, type: 'folder' }
+              : item
+          )
+        );
+      }
+      
+      // Recharger la liste (forcer le rechargement) pour avoir les données complètes
+      await loadFiles(true);
     } catch (err) {
       console.error('Failed to create folder:', err);
       console.error('Error response:', err.response?.data);
+      
+      // Retirer le dossier temporaire en cas d'erreur
+      setItems(prevItems => prevItems.filter(item => !item.isTemp));
       
       // Construire un message d'erreur détaillé
       let errorMessage = 'Erreur inconnue';
