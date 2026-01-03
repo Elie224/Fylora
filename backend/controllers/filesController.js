@@ -604,22 +604,25 @@ async function previewFile(req, res, next) {
     const userId = req.user.id;
     const { id } = req.params;
 
+    // Valider l'ID
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: { message: 'Invalid file ID' } });
+    }
+
     // Utiliser mongoose directement pour avoir accès à tous les champs, y compris is_deleted
     // FileModel.findById utilise toDTO qui pourrait filtrer certains champs
     const mongoose = require('mongoose');
     const File = mongoose.models.File;
     
     if (!File) {
-      // Si le modèle n'est pas chargé, le charger via le schema
-      const FileSchema = require('../models/fileModel');
-      // Le modèle File est déjà créé dans fileModel.js, on doit juste l'importer
-      // Mais comme il est dans mongoose.models, on peut l'utiliser directement
+      logger.logError('File model not available in previewFile', { fileId: id });
       return res.status(500).json({ error: { message: 'File model not available' } });
     }
     
     const file = await File.findById(id).lean();
     
     if (!file) {
+      logger.logInfo('File not found in database', { fileId: id, userId });
       return res.status(404).json({ error: { message: 'File not found' } });
     }
 
@@ -629,11 +632,13 @@ async function previewFile(req, res, next) {
     const userOwnerId = userId?.toString ? userId.toString() : userId;
     
     if (fileOwnerId !== userOwnerId) {
+      logger.logInfo('Access denied to file', { fileId: id, fileOwnerId, userOwnerId });
       return res.status(403).json({ error: { message: 'Access denied' } });
     }
 
-    // Vérifier que le fichier n'est pas supprimé (sauf si on veut prévisualiser depuis la corbeille)
+    // Vérifier que le fichier n'est pas supprimé
     if (file.is_deleted) {
+      logger.logInfo('Attempt to preview deleted file', { fileId: id, userId });
       return res.status(404).json({ error: { message: 'File has been deleted' } });
     }
 
@@ -642,7 +647,7 @@ async function previewFile(req, res, next) {
     try {
       await fs.access(filePath);
     } catch (accessErr) {
-      logger.logError('File not found on disk', { fileId: id, filePath, error: accessErr.message });
+      logger.logError('File not found on disk', { fileId: id, filePath, error: accessErr.message, userId });
       return res.status(404).json({ error: { message: 'File not found on disk' } });
     }
 
@@ -664,7 +669,7 @@ async function previewFile(req, res, next) {
 
     return res.status(400).json({ error: { message: 'Preview not available for this file type' } });
   } catch (err) {
-    logger.logError('Error in previewFile', { error: err.message, stack: err.stack, fileId: req.params.id });
+    logger.logError('Error in previewFile', { error: err.message, stack: err.stack, fileId: req.params.id, userId: req.user?.id });
     next(err);
   }
 }
