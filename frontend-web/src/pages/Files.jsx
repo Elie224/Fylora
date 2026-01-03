@@ -191,13 +191,14 @@ export default function Files() {
     
     setUploading(true);
     const progress = {};
+    const uploadedFiles = []; // Pour la mise à jour optimiste
     try {
       for (const file of files) {
         progress[file.name] = 0;
         setUploadProgress({ ...progress });
         
         try {
-          await fileService.upload(
+          const response = await fileService.upload(
             file, 
             currentFolder?.id || null,
             (percent) => {
@@ -205,6 +206,20 @@ export default function Files() {
               setUploadProgress({ ...progress });
             }
           );
+          
+          // Mise à jour optimiste : ajouter le fichier immédiatement à la liste
+          if (response?.data?.data) {
+            const uploadedFile = response.data.data;
+            uploadedFiles.push(uploadedFile);
+            // Ajouter immédiatement à la liste pour feedback instantané
+            setItems(prevItems => {
+              // Vérifier si le fichier n'est pas déjà dans la liste
+              const exists = prevItems.some(item => (item.id || item._id) === (uploadedFile.id || uploadedFile._id));
+              if (exists) return prevItems;
+              return [...prevItems, { ...uploadedFile, type: 'file' }];
+            });
+          }
+          
           progress[file.name] = 100;
           setUploadProgress({ ...progress });
         } catch (fileErr) {
@@ -216,12 +231,14 @@ export default function Files() {
         }
       }
       
-      // Recharger la liste des fichiers après tous les uploads
-      await loadFiles();
+      // Recharger la liste des fichiers après tous les uploads (forcer le rechargement)
+      await loadFiles(true);
       setUploadProgress({});
     } catch (err) {
       console.error('Upload failed:', err);
       alert(t('uploadError') + ': ' + (err.response?.data?.error?.message || err.message));
+      // Recharger même en cas d'erreur pour avoir l'état correct
+      await loadFiles(true);
     } finally {
       setUploading(false);
     }

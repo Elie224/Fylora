@@ -62,33 +62,45 @@ export default function Trash() {
 
   const restoreFile = async (fileId) => {
     try {
-      await fileService.restore(fileId);
       // Mise à jour optimiste : supprimer le fichier de la liste immédiatement
       setFiles(prevFiles => prevFiles.filter(file => (file.id || file._id) !== fileId));
-      // Recharger la liste (forcer le rechargement)
-      await loadTrash(true);
-      alert(t('file') + ' ' + t('restoreSuccess'));
+      
+      await fileService.restore(fileId);
+      
+      // Recharger la liste (forcer le rechargement) sans attendre
+      loadTrash(true).catch(() => {});
+      
+      // Naviguer automatiquement vers Files pour voir le fichier restauré
+      setTimeout(() => {
+        window.location.href = '/files';
+      }, 500);
     } catch (err) {
       console.error('Failed to restore file:', err);
       alert(t('restoreError'));
       // Recharger en cas d'erreur pour récupérer l'état correct
-      await loadTrash();
+      await loadTrash(true);
     }
   };
 
   const restoreFolder = async (folderId) => {
     try {
-      await folderService.restore(folderId);
       // Mise à jour optimiste : supprimer le dossier de la liste immédiatement
       setFolders(prevFolders => prevFolders.filter(folder => (folder.id || folder._id) !== folderId));
-      // Recharger la liste (forcer le rechargement)
-      await loadTrash(true);
-      alert(t('folder') + ' ' + t('restoreSuccess'));
+      
+      await folderService.restore(folderId);
+      
+      // Recharger la liste (forcer le rechargement) sans attendre
+      loadTrash(true).catch(() => {});
+      
+      // Naviguer automatiquement vers Files pour voir le dossier restauré
+      setTimeout(() => {
+        window.location.href = '/files';
+      }, 500);
     } catch (err) {
       console.error('Failed to restore folder:', err);
       alert(t('restoreError'));
       // Recharger en cas d'erreur pour récupérer l'état correct
-      await loadTrash();
+      await loadTrash(true);
     }
   };
 
