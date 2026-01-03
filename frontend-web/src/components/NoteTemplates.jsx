@@ -32,7 +32,14 @@ export default function NoteTemplates({ onClose, onSelect }) {
   };
 
   const createFromTemplate = async (templateId) => {
+    if (!templateId) {
+      console.error('Template ID is undefined');
+      alert('Erreur: ID du template manquant');
+      return;
+    }
+    
     try {
+      console.log('Creating note from template:', templateId);
       const response = await noteTemplatesService.createNoteFromTemplate(templateId);
       const note = response.data?.note;
       if (note) {
@@ -42,7 +49,8 @@ export default function NoteTemplates({ onClose, onSelect }) {
       }
     } catch (err) {
       console.error('Failed to create note from template:', err);
-      alert('Erreur lors de la création');
+      const errorMsg = err.response?.data?.error?.message || err.message || 'Erreur lors de la création';
+      alert(`Erreur lors de la création: ${errorMsg}`);
     }
   };
 
@@ -193,10 +201,18 @@ export default function NoteTemplates({ onClose, onSelect }) {
               const background = categoryBackgrounds[category] || categoryBackgrounds.general;
               const icon = categoryIcons[category] || '📋';
               
+              // Extraire l'ID du template de manière fiable
+              const templateId = template.id || template._id;
+              
+              if (!templateId) {
+                console.error('Template without ID:', template);
+                return null;
+              }
+              
               return (
               <div
-                key={template._id || template.id}
-                onClick={() => createFromTemplate(template._id || template.id)}
+                key={templateId}
+                onClick={() => createFromTemplate(templateId)}
                 style={{
                   padding: '20px',
                   background: theme === 'dark' 
