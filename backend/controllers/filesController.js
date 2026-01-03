@@ -604,9 +604,21 @@ async function previewFile(req, res, next) {
     const userId = req.user.id;
     const { id } = req.params;
 
-    // Utiliser File directement pour avoir accès à tous les champs, y compris is_deleted
-    const File = require('../models/fileModel').File || require('mongoose').model('File');
-    const file = await File.findById(id).lean();
+    // Utiliser mongoose directement pour avoir accès à tous les champs, y compris is_deleted
+    // FileModel.findById utilise toDTO qui pourrait filtrer certains champs
+    const mongoose = require('mongoose');
+    const File = mongoose.models.File;
+    
+    let file;
+    if (File) {
+      file = await File.findById(id).lean();
+    } else {
+      // Fallback vers FileModel
+      file = await FileModel.findById(id);
+      if (file && typeof file.toObject === 'function') {
+        file = file.toObject();
+      }
+    }
     
     if (!file) {
       return res.status(404).json({ error: { message: 'File not found' } });
