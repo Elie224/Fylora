@@ -293,6 +293,7 @@ class ApiService {
   }
   
   /// Upload de fichier avec PlatformFile (support web et mobile)
+  /// OPTIMISATION: Pas de retry pour les uploads (évite les doublons et accélère)
   Future<Response> uploadFileFromPlatform(
     String path,
     PlatformFile platformFile, {
@@ -302,10 +303,17 @@ class ApiService {
   }) async {
     print('🔵 [ApiService] Upload: path=$path, filename=${platformFile.name}, folderId=$folderId, size=${kIsWeb ? platformFile.bytes?.length : 'N/A'}');
 
+    // OPTIMISATION: Calculer le timeout adaptatif selon la taille du fichier
+    final fileSize = kIsWeb ? (platformFile.bytes?.length ?? 0) : (platformFile.size ?? 0);
+    final estimatedTimeout = Duration(
+      seconds: (fileSize / (1024 * 1024) * 2).ceil().clamp(30, 300), // 2s par MB, min 30s, max 5min
+    );
+
     return await _timeoutManager.withTimeout(
-      () => _retry.execute(() async {
+      () async {
+        // OPTIMISATION: Pas de retry pour les uploads - échoue immédiatement si problème
         try {
-          // Créer un nouveau MultipartFile à chaque tentative pour éviter l'erreur "MultipartFile already finalized"
+          // Créer un nouveau MultipartFile
           MultipartFile multipartFile;
           
           if (kIsWeb) {
@@ -328,7 +336,7 @@ class ApiService {
             );
           }
           
-          // Créer un nouveau FormData à chaque tentative pour éviter l'erreur "FormData already finalized"
+          // Créer un nouveau FormData
           final formData = FormData.fromMap({
             fieldName: multipartFile,
             if (folderId != null) 'folder_id': folderId,
@@ -336,14 +344,14 @@ class ApiService {
           
           // Ne pas définir Content-Type - Dio le fait automatiquement avec FormData et ajoute la boundary
           // L'intercepteur supprimera le Content-Type par défaut pour FormData
-          // Augmenter le receiveTimeout pour les uploads (5 minutes)
+          // Timeout adaptatif selon la taille du fichier
           final response = await _dio.post(
             path,
             data: formData,
             onSendProgress: onProgress,
             options: Options(
-              receiveTimeout: const Duration(minutes: 5),
-              sendTimeout: const Duration(minutes: 5),
+              receiveTimeout: estimatedTimeout,
+              sendTimeout: estimatedTimeout,
             ),
           );
           print('✅ [ApiService] Upload réussi: statusCode=${response.statusCode}');
@@ -352,8 +360,9 @@ class ApiService {
           print('❌ [ApiService] Erreur upload: $e');
           rethrow;
         }
-      }),
+      },
       'fileUpload',
+      customTimeout: estimatedTimeout,
     );
   }
 

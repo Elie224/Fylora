@@ -204,39 +204,44 @@ async function uploadFile(req, res, next) {
       return res.status(400).json({ error: { message: 'No file provided' } });
     }
 
-    // Vérifier le quota utilisateur (calculer depuis les fichiers réels)
-    const user = await UserModel.findById(userId);
-    const currentUsed = await calculateRealQuotaUsed(userId);
     const fileSize = req.file.size;
+    const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+
+    // OPTIMISATION: Utiliser quota_used stocké au lieu de recalculer (beaucoup plus rapide)
+    const user = await UserModel.findById(userId).select('quota_used quota_limit').lean();
+    const currentUsed = user.quota_used || 0;
     const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
 
+    // Vérification rapide du quota
     if (currentUsed + fileSize > quotaLimit) {
-      // Supprimer le fichier uploadé
       await fs.unlink(req.file.path).catch(() => {});
       return res.status(507).json({ error: { message: 'Insufficient storage quota' } });
     }
 
-    // Vérifier le dossier parent
+    // OPTIMISATION: Vérifier le dossier parent
     let folderId = folder_id || null;
+    let folderResult;
+
     if (folderId) {
-      const folder = await FolderModel.findById(folderId);
-      if (!folder) {
+      folderResult = await FolderModel.findById(folderId).lean();
+      if (!folderResult) {
         await fs.unlink(req.file.path).catch(() => {});
         return res.status(404).json({ error: { message: 'Folder not found' } });
       }
       
-      // Vérifier que le dossier appartient à l'utilisateur
-      if (!compareObjectIds(folder.owner_id, userId)) {
+      if (!compareObjectIds(folderResult.owner_id, userId)) {
         await fs.unlink(req.file.path).catch(() => {});
         return errorResponse(res, 'Access denied', 403);
       }
     } else {
       // Créer ou récupérer le dossier racine
-      let rootFolder = await FolderModel.findRootFolder(userId);
-      if (!rootFolder) {
-        rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
+      folderResult = await FolderModel.findRootFolder(userId);
+      if (!folderResult) {
+        const rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
+        folderId = rootFolder.id;
+      } else {
+        folderId = folderResult.id;
       }
-      folderId = rootFolder.id;
     }
 
     // Vérifier que le fichier existe physiquement
@@ -248,17 +253,25 @@ async function uploadFile(req, res, next) {
       return res.status(500).json({ error: { message: 'Failed to save file' } });
     }
 
-    // Vérifier la déduplication
-    const duplicateCheck = await fileDeduplication.checkDuplicate(userId, req.file.path);
     let finalFilePath = req.file.path;
     let actualSize = fileSize;
+    let isDuplicate = false;
 
-    if (duplicateCheck.isDuplicate) {
-      // Fichier dupliqué - créer un lien symbolique ou référence
-      const newPath = path.join(config.upload.uploadDir, `user_${userId}`, `${uuidv4()}${path.extname(req.file.originalname)}`);
-      await fileDeduplication.createSymlink(duplicateCheck.existingFilePath, newPath);
-      finalFilePath = newPath;
-      actualSize = 0; // Pas de quota supplémentaire pour les doublons
+    // OPTIMISATION: Pour les petits fichiers, vérifier la déduplication immédiatement
+    // Pour les gros fichiers, faire en arrière-plan pour ne pas bloquer la réponse
+    if (fileSize < LARGE_FILE_THRESHOLD) {
+      const duplicateCheck = await fileDeduplication.checkDuplicate(userId, req.file.path);
+      isDuplicate = duplicateCheck.isDuplicate;
+
+      if (duplicateCheck.isDuplicate) {
+        const newPath = path.join(config.upload.uploadDir, `user_${userId}`, `${uuidv4()}${path.extname(req.file.originalname)}`);
+        await fileDeduplication.createSymlink(duplicateCheck.existingFilePath, newPath);
+        finalFilePath = newPath;
+        actualSize = 0;
+      }
+    } else {
+      // Pour les gros fichiers, la déduplication sera faite en arrière-plan
+      // On continue avec le fichier tel quel pour répondre rapidement
     }
 
     // Créer l'entrée en base de données
@@ -271,33 +284,62 @@ async function uploadFile(req, res, next) {
       filePath: finalFilePath,
     });
 
-    // Mettre à jour le quota utilisé (ajouter la taille du fichier seulement si pas doublon)
-    if (!duplicateCheck.isDuplicate) {
-      await updateQuotaAfterOperation(userId, fileSize);
+    // OPTIMISATION: Mettre à jour le quota de manière asynchrone (ne pas attendre)
+    if (!isDuplicate) {
+      updateQuotaAfterOperation(userId, fileSize).catch(err => {
+        logger.logError(err, { context: 'quota_update_async' });
+      });
     }
 
-    // Traitement asynchrone en arrière-plan (OCR, métadonnées, empreinte)
-    await queues.fileProcessing.add({
-      fileId: file.id,
-      userId,
-      filePath: finalFilePath,
-      mimeType: req.file.mimetype,
-      fileSize,
-    });
-
-    // Indexation async pour recherche
-    await searchEngine.indexFileAsync(file.id, userId, finalFilePath, req.file.mimetype);
-
-    // Invalider le cache
-    await smartCache.invalidateFile(file.id, userId);
-    const { invalidateUserCache } = require('../utils/cache');
-    invalidateUserCache(userId);
-
+    // OPTIMISATION: Répondre immédiatement, puis traiter en arrière-plan
     res.status(201).json({
       data: file,
       message: 'File uploaded successfully',
-      isDuplicate: duplicateCheck.isDuplicate,
+      isDuplicate: isDuplicate,
     });
+
+    // Traitement asynchrone en arrière-plan (ne pas attendre)
+    Promise.all([
+      // Déduplication pour les gros fichiers
+      fileSize >= LARGE_FILE_THRESHOLD ? (async () => {
+        try {
+          const duplicateCheck = await fileDeduplication.checkDuplicate(userId, finalFilePath);
+          if (duplicateCheck.isDuplicate) {
+            const newPath = path.join(config.upload.uploadDir, `user_${userId}`, `${uuidv4()}${path.extname(req.file.originalname)}`);
+            await fileDeduplication.createSymlink(duplicateCheck.existingFilePath, newPath);
+            await FileModel.findByIdAndUpdate(file.id, { file_path: newPath });
+            await updateQuotaAfterOperation(userId, -fileSize); // Retirer le quota car doublon
+            await fs.unlink(finalFilePath).catch(() => {}); // Supprimer le fichier original
+          }
+        } catch (err) {
+          logger.logError(err, { context: 'background_deduplication' });
+        }
+      })() : Promise.resolve(),
+      
+      // Traitement asynchrone (OCR, métadonnées, empreinte)
+      queues.fileProcessing.add({
+        fileId: file.id,
+        userId,
+        filePath: finalFilePath,
+        mimeType: req.file.mimetype,
+        fileSize,
+      }).catch(err => logger.logError(err, { context: 'file_processing_queue' })),
+      
+      // Indexation async pour recherche
+      searchEngine.indexFileAsync(file.id, userId, finalFilePath, req.file.mimetype).catch(err => 
+        logger.logError(err, { context: 'search_indexing' })
+      ),
+      
+      // Invalider le cache
+      smartCache.invalidateFile(file.id, userId).catch(() => {}),
+    ]).catch(err => {
+      logger.logError(err, { context: 'background_processing' });
+    });
+
+    // Invalider le cache utilisateur de manière asynchrone
+    const { invalidateUserCache } = require('../utils/cache');
+    invalidateUserCache(userId).catch(() => {});
+
   } catch (err) {
     // Supprimer le fichier en cas d'erreur
     if (req.file?.path) {
