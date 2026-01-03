@@ -63,10 +63,126 @@ export default function Notes() {
     return null;
   }, []);
 
-  useEffect(() => {
-    loadNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder]);
+  const loadNotes = useCallback(async () => {
+    try {
+      setLoading(true);
+      const filters = {};
+      if (filterFavorite) filters.is_favorite = 'true';
+      if (dateFrom) filters.date_from = dateFrom;
+      if (dateTo) filters.date_to = dateTo;
+      if (searchQuery && searchQuery.trim()) filters.search = searchQuery.trim();
+      filters.sort_by = sortBy === 'updated' ? 'updated_at' : sortBy === 'created' ? 'created_at' : 'title';
+      filters.sort_order = sortOrder;
+      
+      const response = await notesService.listNotes(null, false, filters);
+      if (response && response.data) {
+        setNotes(response.data.notes || []);
+      } else {
+        setNotes([]);
+      }
+    } catch (err) {
+      console.error('Failed to load notes:', err);
+      setNotes([]);
+      if (showToast) {
+        showToast('Erreur lors du chargement des notes', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast, filterFavorite, dateFrom, dateTo, searchQuery, sortBy, sortOrder]);
+
+  const loadNote = useCallback(async (noteId) => {
+    // Vérifier que noteId est valide et le convertir en string
+    if (!noteId) {
+      console.error('Invalid note ID: null or undefined');
+      navigate('/notes');
+      return;
+    }
+    
+    // Convertir en string si c'est un objet
+    const noteIdString = typeof noteId === 'string' ? noteId : String(noteId);
+    
+    if (noteIdString === 'undefined' || noteIdString === '[object Object]' || noteIdString === 'null') {
+      console.error('Invalid note ID:', noteIdString);
+      navigate('/notes');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await notesService.getNote(noteIdString);
+      const note = response.data?.note;
+      
+      if (!note) {
+        console.error('Note not found:', noteIdString);
+        showToast('Note non trouvée', 'error');
+        navigate('/notes');
+        return;
+      }
+      
+      setCurrentNote(note);
+      setTitle(note.title || '');
+      setContent(note.content || '');
+    } catch (err) {
+      console.error('Failed to load note:', err);
+      const errorMsg = err.response?.data?.error?.message || err.message || 'Erreur lors du chargement de la note';
+      showToast(`Erreur: ${errorMsg}`, 'error');
+      navigate('/notes');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate, showToast]);
+
+  const saveNote = useCallback(async () => {
+    if (!currentNote) return;
+
+    const noteId = getNoteId(currentNote);
+    if (!noteId) {
+      console.error('Cannot save note: invalid ID');
+      showToast('Erreur: ID de note invalide', 'error');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await notesService.updateNote(noteId, {
+        title,
+        content,
+        version: currentNote.version,
+      });
+      setLastSaved(new Date());
+      showToast('Note enregistrée avec succès', 'success', 2000);
+      await loadNote(noteId);
+    } catch (err) {
+      console.error('Failed to save note:', err);
+      if (err.response?.status === 409) {
+        showToast('La note a été modifiée par un autre utilisateur. Rechargement...', 'warning');
+        await loadNote(noteId);
+      } else {
+        showToast('Erreur lors de l\'enregistrement', 'error');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [currentNote, title, content, getNoteId, loadNote, showToast]);
+
+  const createNote = useCallback(async () => {
+    try {
+      const response = await notesService.createNote('Nouvelle note');
+      const note = response.data?.note;
+      const noteId = getNoteId(note);
+      if (noteId) {
+        showToast('Note créée avec succès', 'success');
+        navigate(`/notes/${noteId}`);
+      } else {
+        console.error('Failed to get note ID from created note:', note);
+        showToast('Erreur: Impossible de récupérer l\'ID de la note créée', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to create note:', err);
+      showToast('Erreur lors de la création de la note', 'error');
+    }
+  }, [getNoteId, navigate, showToast]);
 
   // Recharger les notes quand les filtres changent (avec debounce)
   useEffect(() => {
@@ -120,7 +236,7 @@ export default function Notes() {
         },
         onNoteChanged: (data) => {
           // Appliquer les changements si ce n'est pas l'utilisateur actuel
-          if (data.user_id !== user.id) {
+          if (user && data.user_id !== user.id) {
             if (data.changes.title) {
               setTitle(data.changes.title);
             }
@@ -144,7 +260,7 @@ export default function Notes() {
         }
       };
     }
-  }, [currentNote, accessToken, user.id, getNoteId]);
+  }, [currentNote, accessToken, user, getNoteId]);
 
   // Sauvegarde automatique après 2 secondes d'inactivité
   useEffect(() => {
