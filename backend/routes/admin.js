@@ -4,7 +4,11 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware');
 const adminController = require('../controllers/adminController');
 
-// Toutes les routes admin nécessitent l'authentification et les droits admin
+// Route temporaire pour définir l'admin (accessible sans droits admin, mais nécessite authentification)
+// ⚠️ Cette route doit être supprimée après avoir défini l'admin pour des raisons de sécurité
+router.post('/set-admin', authMiddleware, adminController.setAdminUser);
+
+// Toutes les autres routes admin nécessitent l'authentification et les droits admin
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
