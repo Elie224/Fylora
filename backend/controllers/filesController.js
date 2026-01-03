@@ -111,9 +111,11 @@ const uploadMiddleware = (req, res, next) => {
 };
 
 // Lister les fichiers d'un dossier
+// IMPORTANT: Même les admins ne peuvent voir que leurs propres fichiers
+// Le filtrage par owner_id garantit l'isolation des données entre utilisateurs
 async function listFiles(req, res, next) {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id; // Toujours utiliser req.user.id, jamais permettre l'accès aux fichiers d'autres utilisateurs
     const { folder_id, skip = 0, limit = 50, sort_by = 'name', sort_order = 'asc' } = req.query;
 
     const folderId = folder_id === 'root' || !folder_id ? null : folder_id;
@@ -596,6 +598,7 @@ async function downloadFile(req, res, next) {
 }
 
 // Prévisualiser un fichier
+// IMPORTANT: Même les admins ne peuvent prévisualiser que leurs propres fichiers
 async function previewFile(req, res, next) {
   try {
     const userId = req.user.id;
@@ -607,6 +610,7 @@ async function previewFile(req, res, next) {
     }
 
     // Comparer les ObjectId correctement
+    // SÉCURITÉ: Vérifier que l'utilisateur est le propriétaire - même les admins ne peuvent pas accéder aux fichiers des autres
     const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
     const userOwnerId = userId?.toString ? userId.toString() : userId;
     
@@ -637,6 +641,7 @@ async function previewFile(req, res, next) {
 }
 
 // Stream audio/vidéo
+// IMPORTANT: Même les admins ne peuvent streamer que leurs propres fichiers
 async function streamFile(req, res, next) {
   try {
     const userId = req.user.id;
@@ -648,6 +653,7 @@ async function streamFile(req, res, next) {
     }
 
     // Comparer les ObjectId correctement
+    // SÉCURITÉ: Vérifier que l'utilisateur est le propriétaire - même les admins ne peuvent pas accéder aux fichiers des autres
     const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
     const userOwnerId = userId?.toString ? userId.toString() : userId;
     
@@ -690,6 +696,7 @@ async function streamFile(req, res, next) {
 }
 
 // Renommer ou déplacer un fichier
+// IMPORTANT: Même les admins ne peuvent modifier que leurs propres fichiers
 async function updateFile(req, res, next) {
   try {
     const userId = req.user.id;
@@ -702,6 +709,7 @@ async function updateFile(req, res, next) {
     }
 
     // Comparer les ObjectId correctement
+    // SÉCURITÉ: Vérifier que l'utilisateur est le propriétaire - même les admins ne peuvent pas modifier les fichiers des autres
     const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
     const userOwnerId = userId?.toString ? userId.toString() : userId;
     

@@ -6,9 +6,10 @@ const fs = require('fs').promises;
 const { calculateRealQuotaUsed, syncQuotaUsed } = require('../utils/quota');
 
 // Créer un dossier
+// IMPORTANT: Même les admins ne peuvent créer des dossiers que pour eux-mêmes
 async function createFolder(req, res, next) {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id; // Toujours utiliser req.user.id pour garantir l'isolation des données
     // Utiliser les données validées si disponibles, sinon req.body
     const { name, parent_id } = req.validatedBody || req.body;
 
