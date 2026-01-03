@@ -244,24 +244,8 @@ exports.getNote = async (req, res, next) => {
       }
     }
 
-    // S'assurer que l'ID est retourné comme string
-    const noteResponse = note.toObject ? note.toObject() : note;
-    noteResponse.id = String(note._id);
-    noteResponse._id = String(note._id);
-    
-    // Convertir les IDs des références aussi
-    if (noteResponse.owner_id) {
-      noteResponse.owner_id = noteResponse.owner_id._id ? String(noteResponse.owner_id._id) : String(noteResponse.owner_id);
-    }
-    if (noteResponse.last_modified_by) {
-      noteResponse.last_modified_by = noteResponse.last_modified_by._id ? String(noteResponse.last_modified_by._id) : String(noteResponse.last_modified_by);
-    }
-    if (noteResponse.shared_with) {
-      noteResponse.shared_with = noteResponse.shared_with.map(share => ({
-        ...share,
-        user_id: share.user_id?._id ? String(share.user_id._id) : String(share.user_id),
-      }));
-    }
+    // Normaliser la note avec des IDs en strings (note est déjà un objet plain avec lean())
+    const noteResponse = normalizeNote(note);
 
     return successResponse(res, { note: noteResponse });
   } catch (error) {
