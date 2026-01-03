@@ -121,22 +121,39 @@ async function listFiles(req, res, next) {
     // Si folderId est null (racine), récupérer ou créer le dossier Root
     let actualFolderId = folderId;
     if (!actualFolderId) {
-      let rootFolder = await FolderModel.findRootFolder(userId);
+      // OPTIMISATION: Utiliser mongoose directement pour éviter le wrapper
+      const mongoose = require('mongoose');
+      const Folder = mongoose.models.Folder || mongoose.model('Folder');
+      const ownerObjectId = new mongoose.Types.ObjectId(userId);
+      
+      // Requête optimisée pour trouver le Root folder
+      let rootFolder = await Folder.findOne({ 
+        owner_id: ownerObjectId, 
+        name: 'Root', 
+        parent_id: null 
+      }).select('_id').lean();
+      
       if (!rootFolder) {
         // Créer le dossier Root s'il n'existe pas
         rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
+        actualFolderId = rootFolder.id;
+      } else {
+        actualFolderId = rootFolder._id.toString();
       }
-      actualFolderId = rootFolder.id;
     } else {
-      // Vérifier que le dossier appartient à l'utilisateur
-      const folder = await FolderModel.findById(actualFolderId);
+      // OPTIMISATION: Vérifier le dossier avec une requête optimisée (seulement owner_id)
+      const mongoose = require('mongoose');
+      const Folder = mongoose.models.Folder || mongoose.model('Folder');
+      const folderObjectId = new mongoose.Types.ObjectId(actualFolderId);
+      const ownerObjectId = new mongoose.Types.ObjectId(userId);
+      
+      const folder = await Folder.findOne({ 
+        _id: folderObjectId, 
+        owner_id: ownerObjectId 
+      }).select('owner_id').lean();
+      
       if (!folder) {
         return res.status(404).json({ error: { message: 'Folder not found' } });
-      }
-      
-      // Vérifier que le dossier appartient à l'utilisateur
-      if (!compareObjectIds(folder.owner_id, userId)) {
-        return errorResponse(res, 'Access denied', 403);
       }
     }
 
@@ -144,15 +161,27 @@ async function listFiles(req, res, next) {
     const skipNum = parseInt(skip);
     const limitNum = parseInt(limit);
     
-    // Récupérer en parallèle avec pagination optimisée
+    // OPTIMISATION: Récupérer en parallèle avec pagination optimisée
     // Pour les dossiers, si folderId est null (racine), chercher les dossiers avec parent_id = null
     // Pour les fichiers, utiliser actualFolderId (qui sera le Root si on est à la racine)
-    const [files, folders, totalFiles, totalFolders] = await Promise.all([
+    // OPTIMISATION: Ne pas compter si on n'a pas besoin (skip=0 et limit suffisant)
+    const needCount = skipNum === 0 && limitNum >= 100; // Compter seulement si nécessaire
+    
+    const promises = [
       FileModel.findByOwner(userId, actualFolderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
       FolderModel.findByOwner(userId, folderId, false, { skip: skipNum, limit: limitNum, sortBy: sort_by, sortOrder: sort_order }),
-      FileModel.countByOwner(userId, actualFolderId, false),
-      FolderModel.countByOwner(userId, folderId, false),
-    ]);
+    ];
+    
+    if (needCount) {
+      promises.push(
+        FileModel.countByOwner(userId, actualFolderId, false),
+        FolderModel.countByOwner(userId, folderId, false)
+      );
+    } else {
+      promises.push(Promise.resolve(0), Promise.resolve(0));
+    }
+    
+    const [files, folders, totalFiles, totalFolders] = await Promise.all(promises);
 
     // Si on est à la racine (folderId est null), exclure le dossier Root de la liste
     // car l'utilisateur est déjà dans le Root
