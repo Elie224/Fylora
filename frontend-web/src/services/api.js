@@ -154,8 +154,15 @@ export const authService = {
 
 // Services fichiers
 export const fileService = {
-  list: (folderId = null) =>
-    apiClient.get('/files', { params: { folder_id: folderId } }),
+  list: (folderId = null, additionalParams = {}) =>
+    apiClient.get('/files', { 
+      params: { 
+        folder_id: folderId,
+        ...additionalParams
+      },
+      // Invalider le cache pour forcer le rechargement
+      headers: additionalParams._t ? { 'Cache-Control': 'no-cache' } : {}
+    }),
   upload: (file, folderId = null, onProgress = null) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -179,7 +186,10 @@ export const fileService = {
   delete: (fileId) => apiClient.delete(`/files/${fileId}`),
   restore: (fileId) => apiClient.post(`/files/${fileId}/restore`),
   permanentDelete: (fileId) => apiClient.delete(`/files/${fileId}/permanent`),
-  listTrash: () => apiClient.get('/files/trash'),
+  listTrash: (params = {}) => apiClient.get('/files/trash', { 
+    params,
+    headers: params._t ? { 'Cache-Control': 'no-cache' } : {}
+  }),
   rename: (fileId, newName) =>
     apiClient.patch(`/files/${fileId}`, { name: newName }),
   move: (fileId, newFolderId) =>
@@ -207,7 +217,10 @@ export const folderService = {
   delete: (folderId) => apiClient.delete(`/folders/${folderId}`),
   restore: (folderId) => apiClient.post(`/folders/${folderId}/restore`),
   permanentDelete: (folderId) => apiClient.delete(`/folders/${folderId}/permanent`),
-  listTrash: () => apiClient.get('/folders/trash'),
+  listTrash: (params = {}) => apiClient.get('/folders/trash', { 
+    params,
+    headers: params._t ? { 'Cache-Control': 'no-cache' } : {}
+  }),
   downloadAsZip: (folderId) =>
     apiClient.get(`/folders/${folderId}/download`, { responseType: 'blob' }),
   list: (parentId = null) =>

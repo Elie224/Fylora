@@ -142,11 +142,13 @@ export default function Files() {
     }
   };
 
-  const loadFiles = async () => {
+  const loadFiles = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fileService.list(currentFolder?.id || null);
+      // Forcer le rechargement sans cache si demandé
+      const params = forceRefresh ? { _t: Date.now() } : {};
+      const response = await fileService.list(currentFolder?.id || null, params);
       setItems(response.data.data.items || []);
     } catch (err) {
       console.error('Failed to load files:', err);
@@ -360,8 +362,14 @@ export default function Files() {
       
       console.log('✅ Deletion successful!');
       
-      // Recharger la liste après suppression
-      await loadFiles();
+      // Mise à jour optimiste : supprimer l'élément de la liste immédiatement
+      setItems(prevItems => prevItems.filter(item => {
+        const itemIdToCheck = item.id || item._id;
+        return itemIdToCheck !== itemId;
+      }));
+      
+      // Recharger la liste après suppression (forcer le rechargement sans cache)
+      await loadFiles(true);
       
       alert(`✅ "${itemName}" a été supprimé avec succès\n\nVous pouvez le restaurer depuis la corbeille si nécessaire.`);
     } catch (err) {

@@ -24,22 +24,31 @@ export default function Trash() {
     loadTrash();
   }, []);
 
-  const loadTrash = async () => {
+  const loadTrash = async (forceRefresh = false) => {
     try {
       setLoading(true);
-      setFiles([]);
-      setFolders([]);
+      
+      // Ne pas vider immédiatement pour éviter le flash blanc
+      // setFiles([]);
+      // setFolders([]);
+      
+      // Forcer le rechargement sans cache si demandé
+      const params = forceRefresh ? { _t: Date.now() } : {};
       
       // Charger les fichiers supprimés
-      const filesResponse = await fileService.listTrash();
+      const filesResponse = await fileService.listTrash(forceRefresh ? params : {});
       if (filesResponse?.data?.data?.items) {
         setFiles(filesResponse.data.data.items);
+      } else {
+        setFiles([]);
       }
       
       // Charger les dossiers supprimés
-      const foldersResponse = await folderService.listTrash();
+      const foldersResponse = await folderService.listTrash(forceRefresh ? params : {});
       if (foldersResponse?.data?.data?.items) {
         setFolders(foldersResponse.data.data.items);
+      } else {
+        setFolders([]);
       }
     } catch (err) {
       console.error('Failed to load trash:', err);
@@ -54,22 +63,32 @@ export default function Trash() {
   const restoreFile = async (fileId) => {
     try {
       await fileService.restore(fileId);
-      loadTrash();
+      // Mise à jour optimiste : supprimer le fichier de la liste immédiatement
+      setFiles(prevFiles => prevFiles.filter(file => (file.id || file._id) !== fileId));
+      // Recharger la liste
+      await loadTrash();
       alert(t('file') + ' ' + t('restoreSuccess'));
     } catch (err) {
       console.error('Failed to restore file:', err);
       alert(t('restoreError'));
+      // Recharger en cas d'erreur pour récupérer l'état correct
+      await loadTrash();
     }
   };
 
   const restoreFolder = async (folderId) => {
     try {
       await folderService.restore(folderId);
-      loadTrash();
+      // Mise à jour optimiste : supprimer le dossier de la liste immédiatement
+      setFolders(prevFolders => prevFolders.filter(folder => (folder.id || folder._id) !== folderId));
+      // Recharger la liste (forcer le rechargement)
+      await loadTrash(true);
       alert(t('folder') + ' ' + t('restoreSuccess'));
     } catch (err) {
       console.error('Failed to restore folder:', err);
       alert(t('restoreError'));
+      // Recharger en cas d'erreur pour récupérer l'état correct
+      await loadTrash();
     }
   };
 
@@ -80,12 +99,17 @@ export default function Trash() {
     }
     try {
       await fileService.permanentDelete(fileId);
-      loadTrash();
+      // Mise à jour optimiste : supprimer le fichier de la liste immédiatement
+      setFiles(prevFiles => prevFiles.filter(file => (file.id || file._id) !== fileId));
+      // Recharger la liste
+      await loadTrash();
       alert(t('permanentDeleteSuccess') || 'Fichier supprimé définitivement');
     } catch (err) {
       console.error('Failed to permanently delete file:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || (t('permanentDeleteError') || 'Erreur lors de la suppression définitive');
       alert(errorMsg);
+      // Recharger en cas d'erreur pour récupérer l'état correct
+      await loadTrash();
     }
   };
 
@@ -96,12 +120,17 @@ export default function Trash() {
     }
     try {
       await folderService.permanentDelete(folderId);
-      loadTrash();
+      // Mise à jour optimiste : supprimer le dossier de la liste immédiatement
+      setFolders(prevFolders => prevFolders.filter(folder => (folder.id || folder._id) !== folderId));
+      // Recharger la liste (forcer le rechargement)
+      await loadTrash(true);
       alert(t('permanentDeleteSuccess') || 'Dossier supprimé définitivement');
     } catch (err) {
       console.error('Failed to permanently delete folder:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || (t('permanentDeleteError') || 'Erreur lors de la suppression définitive');
       alert(errorMsg);
+      // Recharger en cas d'erreur pour récupérer l'état correct
+      await loadTrash();
     }
   };
 
