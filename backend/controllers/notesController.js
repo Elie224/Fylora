@@ -8,6 +8,7 @@ const { AppError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
 const { logActivity } = require('../middlewares/activityLogger');
 const { invalidateUserCache } = require('../utils/cache');
+const mongoose = require('mongoose');
 
 /**
  * Fonction utilitaire pour normaliser une note avec des IDs en strings
@@ -187,7 +188,6 @@ exports.getNote = async (req, res, next) => {
 
     // Vérifier les permissions
     // Convertir userId en ObjectId si nécessaire pour la comparaison
-    const mongoose = require('mongoose');
     const userIdObj = mongoose.Types.ObjectId.isValid(userId) 
       ? new mongoose.Types.ObjectId(userId) 
       : userId;
