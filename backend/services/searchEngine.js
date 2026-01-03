@@ -4,6 +4,7 @@
 const FileModel = require('../models/fileModel');
 const FileMetadata = require('../models/FileMetadata');
 const smartCache = require('../utils/smartCache');
+const fileIntelligenceService = require('./fileIntelligenceService');
 const mongoose = require('mongoose');
 
 class SearchEngine {

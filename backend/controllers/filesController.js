@@ -375,8 +375,13 @@ async function uploadFile(req, res, next) {
     });
 
     // Invalider le cache utilisateur de manière asynchrone
-    const { invalidateUserCache } = require('../utils/cache');
-    invalidateUserCache(userId).catch(() => {});
+    try {
+      const { invalidateUserCache } = require('../utils/cache');
+      invalidateUserCache(userId);
+    } catch (cacheErr) {
+      // Ignorer les erreurs de cache silencieusement
+      logger.logError(cacheErr, { context: 'invalidate_user_cache' });
+    }
 
   } catch (err) {
     // Supprimer le fichier en cas d'erreur
