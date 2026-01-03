@@ -78,9 +78,10 @@ async function getUsers(req, res, next) {
       ];
     }
 
+    // IMPORTANT: L'admin ne peut voir que les informations de profil publiques, pas les fichiers/données personnelles
     const [users, total] = await Promise.all([
       User.find(query)
-        .select('-password_hash')
+        .select('-password_hash') // Ne jamais exposer le hash du mot de passe
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit)
@@ -96,11 +97,12 @@ async function getUsers(req, res, next) {
           display_name: u.display_name,
           avatar_url: u.avatar_url,
           quota_limit: u.quota_limit,
-          quota_used: u.quota_used,
+          quota_used: u.quota_used, // Statistique agrégée uniquement
           is_active: u.is_active,
           is_admin: u.is_admin || false,
           created_at: u.created_at,
           last_login_at: u.last_login_at
+          // IMPORTANT: Ne pas exposer les fichiers, dossiers ou autres données personnelles
         })),
         pagination: {
           page,
@@ -128,12 +130,13 @@ async function getUser(req, res, next) {
     }
 
     // Compter les fichiers et dossiers de l'utilisateur
+    // IMPORTANT: L'admin ne peut voir que les statistiques agrégées, pas les fichiers eux-mêmes
     const File = mongoose.models.File || mongoose.model('File');
     const Folder = mongoose.models.Folder || mongoose.model('Folder');
 
     const [filesCount, foldersCount] = await Promise.all([
-      File.countDocuments({ user_id: userId, deleted_at: null }),
-      Folder.countDocuments({ user_id: userId, deleted_at: null })
+      File.countDocuments({ owner_id: userId, deleted_at: null }),
+      Folder.countDocuments({ owner_id: userId, deleted_at: null })
     ]);
 
     res.status(200).json({

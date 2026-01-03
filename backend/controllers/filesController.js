@@ -523,12 +523,14 @@ async function downloadFile(req, res, next) {
     let hasAccess = false;
     
     // Vérifier si l'utilisateur est le propriétaire
+    // IMPORTANT: Même les admins ne peuvent pas accéder aux fichiers des autres utilisateurs
     if (userId) {
       const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
       const userOwnerId = userId?.toString ? userId.toString() : userId;
       if (fileOwnerId === userOwnerId) {
         hasAccess = true;
       }
+      // Les admins n'ont pas d'accès spécial aux fichiers des utilisateurs
     }
     
     // Si pas propriétaire, vérifier le partage public
