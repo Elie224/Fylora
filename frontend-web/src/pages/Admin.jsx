@@ -429,11 +429,11 @@ export default function Admin() {
             overflow: 'auto'
           }}>
             <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
-              Modifier {selectedUser.email}
+              {t('editUser')} {selectedUser.email}
             </h3>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#555' }}>Nom d'affichage</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#555' }}>{t('displayName')}</label>
               <input
                 type="text"
                 value={editForm.display_name}
@@ -450,7 +450,7 @@ export default function Admin() {
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#555' }}>Quota limite (GB)</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#555' }}>{t('quotaLimit')} (GB)</label>
               <input
                 type="number"
                 step="0.1"
@@ -474,7 +474,7 @@ export default function Admin() {
                   checked={editForm.is_active}
                   onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
                 />
-                <span style={{ fontWeight: '600', color: '#555' }}>Compte actif</span>
+                <span style={{ fontWeight: '600', color: '#555' }}>{t('accountActive')}</span>
               </label>
             </div>
 
@@ -485,7 +485,7 @@ export default function Admin() {
                   checked={editForm.is_admin}
                   onChange={(e) => setEditForm({ ...editForm, is_admin: e.target.checked })}
                 />
-                <span style={{ fontWeight: '600', color: '#555' }}>Administrateur</span>
+                <span style={{ fontWeight: '600', color: '#555' }}>{t('admin')}</span>
               </label>
             </div>
 
@@ -502,7 +502,7 @@ export default function Admin() {
                   fontWeight: '600'
                 }}
               >
-                Annuler
+                {t('cancel')}
               </button>
               <button
                 onClick={handleUpdateUser}
@@ -516,7 +516,7 @@ export default function Admin() {
                   fontWeight: '600'
                 }}
               >
-                Enregistrer
+                {t('save')}
               </button>
             </div>
           </div>
