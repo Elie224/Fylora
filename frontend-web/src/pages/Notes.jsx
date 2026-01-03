@@ -170,15 +170,22 @@ export default function Notes() {
       if (filterFavorite) filters.is_favorite = 'true';
       if (dateFrom) filters.date_from = dateFrom;
       if (dateTo) filters.date_to = dateTo;
-      if (searchQuery.trim()) filters.search = searchQuery.trim();
+      if (searchQuery && searchQuery.trim()) filters.search = searchQuery.trim();
       filters.sort_by = sortBy === 'updated' ? 'updated_at' : sortBy === 'created' ? 'created_at' : 'title';
       filters.sort_order = sortOrder;
       
       const response = await notesService.listNotes(null, false, filters);
-      setNotes(response.data?.notes || []);
+      if (response && response.data) {
+        setNotes(response.data.notes || []);
+      } else {
+        setNotes([]);
+      }
     } catch (err) {
       console.error('Failed to load notes:', err);
-      showToast('Erreur lors du chargement des notes', 'error');
+      setNotes([]);
+      if (showToast) {
+        showToast('Erreur lors du chargement des notes', 'error');
+      }
     } finally {
       setLoading(false);
     }
