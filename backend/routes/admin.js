@@ -17,5 +17,9 @@ router.get('/users/:id', adminController.getUser);
 router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 
+// Route temporaire pour définir l'admin (à supprimer après utilisation)
+// ⚠️ Cette route doit être supprimée après avoir défini l'admin pour des raisons de sécurité
+router.post('/set-admin', adminController.setAdminUser);
+
 module.exports = router;
 
