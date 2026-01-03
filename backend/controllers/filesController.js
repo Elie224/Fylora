@@ -654,11 +654,19 @@ async function previewFile(req, res, next) {
       return res.status(404).json({ error: { message: 'File path not found' } });
     }
     
-    const filePath = path.resolve(file.file_path);
+    // Résoudre le chemin du fichier (peut être relatif ou absolu)
+    let filePath;
+    if (path.isAbsolute(file.file_path)) {
+      filePath = file.file_path;
+    } else {
+      // Chemin relatif - le combiner avec le répertoire d'upload
+      filePath = path.resolve(config.upload.uploadDir, file.file_path);
+    }
+    
     try {
       await fs.access(filePath);
     } catch (accessErr) {
-      logger.logError('File not found on disk', { fileId: id, filePath, error: accessErr.message, userId });
+      logger.logError('File not found on disk', { fileId: id, filePath, originalPath: file.file_path, error: accessErr.message, userId });
       return res.status(404).json({ error: { message: 'File not found on disk' } });
     }
 
