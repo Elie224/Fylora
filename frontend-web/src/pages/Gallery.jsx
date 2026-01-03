@@ -39,17 +39,15 @@ export default function Gallery() {
         throw new Error('Non authentifié');
       }
 
-      // Récupérer tous les fichiers images et vidéos via l'API de recherche
-      // On fait plusieurs requêtes pour récupérer tous les fichiers (pagination)
+      // Utiliser l'API de recherche pour récupérer TOUS les fichiers images et vidéos
+      // de tous les dossiers, pas seulement ceux du dossier actuel
       let allMediaFiles = [];
-      let skip = 0;
-      const limit = 100; // Récupérer 100 fichiers à la fois
-      let hasMore = true;
-
-      while (hasMore) {
+      
+      try {
+        // Méthode 1 : Utiliser l'endpoint de recherche avec filtre mime_type
         // Rechercher les images
         const imagesResponse = await fetch(
-          `${apiUrl}/api/search?mime_type=image&limit=${limit}&skip=${skip}`,
+          `${apiUrl}/api/search?mime_type=image&limit=1000`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -60,7 +58,7 @@ export default function Gallery() {
 
         // Rechercher les vidéos
         const videosResponse = await fetch(
-          `${apiUrl}/api/search?mime_type=video&limit=${limit}&skip=${skip}`,
+          `${apiUrl}/api/search?mime_type=video&limit=1000`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -69,51 +67,39 @@ export default function Gallery() {
           }
         );
 
-        if (!imagesResponse.ok && !videosResponse.ok) {
-          throw new Error('Erreur lors du chargement des médias');
+        if (imagesResponse.ok) {
+          const imagesData = await imagesResponse.json();
+          const images = imagesData?.data?.items || imagesData?.items || [];
+          allMediaFiles = [...allMediaFiles, ...images];
         }
 
-        const imagesData = imagesResponse.ok ? await imagesResponse.json() : { data: { items: [] } };
-        const videosData = videosResponse.ok ? await videosResponse.json() : { data: { items: [] } };
-
-        const images = imagesData?.data?.items || imagesData?.items || [];
-        const videos = videosData?.data?.items || videosData?.items || [];
-
-        // Filtrer pour ne garder que les images et vidéos
-        const mediaBatch = [...images, ...videos].filter(file => {
-          if (!file) return false;
-          const mimeType = file.mime_type || '';
-          return mimeType.startsWith('image/') || mimeType.startsWith('video/');
-        });
-
-        allMediaFiles = [...allMediaFiles, ...mediaBatch];
-
-        // Si on a récupéré moins de fichiers que la limite, on a tout récupéré
-        if (mediaBatch.length < limit) {
-          hasMore = false;
-        } else {
-          skip += limit;
+        if (videosResponse.ok) {
+          const videosData = await videosResponse.json();
+          const videos = videosData?.data?.items || videosData?.items || [];
+          allMediaFiles = [...allMediaFiles, ...videos];
         }
-
-        // Limite de sécurité : ne pas faire plus de 10 requêtes (1000 fichiers max)
-        if (skip >= 1000) {
-          hasMore = false;
-        }
+      } catch (searchErr) {
+        console.warn('Erreur lors de la recherche par type MIME:', searchErr);
       }
 
-      // Alternative : Si la recherche ne fonctionne pas, utiliser fileService.list() sans folder_id
-      // pour récupérer tous les fichiers de la racine, puis chercher récursivement
+      // Méthode 2 : Si la recherche ne retourne rien, utiliser fileService avec un filtre
+      // Récupérer tous les fichiers et filtrer côté client
       if (allMediaFiles.length === 0) {
-        // Fallback : charger depuis la racine
-        const response = await fileService.list(null, { limit: 1000 });
-        const allFiles = response?.data?.data?.items || response?.data?.items || [];
-        
-        // Filtrer uniquement les images et vidéos
-        allMediaFiles = allFiles.filter(file => {
-          if (!file) return false;
-          const mimeType = file.mime_type || '';
-          return mimeType.startsWith('image/') || mimeType.startsWith('video/');
-        });
+        try {
+          // Récupérer tous les fichiers (sans limite de dossier)
+          const response = await fileService.list(null, { limit: 1000, sort_by: 'updated_at', sort_order: 'desc' });
+          const allFiles = response?.data?.data?.items || response?.data?.items || [];
+          
+          // Filtrer uniquement les images et vidéos
+          allMediaFiles = allFiles.filter(file => {
+            if (!file) return false;
+            const mimeType = file.mime_type || '';
+            return mimeType.startsWith('image/') || mimeType.startsWith('video/');
+          });
+        } catch (listErr) {
+          console.error('Erreur lors du chargement des fichiers:', listErr);
+          throw listErr;
+        }
       }
 
       // Trier par date de création (plus récent en premier)
