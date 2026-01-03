@@ -1,0 +1,570 @@
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { fileService } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useAuthStore } from '../services/authStore';
+import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../components/Toast';
+
+export default function Gallery() {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+  const { theme } = useTheme();
+  const { showToast, ToastContainer } = useToast();
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'timeline'
+  const [filterType, setFilterType] = useState('all'); // 'all' | 'images' | 'videos'
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [groupedByDate, setGroupedByDate] = useState({});
+
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#64748b';
+  const bgColor = theme === 'dark' ? '#121212' : '#f8fafc';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f1f5f9';
+
+  const loadMediaFiles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fileService.list();
+      const allFiles = response.data?.items || [];
+      
+      // Filtrer uniquement les images et vidéos
+      const media = allFiles.filter(file => {
+        const mimeType = file.mime_type || '';
+        return mimeType.startsWith('image/') || mimeType.startsWith('video/');
+      });
+
+      setMediaFiles(media);
+
+      // Grouper par date pour la vue timeline
+      const grouped = {};
+      media.forEach(file => {
+        const date = new Date(file.created_at || file.uploaded_at);
+        const dateKey = date.toLocaleDateString('fr-FR', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(file);
+      });
+      setGroupedByDate(grouped);
+    } catch (err) {
+      console.error('Failed to load media files:', err);
+      showToast('Erreur lors du chargement de la galerie', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    loadMediaFiles();
+  }, [loadMediaFiles]);
+
+  const filteredFiles = useMemo(() => {
+    if (filterType === 'all') return mediaFiles;
+    if (filterType === 'images') {
+      return mediaFiles.filter(f => (f.mime_type || '').startsWith('image/'));
+    }
+    if (filterType === 'videos') {
+      return mediaFiles.filter(f => (f.mime_type || '').startsWith('video/'));
+    }
+    return mediaFiles;
+  }, [mediaFiles, filterType]);
+
+  const openLightbox = useCallback((file, index) => {
+    setSelectedFile(file);
+    setCurrentIndex(index);
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setSelectedFile(null);
+  }, []);
+
+  const navigateLightbox = useCallback((direction) => {
+    const newIndex = direction === 'next' 
+      ? (currentIndex + 1) % filteredFiles.length
+      : (currentIndex - 1 + filteredFiles.length) % filteredFiles.length;
+    setCurrentIndex(newIndex);
+    setSelectedFile(filteredFiles[newIndex]);
+  }, [currentIndex, filteredFiles]);
+
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }, []);
+
+  const getThumbnailUrl = useCallback((fileId) => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    return `${apiUrl}/api/files/${fileId}/preview`;
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>
+        Chargement de la galerie...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '24px', backgroundColor: bgColor, minHeight: '100vh' }}>
+      {/* En-tête */}
+      <div style={{
+        marginBottom: '24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px',
+      }}>
+        <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: textColor }}>
+          📸 Galerie
+        </h1>
+        
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* Filtres */}
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: cardBg,
+              color: textColor,
+              border: `1px solid ${borderColor}`,
+              borderRadius: '8px',
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="all">Tous les médias</option>
+            <option value="images">Images uniquement</option>
+            <option value="videos">Vidéos uniquement</option>
+          </select>
+
+          {/* Vue */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            backgroundColor: cardBg,
+            padding: '4px',
+            borderRadius: '8px',
+            border: `1px solid ${borderColor}`,
+          }}>
+            <button
+              onClick={() => setViewMode('grid')}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: viewMode === 'grid' ? '#2196F3' : 'transparent',
+                color: viewMode === 'grid' ? 'white' : textColor,
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              ⬜ Grille
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: viewMode === 'timeline' ? '#2196F3' : 'transparent',
+                color: viewMode === 'timeline' ? 'white' : textColor,
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              📅 Timeline
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Statistiques */}
+      <div style={{
+        marginBottom: '24px',
+        padding: '16px',
+        backgroundColor: cardBg,
+        borderRadius: '12px',
+        border: `1px solid ${borderColor}`,
+        display: 'flex',
+        gap: '24px',
+        flexWrap: 'wrap',
+      }}>
+        <div>
+          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>Total</div>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: textColor }}>
+            {mediaFiles.length} {mediaFiles.length === 1 ? 'média' : 'médias'}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>Images</div>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#4CAF50' }}>
+            {mediaFiles.filter(f => (f.mime_type || '').startsWith('image/')).length}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>Vidéos</div>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#FF9800' }}>
+            {mediaFiles.filter(f => (f.mime_type || '').startsWith('video/')).length}
+          </div>
+        </div>
+      </div>
+
+      {/* Vue Grille */}
+      {viewMode === 'grid' && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: '16px',
+        }}>
+          {filteredFiles.map((file, index) => {
+            const isImage = (file.mime_type || '').startsWith('image/');
+            const thumbnailUrl = getThumbnailUrl(file.id || file._id);
+            const token = localStorage.getItem('access_token');
+
+            return (
+              <div
+                key={file.id || file._id}
+                onClick={() => openLightbox(file, index)}
+                style={{
+                  aspectRatio: '1',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  backgroundColor: cardBg,
+                  border: `1px solid ${borderColor}`,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'all 0.2s',
+                  boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = theme === 'dark' 
+                    ? '0 8px 16px rgba(0,0,0,0.4)' 
+                    : '0 8px 16px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = theme === 'dark' 
+                    ? '0 2px 8px rgba(0,0,0,0.3)' 
+                    : '0 2px 8px rgba(0,0,0,0.1)';
+                }}
+              >
+                {isImage ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt={file.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: ${textSecondary};">
+                          🖼️ Image
+                        </div>
+                      `;
+                    }}
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+                    position: 'relative',
+                  }}>
+                    <div style={{ fontSize: '48px' }}>🎬</div>
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      right: '8px',
+                      backgroundColor: 'rgba(0,0,0,0.7)',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                    }}>
+                      ▶️
+                    </div>
+                  </div>
+                )}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                  padding: '8px',
+                  color: 'white',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                }}>
+                  {file.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Vue Timeline */}
+      {viewMode === 'timeline' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {Object.entries(groupedByDate)
+            .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+            .map(([date, files]) => (
+              <div key={date}>
+                <h2 style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  color: textColor,
+                  paddingBottom: '8px',
+                  borderBottom: `2px solid ${borderColor}`,
+                }}>
+                  {date}
+                </h2>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                  gap: '12px',
+                }}>
+                  {files
+                    .filter(file => {
+                      if (filterType === 'all') return true;
+                      if (filterType === 'images') return (file.mime_type || '').startsWith('image/');
+                      if (filterType === 'videos') return (file.mime_type || '').startsWith('video/');
+                      return true;
+                    })
+                    .map((file, index) => {
+                      const isImage = (file.mime_type || '').startsWith('image/');
+                      const thumbnailUrl = getThumbnailUrl(file.id || file._id);
+                      const fileIndex = filteredFiles.findIndex(f => 
+                        (f.id || f._id) === (file.id || file._id)
+                      );
+
+                      return (
+                        <div
+                          key={file.id || file._id}
+                          onClick={() => openLightbox(file, fileIndex)}
+                          style={{
+                            aspectRatio: '1',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            backgroundColor: cardBg,
+                            border: `1px solid ${borderColor}`,
+                            cursor: 'pointer',
+                            position: 'relative',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          {isImage ? (
+                            <img
+                              src={thumbnailUrl}
+                              alt={file.name}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+                            }}>
+                              <div style={{ fontSize: '32px' }}>🎬</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {selectedFile && (
+        <div
+          onClick={closeLightbox}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+            }}
+          >
+            {selectedFile.mime_type?.startsWith('image/') ? (
+              <img
+                src={getThumbnailUrl(selectedFile.id || selectedFile._id)}
+                alt={selectedFile.name}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '90vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                }}
+              />
+            ) : (
+              <video
+                controls
+                src={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/files/${selectedFile.id || selectedFile._id}/stream`}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '90vh',
+                  borderRadius: '8px',
+                }}
+              />
+            )}
+            
+            {/* Contrôles */}
+            <div style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              display: 'flex',
+              gap: '8px',
+            }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateLightbox('prev');
+                }}
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                }}
+              >
+                ⬅️
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateLightbox('next');
+                }}
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                }}
+              >
+                ➡️
+              </button>
+              <button
+                onClick={closeLightbox}
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Informations */}
+            <div style={{
+              position: 'absolute',
+              bottom: '20px',
+              left: '20px',
+              right: '20px',
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              padding: '16px',
+              borderRadius: '8px',
+            }}>
+              <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                {selectedFile.name}
+              </div>
+              <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                {formatDate(selectedFile.created_at)} • {currentIndex + 1} / {filteredFiles.length}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {filteredFiles.length === 0 && (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          color: textSecondary,
+        }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>📸</div>
+          <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>
+            Aucun média trouvé
+          </div>
+          <div style={{ fontSize: '14px' }}>
+            {filterType === 'all' 
+              ? 'Vous n\'avez pas encore de photos ou vidéos'
+              : `Aucune ${filterType === 'images' ? 'image' : 'vidéo'} trouvée`}
+          </div>
+        </div>
+      )}
+
+      <ToastContainer />
+    </div>
+  );
+}
+

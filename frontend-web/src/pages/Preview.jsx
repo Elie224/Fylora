@@ -616,10 +616,18 @@ function PdfPreview({ url, token }) {
   );
 }
 
-// Composant pour prévisualiser les vidéos avec authentification
+// Composant pour prévisualiser les vidéos avec authentification et contrôles avancés
 function VideoPreview({ url, token }) {
   const [videoUrl, setVideoUrl] = useState(null);
   const [error, setError] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const videoRef = React.useRef(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -652,6 +660,70 @@ function VideoPreview({ url, token }) {
     };
   }, [url, token]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const updateTime = () => setCurrentTime(video.currentTime);
+    const updateDuration = () => setDuration(video.duration);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => setIsPlaying(false);
+
+    video.addEventListener('timeupdate', updateTime);
+    video.addEventListener('loadedmetadata', updateDuration);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', updateTime);
+      video.removeEventListener('loadedmetadata', updateDuration);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [videoUrl]);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const handleSeek = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    if (videoRef.current) {
+      videoRef.current.currentTime = percent * duration;
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!videoRef.current) return;
+    if (!isFullscreen) {
+      if (videoRef.current.requestFullscreen) {
+        videoRef.current.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (error) {
     return <div style={{ padding: 24, color: 'red' }}>Erreur: {error}</div>;
   }
@@ -660,14 +732,150 @@ function VideoPreview({ url, token }) {
     return <div style={{ padding: 24, textAlign: 'center' }}>Chargement de la vidéo...</div>;
   }
 
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+
   return (
-    <video
-      controls
-      style={{ maxWidth: '100%', maxHeight: '80vh' }}
-      src={videoUrl}
-    >
-      Votre navigateur ne supporte pas la lecture vidéo.
-    </video>
+    <div style={{ position: 'relative', maxWidth: '100%' }}>
+      <video
+        ref={videoRef}
+        style={{ 
+          maxWidth: '100%', 
+          maxHeight: '80vh',
+          display: 'block',
+          borderRadius: '8px',
+        }}
+        src={videoUrl}
+        volume={volume}
+        playbackRate={playbackRate}
+      >
+        Votre navigateur ne supporte pas la lecture vidéo.
+      </video>
+      
+      {/* Contrôles personnalisés */}
+      <div style={{
+        marginTop: '12px',
+        padding: '12px',
+        backgroundColor: cardBg,
+        borderRadius: '8px',
+        border: `1px solid ${theme === 'dark' ? '#333' : '#e2e8f0'}`,
+      }}>
+        {/* Barre de progression */}
+        <div
+          onClick={handleSeek}
+          style={{
+            width: '100%',
+            height: '6px',
+            backgroundColor: theme === 'dark' ? '#333' : '#e2e8f0',
+            borderRadius: '3px',
+            cursor: 'pointer',
+            marginBottom: '12px',
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              backgroundColor: '#2196F3',
+              borderRadius: '3px',
+              transition: 'width 0.1s',
+            }}
+          />
+        </div>
+
+        {/* Contrôles */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}>
+          <button
+            onClick={togglePlay}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+          </button>
+
+          <span style={{ color: textColor, fontSize: '12px' }}>
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: textColor }}>
+            Volume:
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={(e) => {
+                const newVolume = parseFloat(e.target.value);
+                setVolume(newVolume);
+                if (videoRef.current) {
+                  videoRef.current.volume = newVolume;
+                }
+              }}
+              style={{ width: '80px' }}
+            />
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: textColor }}>
+            Vitesse:
+            <select
+              value={playbackRate}
+              onChange={(e) => {
+                const newRate = parseFloat(e.target.value);
+                setPlaybackRate(newRate);
+                if (videoRef.current) {
+                  videoRef.current.playbackRate = newRate;
+                }
+              }}
+              style={{
+                padding: '4px 8px',
+                backgroundColor: cardBg,
+                color: textColor,
+                border: `1px solid ${theme === 'dark' ? '#333' : '#e2e8f0'}`,
+                borderRadius: '4px',
+                fontSize: '12px',
+              }}
+            >
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1">1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+          </label>
+
+          <button
+            onClick={toggleFullscreen}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+              color: textColor,
+              border: `1px solid ${theme === 'dark' ? '#333' : '#e2e8f0'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            {isFullscreen ? '⤓ Sortir' : '⤢ Plein écran'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -51,6 +51,10 @@ export default function Files() {
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [error, setError] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('filesViewMode');
+    return saved || 'list'; // 'list' ou 'grid'
+  });
 
   // Gérer la déconnexion automatique
   useEffect(() => {
