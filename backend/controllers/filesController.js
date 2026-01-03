@@ -253,7 +253,7 @@ async function listFiles(req, res, next) {
         pagination: {
           total,
           skip: skipNum,
-          limit: effectiveLimit, // Utiliser effectiveLimit au lieu de limitNum
+          limit: limitNum, // Utiliser limitNum (la limite demandée par l'utilisateur)
           hasMore: items.length >= effectiveLimit, // Si on a récupéré le nombre demandé, il y a probablement plus
         },
       },
