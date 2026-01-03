@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { shareService } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Share() {
   const { token } = useParams();
+  const { t, formatFileSize } = useLanguage();
+  const { theme } = useTheme();
   const [share, setShare] = useState(null);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,20 +36,20 @@ export default function Share() {
       } else if (response.status === 401 && response.data?.requires_password) {
         setPasswordRequired(true);
       } else {
-        setError(response.data?.error?.message || 'Partage non trouvé ou expiré');
+        setError(response.data?.error?.message || t('shareNotFound'));
       }
     } catch (err) {
       console.error('Load share error:', err);
       if (err.response?.status === 401 && err.response?.data?.requires_password) {
         setPasswordRequired(true);
       } else if (err.response?.status === 410) {
-        setError('Ce partage a expiré');
+        setError(t('shareExpired'));
       } else if (err.response?.status === 403) {
-        setError('Ce partage a été désactivé');
+        setError(t('shareDeactivated'));
       } else if (err.response?.status === 404) {
-        setError('Partage non trouvé');
+        setError(t('shareNotFoundError'));
       } else {
-        setError(err.response?.data?.error?.message || 'Erreur lors du chargement du partage');
+        setError(err.response?.data?.error?.message || t('errorLoadingShare'));
       }
     } finally {
       setLoading(false);
@@ -113,7 +117,7 @@ export default function Share() {
 
   const verifyPassword = async () => {
     if (!password) {
-      alert('Veuillez entrer le mot de passe');
+      alert(t('enterPassword'));
       return;
     }
     
@@ -129,86 +133,85 @@ export default function Share() {
         setPasswordRequired(false);
       } else {
         const error = await response.json();
-        alert(error.error?.message || 'Mot de passe incorrect');
+        alert(error.error?.message || t('incorrectPassword'));
       }
     } catch (err) {
       console.error('Password verification error:', err);
-      alert('Erreur lors de la vérification du mot de passe');
+      alert(t('errorVerifyingPassword'));
     } finally {
       setLoading(false);
     }
   };
 
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const bgColor = theme === 'dark' ? '#121212' : '#f8fafc';
+
   if (loading) {
-    return <div style={{ padding: 24, textAlign: 'center' }}>Chargement...</div>;
+    return <div style={{ padding: 24, textAlign: 'center', color: textColor }}>{t('loading')}</div>;
   }
 
   if (error) {
     return (
-      <div style={{ padding: 24, textAlign: 'center' }}>
-        <h2>Erreur</h2>
-        <p>{error}</p>
+      <div style={{ padding: 24, textAlign: 'center', backgroundColor: bgColor, minHeight: '100vh' }}>
+        <h2 style={{ color: textColor }}>{t('error')}</h2>
+        <p style={{ color: textColor }}>{error}</p>
       </div>
     );
   }
 
   if (passwordRequired) {
     return (
-      <div style={{ padding: 24, maxWidth: 400, margin: '0 auto' }}>
-        <h2>Partage protégé par mot de passe</h2>
-        <div style={{ marginBottom: 16 }}>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mot de passe"
-            style={{ padding: 8, width: '100%', marginBottom: 8 }}
-            onKeyPress={(e) => e.key === 'Enter' && verifyPassword()}
-          />
-          <button
-            onClick={verifyPassword}
-            style={{ padding: '8px 16px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', width: '100%' }}
-          >
-            Accéder
-          </button>
+      <div style={{ padding: 24, maxWidth: 400, margin: '0 auto', backgroundColor: bgColor, minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: '100%', padding: '24px', backgroundColor: cardBg, borderRadius: '12px', border: `1px solid ${borderColor}` }}>
+          <h2 style={{ color: textColor, marginBottom: '16px' }}>{t('passwordProtected')}</h2>
+          <div style={{ marginBottom: 16 }}>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('enterPassword')}
+              style={{ padding: 12, width: '100%', marginBottom: 8, backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5', color: textColor, border: `1px solid ${borderColor}`, borderRadius: '8px' }}
+              onKeyPress={(e) => e.key === 'Enter' && verifyPassword()}
+            />
+            <button
+              onClick={verifyPassword}
+              style={{ padding: '12px 24px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', width: '100%', fontSize: '16px', fontWeight: '600' }}
+            >
+              {t('access')}
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   if (!share || !share.resource) {
-    return <div style={{ padding: 24 }}>Ressource non trouvée</div>;
+    return <div style={{ padding: 24, color: textColor, backgroundColor: bgColor, minHeight: '100vh' }}>{t('resourceNotFound')}</div>;
   }
 
   const resource = share.resource;
 
   return (
-    <div style={{ padding: 24, maxWidth: 600, margin: '0 auto' }}>
-      <h1>Partage de fichier</h1>
-      <div style={{ padding: 16, border: '1px solid #ddd', borderRadius: 8, marginBottom: 16 }}>
-        <h2>{resource.name}</h2>
+    <div style={{ padding: 24, maxWidth: 600, margin: '0 auto', backgroundColor: bgColor, minHeight: '100vh' }}>
+      <h1 style={{ color: textColor, marginBottom: '24px' }}>{t('fileShare')}</h1>
+      <div style={{ padding: 24, backgroundColor: cardBg, border: `1px solid ${borderColor}`, borderRadius: 12, marginBottom: 16 }}>
+        <h2 style={{ color: textColor, marginBottom: '16px' }}>{resource.name}</h2>
         {resource.type === 'file' && (
           <>
-            <p>Taille: {formatBytes(resource.size)}</p>
-            <p>Type: {resource.mime_type}</p>
+            <p style={{ color: textColor, marginBottom: '8px' }}>{t('size')}: {formatFileSize(resource.size)}</p>
+            <p style={{ color: textColor, marginBottom: '16px' }}>{t('type')}: {resource.mime_type}</p>
           </>
         )}
         <button
           onClick={handleDownload}
-          style={{ padding: '12px 24px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 16 }}
+          style={{ padding: '12px 24px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 16, fontWeight: '600' }}
         >
-          Télécharger {resource.type === 'folder' ? 'le dossier (ZIP)' : 'le fichier'}
+          {resource.type === 'folder' ? t('downloadFolder') : t('downloadFile')}
         </button>
       </div>
     </div>
   );
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '-';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 

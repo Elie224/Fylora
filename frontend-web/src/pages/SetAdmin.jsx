@@ -22,7 +22,7 @@ export default function SetAdmin() {
     e.preventDefault();
     
     if (!email || !email.trim()) {
-      showToast('Veuillez entrer un email', 'error');
+      showToast(t('enterEmail'), 'error');
       return;
     }
 
@@ -53,11 +53,11 @@ export default function SetAdmin() {
           }, 2000);
         }
       } else {
-        showToast(data.error?.message || 'Erreur lors de la configuration', 'error');
+        showToast(data.error?.message || t('configurationError'), 'error');
       }
     } catch (err) {
       console.error('Erreur:', err);
-      showToast('Erreur de connexion au serveur', 'error');
+      showToast(t('serverConnectionError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export default function SetAdmin() {
           fontWeight: '700',
           color: textColor
         }}>
-          🔐 Configuration Administrateur
+          🔐 {t('adminConfiguration')}
         </h1>
         
         <p style={{
@@ -95,7 +95,7 @@ export default function SetAdmin() {
           fontSize: '14px',
           color: textSecondary
         }}>
-          Définir un utilisateur comme administrateur. Cette page est temporaire et doit être supprimée après utilisation.
+          {t('setAdminDescription')}
         </p>
 
         <form onSubmit={handleSetAdmin}>
@@ -107,7 +107,7 @@ export default function SetAdmin() {
               fontWeight: '600',
               color: textColor
             }}>
-              Email de l'utilisateur
+              {t('userEmail')}
             </label>
             <input
               type="email"
@@ -155,7 +155,7 @@ export default function SetAdmin() {
               }
             }}
           >
-            {loading ? '⏳ Configuration en cours...' : '✅ Définir comme Administrateur'}
+            {loading ? `⏳ ${t('configuring')}` : `✅ ${t('setAsAdmin')}`}
           </button>
         </form>
 
@@ -168,7 +168,7 @@ export default function SetAdmin() {
             border: `1px solid ${theme === 'dark' ? '#4caf50' : '#4caf50'}`,
             color: theme === 'dark' ? '#81c784' : '#2e7d32'
           }}>
-            ✅ Vous êtes déjà administrateur
+            ✅ {t('alreadyAdmin')}
           </div>
         )}
 
@@ -181,7 +181,7 @@ export default function SetAdmin() {
           fontSize: '12px',
           color: textSecondary
         }}>
-          ⚠️ <strong>Important :</strong> Cette page doit être supprimée après avoir défini l'administrateur pour des raisons de sécurité.
+          ⚠️ <strong>{t('important')} :</strong> {t('deleteAfterUse')}
         </div>
       </div>
 

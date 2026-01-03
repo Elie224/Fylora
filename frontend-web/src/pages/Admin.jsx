@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { API_URL } from '../config';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Admin() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -69,7 +73,7 @@ export default function Admin() {
       setPagination(data.data.pagination);
     } catch (err) {
       console.error('Failed to load users:', err);
-      showMessage('error', 'Erreur lors du chargement des utilisateurs');
+      showMessage('error', t('errorLoadingUsers'));
     } finally {
       setLoading(false);
     }
@@ -109,7 +113,7 @@ export default function Admin() {
         throw new Error(error.error?.message || 'Erreur lors de la mise à jour');
       }
 
-      showMessage('success', 'Utilisateur mis à jour avec succès');
+      showMessage('success', t('userUpdated'));
       setSelectedUser(null);
       loadUsers();
       loadStats();
@@ -119,7 +123,7 @@ export default function Admin() {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
+    if (!confirm(t('deleteUserConfirm'))) return;
 
     try {
       const token = localStorage.getItem('access_token');
@@ -133,7 +137,7 @@ export default function Admin() {
         throw new Error(error.error?.message || 'Erreur lors de la suppression');
       }
 
-      showMessage('success', 'Utilisateur supprimé avec succès');
+      showMessage('success', t('userDeleted'));
       loadUsers();
       loadStats();
     } catch (err) {
@@ -195,10 +199,10 @@ export default function Admin() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             border: '1px solid #e0e0e0'
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Utilisateurs totaux</div>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalUsers')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#2196F3' }}>{stats.users.total}</div>
             <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-              {stats.users.active} actifs, {stats.users.inactive} inactifs
+              {stats.users.active} {t('active')}, {stats.users.inactive} {t('inactive')}
             </div>
           </div>
 
@@ -209,7 +213,7 @@ export default function Admin() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             border: '1px solid #e0e0e0'
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Fichiers</div>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalFiles')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#4CAF50' }}>{stats.files.total}</div>
           </div>
 
@@ -220,7 +224,7 @@ export default function Admin() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             border: '1px solid #e0e0e0'
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Dossiers</div>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalFolders')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#FF9800' }}>{stats.folders.total}</div>
           </div>
 
@@ -231,7 +235,7 @@ export default function Admin() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             border: '1px solid #e0e0e0'
           }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Stockage utilisé</div>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{t('totalStorage')}</div>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#9C27B0' }}>{formatBytes(stats.storage.total_used)}</div>
           </div>
         </div>
@@ -246,10 +250,10 @@ export default function Admin() {
         padding: '24px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#333', margin: 0 }}>Gestion des utilisateurs</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333', margin: 0 }}>{t('userManagement')}</h2>
           <input
             type="text"
-            placeholder="Rechercher un utilisateur..."
+            placeholder={t('searchUsers')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -263,21 +267,21 @@ export default function Admin() {
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Chargement...</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>{t('loading')}</div>
         ) : users.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>Aucun utilisateur trouvé</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>{t('noResults')}</div>
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #e0e0e0' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#333' }}>Email</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#333' }}>Nom</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#333' }}>Stockage</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#333' }}>Statut</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#333' }}>Admin</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#333' }}>Actions</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('email')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('displayName')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('storageSpace')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('status')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('admin')}</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: theme === 'dark' ? '#e0e0e0' : '#333' }}>{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>

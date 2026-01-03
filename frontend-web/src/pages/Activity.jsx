@@ -81,7 +81,8 @@ export default function Activity() {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('fr-FR', {
+    const locale = language === 'en' ? 'en-US' : 'fr-FR';
+    return new Date(dateString).toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

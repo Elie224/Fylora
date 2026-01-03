@@ -188,12 +188,13 @@ export default function Gallery() {
   const formatDate = useCallback((dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { 
+    const locale = language === 'en' ? 'en-US' : 'fr-FR';
+    return date.toLocaleDateString(locale, { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
     });
-  }, []);
+  }, [language]);
 
   const getThumbnailUrl = useCallback((fileId) => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -203,7 +204,7 @@ export default function Gallery() {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>
-        Chargement de la galerie...
+        {t('loadingGallery')}
       </div>
     );
   }
@@ -220,7 +221,7 @@ export default function Gallery() {
         gap: '16px',
       }}>
         <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: textColor }}>
-          📸 Galerie
+          📸 {t('gallery')}
         </h1>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -238,9 +239,9 @@ export default function Gallery() {
               cursor: 'pointer',
             }}
           >
-            <option value="all">Tous les médias</option>
-            <option value="images">Images uniquement</option>
-            <option value="videos">Vidéos uniquement</option>
+            <option value="all">{t('allMedia')}</option>
+            <option value="images">{t('imagesOnly')}</option>
+            <option value="videos">{t('videosOnly')}</option>
           </select>
 
           {/* Vue */}
@@ -264,7 +265,7 @@ export default function Gallery() {
                 fontSize: '14px',
               }}
             >
-              ⬜ Grille
+              ⬜ {t('grid')}
             </button>
             <button
               onClick={() => setViewMode('timeline')}
@@ -278,7 +279,7 @@ export default function Gallery() {
                 fontSize: '14px',
               }}
             >
-              📅 Timeline
+              📅 {t('timeline')}
             </button>
           </div>
         </div>
@@ -296,19 +297,19 @@ export default function Gallery() {
         flexWrap: 'wrap',
       }}>
         <div>
-          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>Total</div>
+          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>{t('total')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: textColor }}>
-            {mediaFiles.length} {mediaFiles.length === 1 ? 'média' : 'médias'}
+            {mediaFiles.length} {mediaFiles.length === 1 ? t('media') : t('medias')}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>Images</div>
+          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>{t('images')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#4CAF50' }}>
             {mediaFiles.filter(f => (f.mime_type || '').startsWith('image/')).length}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>Vidéos</div>
+          <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>{t('videos')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#FF9800' }}>
             {mediaFiles.filter(f => (f.mime_type || '').startsWith('video/')).length}
           </div>
@@ -650,12 +651,12 @@ export default function Gallery() {
         }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>📸</div>
           <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>
-            Aucun média trouvé
+            {t('noMediaFound')}
           </div>
           <div style={{ fontSize: '14px' }}>
             {filterType === 'all' 
-              ? 'Vous n\'avez pas encore de photos ou vidéos'
-              : `Aucune ${filterType === 'images' ? 'image' : 'vidéo'} trouvée`}
+              ? t('noPhotosOrVideos')
+              : filterType === 'images' ? t('noImagesFound') : t('noVideosFound')}
           </div>
         </div>
       )}
