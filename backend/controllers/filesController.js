@@ -605,13 +605,19 @@ async function previewFile(req, res, next) {
     const { id } = req.params;
 
     // Valider l'ID
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: { message: 'Invalid file ID' } });
+    if (!id) {
+      return res.status(400).json({ error: { message: 'File ID is required' } });
     }
 
     // Utiliser mongoose directement pour avoir accès à tous les champs, y compris is_deleted
     // FileModel.findById utilise toDTO qui pourrait filtrer certains champs
     const mongoose = require('mongoose');
+    
+    // Valider que l'ID est un ObjectId valide
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: { message: 'Invalid file ID format' } });
+    }
+    
     const File = mongoose.models.File;
     
     if (!File) {
@@ -628,8 +634,8 @@ async function previewFile(req, res, next) {
 
     // Comparer les ObjectId correctement
     // SÉCURITÉ: Vérifier que l'utilisateur est le propriétaire - même les admins ne peuvent pas accéder aux fichiers des autres
-    const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
-    const userOwnerId = userId?.toString ? userId.toString() : userId;
+    const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : String(file.owner_id);
+    const userOwnerId = userId?.toString ? userId.toString() : String(userId);
     
     if (fileOwnerId !== userOwnerId) {
       logger.logInfo('Access denied to file', { fileId: id, fileOwnerId, userOwnerId });
@@ -643,6 +649,11 @@ async function previewFile(req, res, next) {
     }
 
     // Vérifier que le fichier existe physiquement
+    if (!file.file_path) {
+      logger.logError('File path is missing', { fileId: id, userId });
+      return res.status(404).json({ error: { message: 'File path not found' } });
+    }
+    
     const filePath = path.resolve(file.file_path);
     try {
       await fs.access(filePath);
