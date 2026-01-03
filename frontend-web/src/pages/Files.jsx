@@ -76,28 +76,31 @@ export default function Files() {
     if (folderId && folderId !== currentFolder?.id) {
       // Charger les informations du dossier
       folderService.get(folderId).then(response => {
-        setCurrentFolder(response.data.data);
-        setError(null);
+        if (response && response.data && response.data.data) {
+          setCurrentFolder(response.data.data);
+          setError(null);
+        } else {
+          throw new Error('Structure de réponse invalide');
+        }
       }).catch(err => {
         console.error('Failed to load folder:', err);
         setError('Impossible de charger le dossier: ' + (err.response?.data?.error?.message || err.message || 'Erreur inconnue'));
       });
+    } else if (!folderId) {
+      // Si pas de folderId dans l'URL, réinitialiser le dossier courant
+      setCurrentFolder(null);
     }
-  }, [searchParams]);
+  }, [searchParams, currentFolder?.id]);
 
-  useEffect(() => {
-    loadFiles();
-    loadTags();
-  }, [loadFiles]);
-
-  const loadTags = async () => {
+  const loadTags = useCallback(async () => {
     try {
       const response = await tagsService.listTags();
       setAvailableTags(response.data?.tags || []);
     } catch (err) {
       console.error('Failed to load tags:', err);
+      // Ne pas bloquer l'application si les tags ne se chargent pas
     }
-  };
+  }, []);
 
   const toggleSelection = (itemId) => {
     setSelectedItems(prev => {
@@ -149,7 +152,7 @@ export default function Files() {
     }
   };
 
-  const loadFiles = async (forceRefresh = false) => {
+  const loadFiles = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -193,7 +196,12 @@ export default function Files() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentFolder?.id, t]);
+
+  useEffect(() => {
+    loadFiles();
+    loadTags();
+  }, [loadFiles, loadTags]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
