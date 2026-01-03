@@ -74,8 +74,10 @@ export default function Notes() {
   useEffect(() => {
     if (currentNote && accessToken) {
       const socket = connectWebSocket(accessToken);
+      const noteId = getNoteId(currentNote);
+      if (!noteId) return;
       
-      joinNote(currentNote.id || currentNote._id, {
+      joinNote(noteId, {
         onUserJoined: (data) => {
           console.log('User joined:', data);
           setActiveUsers(prev => {
@@ -109,7 +111,10 @@ export default function Notes() {
       });
 
       return () => {
-        leaveNote(currentNote.id || currentNote._id);
+        const noteId = getNoteId(currentNote);
+        if (noteId) {
+          leaveNote(noteId);
+        }
       };
     }
   }, [currentNote, accessToken, user.id]);
@@ -125,10 +130,13 @@ export default function Notes() {
         saveNote();
         // Envoyer les changements via WebSocket
         if (currentNote && accessToken) {
-          sendNoteChange(currentNote.id || currentNote._id, {
-            title,
-            content,
-          });
+          const noteId = getNoteId(currentNote);
+          if (noteId) {
+            sendNoteChange(noteId, {
+              title,
+              content,
+            });
+          }
         }
       }, 2000);
     }
@@ -153,21 +161,29 @@ export default function Notes() {
   };
 
   const loadNote = async (noteId) => {
-    // Vérifier que noteId est valide
-    if (!noteId || noteId === 'undefined' || noteId === '[object Object]') {
-      console.error('Invalid note ID:', noteId);
-      alert('Erreur: ID de note invalide');
+    // Vérifier que noteId est valide et le convertir en string
+    if (!noteId) {
+      console.error('Invalid note ID: null or undefined');
+      navigate('/notes');
+      return;
+    }
+    
+    // Convertir en string si c'est un objet
+    const noteIdString = typeof noteId === 'string' ? noteId : String(noteId);
+    
+    if (noteIdString === 'undefined' || noteIdString === '[object Object]' || noteIdString === 'null') {
+      console.error('Invalid note ID:', noteIdString);
       navigate('/notes');
       return;
     }
     
     try {
       setLoading(true);
-      const response = await notesService.getNote(noteId);
+      const response = await notesService.getNote(noteIdString);
       const note = response.data?.note;
       
       if (!note) {
-        console.error('Note not found:', noteId);
+        console.error('Note not found:', noteIdString);
         alert('Note non trouvée');
         navigate('/notes');
         return;
@@ -189,31 +205,55 @@ export default function Notes() {
   const saveNote = async () => {
     if (!currentNote) return;
 
+    const noteId = getNoteId(currentNote);
+    if (!noteId) {
+      console.error('Cannot save note: invalid ID');
+      return;
+    }
+
     try {
       setSaving(true);
-      await notesService.updateNote(currentNote.id || currentNote._id, {
+      await notesService.updateNote(noteId, {
         title,
         content,
         version: currentNote.version,
       });
       setLastSaved(new Date());
-      await loadNote(currentNote.id || currentNote._id);
+      await loadNote(noteId);
     } catch (err) {
       console.error('Failed to save note:', err);
       if (err.response?.status === 409) {
         alert('La note a été modifiée par un autre utilisateur. Rechargement...');
-        await loadNote(currentNote.id || currentNote._id);
+        await loadNote(noteId);
       }
     } finally {
       setSaving(false);
     }
   };
 
+  // Fonction utilitaire pour extraire l'ID de manière sécurisée
+  const getNoteId = (note) => {
+    if (!note) return null;
+    if (note.id) {
+      return typeof note.id === 'string' ? note.id : String(note.id);
+    }
+    if (note._id) {
+      return typeof note._id === 'string' ? note._id : String(note._id);
+    }
+    return null;
+  };
+
   const createNote = async () => {
     try {
       const response = await notesService.createNote('Nouvelle note');
       const note = response.data?.note;
-      navigate(`/notes/${note.id || note._id}`);
+      const noteId = getNoteId(note);
+      if (noteId) {
+        navigate(`/notes/${noteId}`);
+      } else {
+        console.error('Failed to get note ID from created note:', note);
+        alert('Erreur: Impossible de récupérer l\'ID de la note créée');
+      }
     } catch (err) {
       console.error('Failed to create note:', err);
       alert('Erreur lors de la création de la note');
@@ -404,32 +444,36 @@ export default function Notes() {
           ) : (
             <>
               {filteredNotes.map((note, index) => {
-              // S'assurer que la clé est toujours une string
-              const noteId = note.id 
-                ? (typeof note.id === 'string' ? note.id : String(note.id))
-                : (note._id ? (typeof note._id === 'string' ? note._id : String(note._id)) : `note-${index}`);
+              const noteId = getNoteId(note) || `note-${index}`;
+              const currentNoteId = getNoteId(currentNote);
+              const isSelected = currentNoteId && currentNoteId === noteId;
+              
               return (
                 <div
                   key={noteId}
-                  onClick={() => navigate(`/notes/${note.id || note._id}`)}
+                  onClick={() => {
+                    if (noteId && noteId !== `note-${index}`) {
+                      navigate(`/notes/${noteId}`);
+                    }
+                  }}
                   style={{
                     padding: '14px',
                     marginBottom: '10px',
                     borderRadius: '10px',
-                    backgroundColor: currentNote && (currentNote.id || currentNote._id) === (note.id || note._id)
+                    backgroundColor: isSelected
                       ? (theme === 'dark' ? hoverBg : '#e0f2fe')
                       : (theme === 'dark' ? 'transparent' : '#ffffff'),
-                    border: currentNote && (currentNote.id || currentNote._id) === (note.id || note._id)
+                    border: isSelected
                       ? `2px solid ${theme === 'dark' ? '#2196F3' : '#2196F3'}`
                       : `1px solid ${theme === 'dark' ? borderColor : '#e2e8f0'}`,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    boxShadow: currentNote && (currentNote.id || currentNote._id) === (note.id || note._id)
+                    boxShadow: isSelected
                       ? (theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 4px 12px rgba(33,150,243,0.15)')
                       : (theme === 'dark' ? 'none' : '0 1px 3px rgba(0,0,0,0.08)'),
                   }}
                   onMouseEnter={(e) => {
-                    if (!currentNote || (currentNote.id || currentNote._id) !== (note.id || note._id)) {
+                    if (!isSelected) {
                       e.currentTarget.style.backgroundColor = theme === 'dark' ? hoverBg : '#f8fafc';
                       e.currentTarget.style.borderColor = theme === 'dark' ? borderColor : '#cbd5e1';
                       e.currentTarget.style.boxShadow = theme === 'dark' 
@@ -439,7 +483,7 @@ export default function Notes() {
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!currentNote || (currentNote.id || currentNote._id) !== (note.id || note._id)) {
+                    if (!isSelected) {
                       e.currentTarget.style.backgroundColor = theme === 'dark' ? 'transparent' : '#ffffff';
                       e.currentTarget.style.borderColor = theme === 'dark' ? borderColor : '#e2e8f0';
                       e.currentTarget.style.boxShadow = theme === 'dark' ? 'none' : '0 1px 3px rgba(0,0,0,0.08)';
@@ -651,7 +695,12 @@ export default function Notes() {
                   📚 Versions
                 </button>
                 <button
-                  onClick={() => deleteNote(currentNote.id || currentNote._id)}
+                  onClick={() => {
+                    const noteId = getNoteId(currentNote);
+                    if (noteId) {
+                      deleteNote(noteId);
+                    }
+                  }}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#f44336',
@@ -923,15 +972,20 @@ export default function Notes() {
       {/* Modaux pour les fonctionnalités */}
       {showComments && currentNote && (
         <NoteComments 
-          noteId={currentNote.id || currentNote._id} 
+          noteId={getNoteId(currentNote)} 
           onClose={() => setShowComments(false)} 
         />
       )}
       {showVersions && currentNote && (
         <NoteVersions 
-          noteId={currentNote.id || currentNote._id} 
+          noteId={getNoteId(currentNote)} 
           onClose={() => setShowVersions(false)} 
-          onRestore={() => loadNote(currentNote.id || currentNote._id)} 
+          onRestore={() => {
+            const noteId = getNoteId(currentNote);
+            if (noteId) {
+              loadNote(noteId);
+            }
+          }} 
         />
       )}
       {showTemplates && (
