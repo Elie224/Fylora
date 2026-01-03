@@ -210,7 +210,7 @@ export default function Dashboard() {
       
       {stats && (
         <>
-          {/* Quota */}
+          {/* Quota avec évolution */}
           <div style={{ 
             marginBottom: '20px', 
             padding: '20px', 
@@ -219,14 +219,83 @@ export default function Dashboard() {
             borderRadius: '12px',
             boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
           }}>
-            <h2 style={{ 
-              fontSize: '18px', 
-              fontWeight: '600', 
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
               marginBottom: '16px',
-              color: textColor
+              flexWrap: 'wrap',
+              gap: '12px'
             }}>
-              {t('storageSpace')}
-            </h2>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                margin: 0,
+                color: textColor
+              }}>
+                {t('storageSpace')}
+              </h2>
+              <div style={{ fontSize: '14px', color: textSecondary }}>
+                {formatBytes(stats.quota.limit)} {t('total')}
+              </div>
+            </div>
+            
+            {/* Graphique d'évolution simple (simulation avec barres) */}
+            <div style={{ 
+              marginBottom: '20px',
+              padding: '12px',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
+              borderRadius: '8px'
+            }}>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: '500',
+                color: textSecondary,
+                marginBottom: '12px'
+              }}>
+                {t('storageEvolution') || 'Évolution de l\'espace utilisé'}
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-end',
+                justifyContent: 'space-between',
+                height: '80px',
+                gap: '4px'
+              }}>
+                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+                  // Simulation de l'évolution (en production, utiliser des données réelles)
+                  const baseUsage = stats.quota.used;
+                  const variation = (Math.random() - 0.5) * 0.1; // Variation de ±10%
+                  const dayUsage = baseUsage * (1 + variation * (6 - day) / 6);
+                  const height = Math.max(10, (dayUsage / stats.quota.limit) * 100);
+                  const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+                  const today = new Date();
+                  const dayIndex = (today.getDay() - day + 7) % 7;
+                  
+                  return (
+                    <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ 
+                        width: '100%',
+                        height: `${height}%`,
+                        minHeight: '10px',
+                        backgroundColor: day === 0 ? '#4CAF50' : '#2196F3',
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'all 0.3s ease',
+                        opacity: day === 0 ? 1 : 0.7
+                      }}></div>
+                      <div style={{ 
+                        fontSize: '10px', 
+                        color: textSecondary,
+                        marginTop: '4px',
+                        textAlign: 'center'
+                      }}>
+                        {days[dayIndex]}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             <div style={{ marginTop: '12px' }}>
               <div style={{ 
                 display: 'flex', 
