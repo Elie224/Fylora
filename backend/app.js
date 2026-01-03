@@ -80,6 +80,14 @@ async function startServer() {
     } catch (schedulerError) {
       console.warn('⚠️  Could not start scheduler service:', schedulerError.message);
     }
+
+    // Initialiser les templates de notes par défaut
+    try {
+      const { initTemplates } = require('./utils/initTemplates');
+      await initTemplates();
+    } catch (templateError) {
+      console.warn('⚠️  Could not initialize note templates:', templateError.message);
+    }
   } catch (err) {
     console.error('❌ Error waiting for MongoDB:', err.message);
   }
