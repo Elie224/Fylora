@@ -307,7 +307,7 @@ export default function Admin() {
                           backgroundColor: u.is_active ? '#e8f5e9' : '#ffebee',
                           color: u.is_active ? '#2e7d32' : '#c62828'
                         }}>
-                          {u.is_active ? 'Actif' : 'Inactif'}
+                          {u.is_active ? t('active') : t('inactive')}
                         </span>
                       </td>
                       <td style={{ padding: '12px' }}>
@@ -339,7 +339,7 @@ export default function Admin() {
                               fontWeight: '600'
                             }}
                           >
-                            Modifier
+                            {t('editUser')}
                           </button>
                           <button
                             onClick={() => handleDeleteUser(u.id)}
@@ -354,7 +354,7 @@ export default function Admin() {
                               fontWeight: '600'
                             }}
                           >
-                            Supprimer
+                            {t('delete')}
                           </button>
                         </div>
                       </td>

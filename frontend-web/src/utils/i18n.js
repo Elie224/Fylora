@@ -677,7 +677,13 @@ const translations = {
     export: 'Export',
     exportActivities: 'Export activities',
     errorLoadingActivities: 'Error loading activities',
-    errorExportingActivities: 'Error exporting activities'
+    errorExportingActivities: 'Error exporting activities',
+    user: 'User',
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page',
+    of: 'of',
+    accountActive: 'Account active'
   }
 };
 

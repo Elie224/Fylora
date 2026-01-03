@@ -56,7 +56,7 @@ export default function Activity() {
       document.body.removeChild(a);
     } catch (err) {
       console.error('Failed to export activities:', err);
-      alert('Erreur lors de l\'export');
+      alert(t('errorExportingActivities'));
     }
   };
 
@@ -152,7 +152,7 @@ export default function Activity() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontSize: '14px', fontWeight: '500' }}>
-              Type d'action
+              {t('actionType')}
             </label>
             <select
               value={filters.action_type}
@@ -167,7 +167,7 @@ export default function Activity() {
                 fontSize: '14px'
               }}
             >
-              <option value="">Tous</option>
+              <option value="">{t('all')}</option>
               <option value="file_upload">Upload</option>
               <option value="file_download">Téléchargement</option>
               <option value="file_delete">Suppression</option>
@@ -177,7 +177,7 @@ export default function Activity() {
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontSize: '14px', fontWeight: '500' }}>
-              Type de ressource
+              {t('resourceType')}
             </label>
             <select
               value={filters.resource_type}
@@ -192,15 +192,15 @@ export default function Activity() {
                 fontSize: '14px'
               }}
             >
-              <option value="">Tous</option>
-              <option value="file">Fichier</option>
-              <option value="folder">Dossier</option>
-              <option value="user">Utilisateur</option>
+              <option value="">{t('all')}</option>
+              <option value="file">{t('file')}</option>
+              <option value="folder">{t('folder')}</option>
+              <option value="user">{t('user')}</option>
             </select>
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontSize: '14px', fontWeight: '500' }}>
-              Date de début
+              {t('dateFrom')}
             </label>
             <input
               type="date"
@@ -219,7 +219,7 @@ export default function Activity() {
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontSize: '14px', fontWeight: '500' }}>
-              Date de fin
+              {t('dateTo')}
             </label>
             <input
               type="date"
@@ -242,7 +242,7 @@ export default function Activity() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: textSecondary }}>
           <div style={{ fontSize: '18px', marginBottom: '8px' }}>⏳</div>
-          <div style={{ color: textColor }}>Chargement...</div>
+          <div style={{ color: textColor }}>{t('loading')}</div>
         </div>
       ) : error ? (
         <div style={{ 
@@ -262,7 +262,7 @@ export default function Activity() {
         <div style={{ textAlign: 'center', padding: '40px', color: textSecondary }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
           <p style={{ fontSize: '16px', marginBottom: '8px', color: textColor }}>
-            Aucune activité enregistrée
+            {t('noActivities')}
           </p>
         </div>
       ) : (
