@@ -201,10 +201,15 @@ async function listFiles(req, res, next) {
       return res.status(500).json({ error: { message: 'Failed to resolve root folder' } });
     }
     
-    const [files, folders] = await Promise.all([
+    // OPTIMISATION: Limiter le nombre d'items récupérés pour améliorer les performances
+    // Si limit est trop grand, le réduire à 50 max pour éviter les requêtes lentes
+    const effectiveLimit = Math.min(limitNum, 50); // Maximum 50 items pour performance
+    
+    // Exécuter les requêtes en parallèle avec Promise.race pour timeout global
+    const queryPromise = Promise.all([
       FileModel.findByOwner(userId, actualFolderId, false, { 
         skip: skipNum, 
-        limit: limitNum, 
+        limit: effectiveLimit, 
         sortBy: sort_by, 
         sortOrder: sort_order 
       }).catch(err => {
@@ -213,7 +218,7 @@ async function listFiles(req, res, next) {
       }),
       FolderModel.findByOwner(userId, folderId, false, { 
         skip: skipNum, 
-        limit: limitNum, 
+        limit: effectiveLimit, 
         sortBy: sort_by, 
         sortOrder: sort_order 
       }).catch(err => {
@@ -221,6 +226,29 @@ async function listFiles(req, res, next) {
         return [];
       }),
     ]);
+    
+    // Timeout global de 2 secondes pour éviter les requêtes trop longues
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Query timeout')), 2000)
+    );
+    
+    let files, folders;
+    try {
+      [files, folders] = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]);
+    } catch (timeoutErr) {
+      logger.logError(timeoutErr, { 
+        context: 'listFiles - query timeout', 
+        userId, 
+        actualFolderId, 
+        folderId 
+      });
+      // Retourner des tableaux vides plutôt qu'une erreur pour éviter de bloquer l'interface
+      files = [];
+      folders = [];
+    }
 
     // Si on est à la racine (folderId est null), exclure le dossier Root de la liste
     // car l'utilisateur est déjà dans le Root
