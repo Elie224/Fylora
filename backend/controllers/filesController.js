@@ -120,6 +120,18 @@ async function listFiles(req, res, next) {
   try {
     const userId = req.user.id; // Toujours utiliser req.user.id, jamais permettre l'accès aux fichiers d'autres utilisateurs
     const { folder_id, skip = 0, limit = 50, sort_by = 'name', sort_order = 'asc' } = req.query;
+    
+    // OPTIMISATION: Vérifier le cache en mémoire pour les requêtes identiques
+    const cacheKey = `files_${userId}_${folder_id || 'root'}_${skip}_${limit}_${sort_by}_${sort_order}`;
+    if (filesListCache.has(cacheKey)) {
+      const cached = filesListCache.get(cacheKey);
+      // Cache valide pendant 30 secondes
+      if (Date.now() - cached.timestamp < 30000) {
+        return res.status(200).json(cached.data);
+      } else {
+        filesListCache.delete(cacheKey);
+      }
+    }
 
     const folderId = folder_id === 'root' || !folder_id ? null : folder_id;
 
@@ -275,7 +287,7 @@ async function listFiles(req, res, next) {
     // Calculer le total (utiliser la longueur des résultats pour éviter les requêtes coûteuses)
     const total = items.length;
 
-    res.status(200).json({
+    const responseData = {
       data: {
         items,
         pagination: {
@@ -285,7 +297,21 @@ async function listFiles(req, res, next) {
           hasMore: items.length >= effectiveLimit, // Si on a récupéré le nombre demandé, il y a probablement plus
         },
       },
-    });
+    };
+    
+    // OPTIMISATION: Mettre en cache la réponse (seulement pour les petites requêtes)
+    if (skipNum === 0 && limitNum <= 50) {
+      filesListCache.set(cacheKey, {
+        data: responseData,
+        timestamp: Date.now()
+      });
+      // Nettoyer le cache après 30 secondes
+      setTimeout(() => {
+        filesListCache.delete(cacheKey);
+      }, 30000);
+    }
+
+    res.status(200).json(responseData);
   } catch (err) {
     next(err);
   }

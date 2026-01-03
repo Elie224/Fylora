@@ -12,11 +12,16 @@ async function getDashboard(req, res, next) {
     const userId = req.user.id;
 
     // Vérifier le cache Redis en premier pour éviter les requêtes coûteuses
-    const cachedDashboard = await smartCache.getCachedDashboard(userId);
-    if (cachedDashboard) {
-      return res.status(200).json({
-        data: cachedDashboard,
-      });
+    try {
+      const cachedDashboard = await smartCache.getCachedDashboard(userId);
+      if (cachedDashboard) {
+        return res.status(200).json({
+          data: cachedDashboard,
+        });
+      }
+    } catch (cacheErr) {
+      // Si le cache échoue, continuer avec la requête normale
+      logger.logWarn('Cache check failed, proceeding with normal query', { userId, error: cacheErr.message });
     }
 
     const user = await UserModel.findById(userId);
