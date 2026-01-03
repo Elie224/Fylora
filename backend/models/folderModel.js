@@ -93,8 +93,22 @@ const FolderModel = {
   },
 
   async findRootFolder(ownerId) {
-    const folder = await Folder.findOne({ owner_id: ownerId, parent_id: null, is_deleted: false }).lean();
-    return folder ? this.toDTO(folder) : null;
+    try {
+      const ownerObjectId = typeof ownerId === 'string' ? new mongoose.Types.ObjectId(ownerId) : ownerId;
+      // Requête optimisée avec index composé et timeout
+      const folder = await Folder.findOne({ 
+        owner_id: ownerObjectId, 
+        parent_id: null, 
+        is_deleted: false 
+      })
+      .select('_id name owner_id parent_id')
+      .lean()
+      .maxTimeMS(2000); // Timeout de 2 secondes
+      return folder ? this.toDTO(folder) : null;
+    } catch (err) {
+      console.error('Error in findRootFolder:', err);
+      throw err;
+    }
   },
 
   async update(id, updates) {

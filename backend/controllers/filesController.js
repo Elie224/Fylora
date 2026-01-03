@@ -133,32 +133,30 @@ async function listFiles(req, res, next) {
         if (rootFolderCache.has(cacheKey)) {
           actualFolderId = rootFolderCache.get(cacheKey);
         } else {
-          // OPTIMISATION: Utiliser mongoose directement avec requête optimisée
-          const mongoose = require('mongoose');
-          const Folder = mongoose.models.Folder || mongoose.model('Folder');
-          const ownerObjectId = new mongoose.Types.ObjectId(userId);
-          
-          // Requête optimisée pour trouver le Root folder (seulement _id)
-          let rootFolder = await Folder.findOne({ 
-            owner_id: ownerObjectId, 
-            name: 'Root', 
-            parent_id: null 
-          })
-          .select('_id')
-          .lean()
-          .maxTimeMS(2000); // Timeout réduit à 2 secondes
+          // OPTIMISATION: Utiliser findRootFolder qui est optimisé
+          let rootFolder = await FolderModel.findRootFolder(userId);
           
           if (!rootFolder) {
-            // Créer le dossier Root s'il n'existe pas
-            rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
-            actualFolderId = rootFolder.id;
+            // Créer le dossier Root s'il n'existe pas (en arrière-plan si possible)
+            try {
+              rootFolder = await FolderModel.create({ name: 'Root', ownerId: userId, parentId: null });
+              actualFolderId = rootFolder.id;
+            } catch (createErr) {
+              logger.logError(createErr, { context: 'listFiles - create Root folder', userId });
+              // Si la création échoue, essayer de trouver à nouveau
+              rootFolder = await FolderModel.findRootFolder(userId);
+              if (!rootFolder) {
+                throw new Error('Failed to create or find Root folder');
+              }
+              actualFolderId = rootFolder.id;
+            }
           } else {
-            actualFolderId = rootFolder._id.toString();
+            actualFolderId = rootFolder.id;
           }
           
-          // Mettre en cache (expire après 5 minutes)
+          // Mettre en cache (expire après 10 minutes pour réduire les requêtes)
           rootFolderCache.set(cacheKey, actualFolderId);
-          setTimeout(() => rootFolderCache.delete(cacheKey), 5 * 60 * 1000);
+          setTimeout(() => rootFolderCache.delete(cacheKey), 10 * 60 * 1000);
         }
       } else {
         // OPTIMISATION: Vérifier le dossier avec une requête optimisée (seulement owner_id)
@@ -255,8 +253,8 @@ async function listFiles(req, res, next) {
         pagination: {
           total,
           skip: skipNum,
-          limit: limitNum,
-          hasMore: items.length >= limitNum, // Si on a récupéré le nombre demandé, il y a probablement plus
+          limit: effectiveLimit, // Utiliser effectiveLimit au lieu de limitNum
+          hasMore: items.length >= effectiveLimit, // Si on a récupéré le nombre demandé, il y a probablement plus
         },
       },
     });
