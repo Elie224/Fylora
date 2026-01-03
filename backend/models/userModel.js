@@ -51,7 +51,13 @@ const UserSchema = new Schema({
     default: { 
       theme: 'light', 
       language: 'fr', // Français par défaut pour Fylora
-      notifications_enabled: true 
+      notifications_enabled: true,
+      // RGPD - Consentement explicite (Article 7)
+      gdpr_consent: false, // Doit être explicitement accepté
+      gdpr_consent_date: null,
+      data_processing_consent: false,
+      // Chiffrement bout en bout activé par défaut pour la vie privée
+      e2e_encryption_enabled: true
     } 
   },
   
