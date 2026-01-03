@@ -15,7 +15,8 @@
     "init-roles": "node scripts/init-roles.js",
     "init-plugins": "node scripts/init-plugins.js",
     "check-oauth": "node scripts/check-oauth-config.js",
-    "diagnose-oauth": "node scripts/diagnose-oauth.js"
+    "diagnose-oauth": "node scripts/diagnose-oauth.js",
+    "set-admin": "node scripts/setAdmin.js"
   },
   "dependencies": {
     "archiver": "^6.0.1",
