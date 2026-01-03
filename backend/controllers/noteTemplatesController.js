@@ -98,8 +98,23 @@ exports.createNoteFromTemplate = async (req, res, next) => {
     const { template_id } = req.params;
     const { title, folder_id } = req.body;
 
+    // Vérifier que template_id est fourni
+    if (!template_id || template_id === 'undefined') {
+      logger.logError(new Error('Template ID is missing or undefined'), { 
+        context: 'createNoteFromTemplate',
+        template_id,
+        params: req.params
+      });
+      return errorResponse(res, 'Template ID is required', 400);
+    }
+
     const template = await NoteTemplate.findById(template_id);
     if (!template) {
+      logger.logError(new Error('Template not found'), { 
+        context: 'createNoteFromTemplate',
+        template_id,
+        userId
+      });
       return errorResponse(res, 'Template not found', 404);
     }
 
