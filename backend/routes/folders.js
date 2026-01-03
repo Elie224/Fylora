@@ -18,6 +18,13 @@ router.post('/', createFolderSchema, validate, foldersController.createFolder);
 // Lister les dossiers supprimés (corbeille) - DOIT être avant les autres routes /:id
 router.get('/trash', foldersController.listTrash);
 
+// Routes avec segments supplémentaires - DOIVENT être avant /:id pour éviter les conflits
+// Restaurer un dossier
+router.post('/:id/restore', foldersController.restoreFolder);
+
+// Supprimer définitivement un dossier
+router.delete('/:id/permanent', foldersController.permanentDeleteFolder);
+
 // Récupérer un dossier par ID
 router.get('/:id', foldersController.getFolder);
 
@@ -26,12 +33,6 @@ router.patch('/:id', renameSchema, validate, foldersController.updateFolder);
 
 // Supprimer un dossier
 router.delete('/:id', foldersController.deleteFolder);
-
-// Restaurer un dossier
-router.post('/:id/restore', foldersController.restoreFolder);
-
-// Supprimer définitivement un dossier
-router.delete('/:id/permanent', foldersController.permanentDeleteFolder);
 
 module.exports = router;
 
