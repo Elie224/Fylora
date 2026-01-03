@@ -27,5 +27,10 @@ router.patch('/me/preferences', usersController.updatePreferences);
 // Lister les utilisateurs (pour le partage interne)
 router.get('/', usersController.listUsers);
 
+// Gestion des sessions
+router.get('/me/sessions', usersController.getActiveSessions);
+router.delete('/me/sessions/:sessionId', usersController.revokeSession);
+router.delete('/me/sessions', usersController.revokeAllOtherSessions);
+
 module.exports = router;
 

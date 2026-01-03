@@ -9,6 +9,7 @@ import { FileListSkeleton } from '../components/SkeletonLoader';
 import { VirtualList } from '../components/VirtualList';
 import { prefetchManager } from '../utils/prefetch';
 import { registerShortcut, CommonShortcuts } from '../utils/keyboardShortcuts';
+import AdvancedFilters from '../components/AdvancedFilters';
 
 export default function Files() {
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ export default function Files() {
   useEffect(() => {
     loadFiles();
     loadTags();
-  }, [currentFolder]);
+  }, [currentFolder, filters]);
 
   const loadTags = async () => {
     try {

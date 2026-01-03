@@ -1,11 +1,14 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../models/userModel');
+const SessionModel = require('../models/sessionModel');
 const { AppError } = require('../middlewares/errorHandler');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
+const logger = require('../utils/logger');
+const { successResponse, errorResponse } = require('../utils/response');
 
 // Configuration multer pour l'avatar
 const avatarStorage = multer.diskStorage({

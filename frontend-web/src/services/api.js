@@ -270,6 +270,9 @@ export const userService = {
     }),
   updatePreferences: (preferences) =>
     apiClient.patch('/users/me/preferences', preferences),
+  getActiveSessions: () => apiClient.get('/users/me/sessions'),
+  revokeSession: (sessionId) => apiClient.delete(`/users/me/sessions/${sessionId}`),
+  revokeAllOtherSessions: () => apiClient.delete('/users/me/sessions'),
 };
 
 // Services dashboard
