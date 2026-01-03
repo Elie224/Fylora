@@ -419,6 +419,10 @@ app.use('/api/notes', require('./routes/notes'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/note-templates', require('./routes/noteTemplates'));
 app.use('/api/admin', require('./routes/admin'));
+
+// Routes GDPR/RGPD pour la conformité avec le Règlement Général sur la Protection des Données
+app.use('/api/gdpr', require('./routes/gdpr'));
+
 // Nouvelles fonctionnalités intelligentes
 app.use('/api/intelligence', require('./routes/intelligence'));
 app.use('/api/statistics', require('./routes/statistics'));
