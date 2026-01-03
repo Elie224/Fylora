@@ -731,22 +731,11 @@ async function previewFile(req, res, next) {
     try {
       await fs.access(filePath);
     } catch (accessErr) {
-      // Le fichier n'existe pas physiquement
-      logger.logError('File not found on disk', { 
-        fileId: id, 
-        filePath, 
-        originalPath: file.file_path, 
-        error: accessErr.message, 
-        userId,
-        fileName: file.name,
-        mimeType: file.mime_type
-      });
-      
-      // Le fichier n'existe pas physiquement
+      // Le fichier n'existe pas physiquement - c'est un fichier orphelin
       // Cela peut arriver si le fichier a été supprimé manuellement ou si le serveur a été redémarré
       // et que les fichiers temporaires ont été perdus (sur Render, les fichiers peuvent être perdus)
       
-      logger.logError('File not found on disk', { 
+      logger.logWarn('File not found on disk (orphan file)', { 
         fileId: id, 
         filePath, 
         originalPath: file.file_path, 
@@ -757,14 +746,15 @@ async function previewFile(req, res, next) {
         uploadDir: config.upload.uploadDir
       });
       
-      // Retourner une erreur claire avec suggestion de supprimer l'entrée
+      // Retourner une erreur claire avec suggestion
       return res.status(404).json({ 
         error: { 
           message: 'File not found on disk',
           details: 'The file record exists in the database but the physical file is missing. This can happen if the file was manually deleted or if the server was restarted and temporary files were lost.',
-          suggestion: 'You may want to delete this file entry from your file list.',
+          suggestion: 'This file will be automatically cleaned up by the orphan cleanup service. You can also delete it manually from your file list.',
           fileId: id,
-          fileName: file.name
+          fileName: file.name,
+          isOrphan: true
         } 
       });
     }
