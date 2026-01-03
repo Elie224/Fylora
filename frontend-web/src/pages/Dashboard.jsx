@@ -65,28 +65,11 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Failed to load dashboard:', err);
       
-      // Si c'est une erreur 401, essayer de rafraîchir le token
+      // Si c'est une erreur 401, laisser l'intercepteur gérer (il va rafraîchir le token)
       if (err.response?.status === 401) {
-        try {
-          // L'intercepteur devrait gérer cela, mais on peut essayer de recharger
-          const refreshToken = localStorage.getItem('refresh_token');
-          if (refreshToken) {
-            // Attendre que l'intercepteur rafraîchisse le token
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            // Réessayer une fois
-            try {
-              const retryResponse = await dashboardService.getStats();
-              setStats(retryResponse.data.data || retryResponse.data);
-              return;
-            } catch (retryErr) {
-              // Si ça échoue encore, laisser l'intercepteur gérer
-              return;
-            }
-          }
-        } catch (refreshErr) {
-          // Laisser l'intercepteur gérer la redirection
-          return;
-        }
+        // L'intercepteur va gérer le refresh et la redirection si nécessaire
+        // Ne pas afficher d'erreur ici
+        setLoading(false);
         return;
       }
       
