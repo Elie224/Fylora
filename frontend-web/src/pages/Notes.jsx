@@ -237,7 +237,7 @@ export default function Notes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // WebSocket pour collaboration en temps réel
+  // WebSocket pour collaboration en temps réel (optionnel)
   useEffect(() => {
     if (!currentNote || !accessToken) {
       setActiveUsers([]);
@@ -250,45 +250,63 @@ export default function Notes() {
       return;
     }
 
-    // Connecter WebSocket une seule fois
-    const socket = connectWebSocket(accessToken);
-    
-    // Joindre la note avec les callbacks
-    joinNote(noteId, {
-      onUserJoined: (data) => {
-        console.log('User joined:', data);
-        setActiveUsers(prev => {
-          if (!prev.find(u => u.user_id === data.user_id)) {
-            return [...prev, data.user];
+    // Essayer de connecter WebSocket, mais ne pas bloquer si ça échoue
+    let socket = null;
+    try {
+      socket = connectWebSocket(accessToken);
+      
+      // Si la connexion échoue, socket sera null
+      if (!socket) {
+        // WebSocket désactivé ou non disponible, continuer sans collaboration
+        setActiveUsers([]);
+        return;
+      }
+
+      // Joindre la note avec les callbacks
+      joinNote(noteId, {
+        onUserJoined: (data) => {
+          console.log('User joined:', data);
+          setActiveUsers(prev => {
+            if (!prev.find(u => u.user_id === data.user_id)) {
+              return [...prev, data.user];
+            }
+            return prev;
+          });
+        },
+        onUserLeft: (data) => {
+          console.log('User left:', data);
+          setActiveUsers(prev => prev.filter(u => u.user_id !== data.user_id));
+        },
+        onNoteChanged: (data) => {
+          // Appliquer les changements si ce n'est pas l'utilisateur actuel
+          if (user && data.user_id !== user.id) {
+            if (data.changes.title !== undefined) {
+              setTitle(data.changes.title);
+            }
+            if (data.changes.content !== undefined) {
+              setContent(data.changes.content);
+            }
           }
-          return prev;
-        });
-      },
-      onUserLeft: (data) => {
-        console.log('User left:', data);
-        setActiveUsers(prev => prev.filter(u => u.user_id !== data.user_id));
-      },
-      onNoteChanged: (data) => {
-        // Appliquer les changements si ce n'est pas l'utilisateur actuel
-        if (user && data.user_id !== user.id) {
-          if (data.changes.title !== undefined) {
-            setTitle(data.changes.title);
-          }
-          if (data.changes.content !== undefined) {
-            setContent(data.changes.content);
-          }
-        }
-      },
-      onActiveUsers: (data) => {
-        setActiveUsers(data.users || []);
-      },
-      onError: (error) => {
-        console.error('WebSocket error:', error);
-      },
-    });
+        },
+        onActiveUsers: (data) => {
+          setActiveUsers(data.users || []);
+        },
+        onError: (error) => {
+          console.error('WebSocket error:', error);
+        },
+      });
+    } catch (error) {
+      // Erreur silencieuse - l'application fonctionne sans WebSocket
+      console.warn('WebSocket non disponible, collaboration désactivée:', error.message);
+      setActiveUsers([]);
+    }
 
     return () => {
-      leaveNote(noteId);
+      try {
+        leaveNote(noteId);
+      } catch (error) {
+        // Ignorer les erreurs lors du nettoyage
+      }
       setActiveUsers([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
