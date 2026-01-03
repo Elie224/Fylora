@@ -135,6 +135,16 @@ function App() {
           }
         />
         <Route
+          path="/set-admin"
+          element={
+            <Layout>
+              <ProtectedRoute>
+                <SetAdmin />
+              </ProtectedRoute>
+            </Layout>
+          }
+        />
+        <Route
           path="/admin"
           element={
             <Layout>
