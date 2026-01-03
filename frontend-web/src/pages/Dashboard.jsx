@@ -210,58 +210,110 @@ export default function Dashboard() {
       
       {stats && (
         <>
-          {/* Quota avec évolution */}
+          {/* Quota avec évolution - Design amélioré */}
           <div style={{ 
-            marginBottom: '20px', 
-            padding: '20px', 
-            backgroundColor: cardBg,
+            marginBottom: '24px', 
+            padding: '28px', 
+            background: theme === 'dark' 
+              ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             border: `1px solid ${borderColor}`, 
-            borderRadius: '12px',
-            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
+            borderRadius: '20px',
+            boxShadow: theme === 'dark' 
+              ? '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)'
+              : '0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
+            {/* Effet de brillance décoratif */}
+            <div style={{
+              position: 'absolute',
+              top: '-50%',
+              right: '-50%',
+              width: '200%',
+              height: '200%',
+              background: theme === 'dark'
+                ? 'radial-gradient(circle, rgba(33,150,243,0.1) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(33,150,243,0.05) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }}></div>
+            
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              marginBottom: '16px',
+              marginBottom: '24px',
               flexWrap: 'wrap',
-              gap: '12px'
+              gap: '12px',
+              position: 'relative',
+              zIndex: 1
             }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                margin: 0,
-                color: textColor
-              }}>
-                {t('storageSpace')}
-              </h2>
-              <div style={{ fontSize: '14px', color: textSecondary }}>
-                {formatBytes(stats.quota.limit)} {t('total')}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  boxShadow: '0 4px 12px rgba(33,150,243,0.3)'
+                }}>
+                  💾
+                </div>
+                <div>
+                  <h2 style={{ 
+                    fontSize: '22px', 
+                    fontWeight: '700', 
+                    margin: 0,
+                    color: textColor,
+                    letterSpacing: '-0.5px'
+                  }}>
+                    {t('storageSpace')}
+                  </h2>
+                  <div style={{ 
+                    fontSize: '13px', 
+                    color: textSecondary,
+                    marginTop: '4px'
+                  }}>
+                    {formatBytes(stats.quota.limit)} {t('total')}
+                  </div>
+                </div>
               </div>
             </div>
             
-            {/* Graphique d'évolution simple (7 derniers jours) */}
+            {/* Graphique d'évolution amélioré (7 derniers jours) */}
             <div style={{ 
-              marginBottom: '20px',
-              padding: '12px',
-              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
-              borderRadius: '8px'
+              marginBottom: '24px',
+              padding: '20px',
+              background: theme === 'dark' 
+                ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+              borderRadius: '16px',
+              border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+              position: 'relative',
+              zIndex: 1
             }}>
               <div style={{ 
-                fontSize: '13px', 
-                fontWeight: '500',
-                color: textSecondary,
-                marginBottom: '12px'
+                fontSize: '14px', 
+                fontWeight: '600',
+                color: textColor,
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}>
+                <span style={{ fontSize: '18px' }}>📊</span>
                 {t('storageEvolution') || 'Évolution de l\'espace utilisé (7 derniers jours)'}
               </div>
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'flex-end',
                 justifyContent: 'space-between',
-                height: '100px',
-                gap: '6px',
-                padding: '8px 0'
+                height: '120px',
+                gap: '8px',
+                padding: '12px 0'
               }}>
                 {[6, 5, 4, 3, 2, 1, 0].map((dayOffset) => {
                   // Simulation réaliste de l'évolution (croissance progressive)
@@ -304,13 +356,30 @@ export default function Dashboard() {
                       <div style={{ 
                         width: '100%',
                         height: `${heightPercent}%`,
-                        minHeight: '8px',
-                        backgroundColor: isToday ? '#4CAF50' : '#2196F3',
-                        borderRadius: '4px 4px 0 0',
+                        minHeight: '12px',
+                        background: isToday 
+                          ? 'linear-gradient(180deg, #4CAF50 0%, #45a049 100%)'
+                          : 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
+                        borderRadius: '8px 8px 0 0',
                         transition: 'all 0.3s ease',
-                        opacity: isToday ? 1 : 0.75,
-                        boxShadow: isToday ? '0 2px 4px rgba(76, 175, 80, 0.3)' : 'none'
-                      }}></div>
+                        opacity: isToday ? 1 : 0.7,
+                        boxShadow: isToday 
+                          ? '0 4px 12px rgba(76, 175, 80, 0.4), inset 0 -2px 4px rgba(0,0,0,0.1)'
+                          : '0 2px 8px rgba(33, 150, 243, 0.3)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Effet de brillance sur les barres */}
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: '30%',
+                          background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
+                          borderRadius: '8px 8px 0 0'
+                        }}></div>
+                      </div>
                       <div style={{ 
                         fontSize: '10px', 
                         color: textSecondary,
@@ -335,29 +404,57 @@ export default function Dashboard() {
                 })}
               </div>
             </div>
-            <div style={{ marginTop: '12px' }}>
+            <div style={{ marginTop: '20px', position: 'relative', zIndex: 1 }}>
               <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                marginBottom: '12px',
-                flexWrap: 'wrap',
-                gap: '8px'
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '16px',
+                marginBottom: '16px'
               }}>
-                <div style={{ fontSize: '14px', color: textSecondary }}>
-                  <strong style={{ color: textColor }}>{t('used')}:</strong> {formatBytes(stats.quota.used)}
+                <div style={{
+                  padding: '16px',
+                  background: theme === 'dark' 
+                    ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                  borderRadius: '12px',
+                  border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`
+                }}>
+                  <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '6px', fontWeight: '500' }}>
+                    {t('used')}
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#4CAF50' }}>
+                    {formatBytes(stats.quota.used)}
+                  </div>
                 </div>
-                <div style={{ fontSize: '14px', color: textSecondary }}>
-                  <strong style={{ color: textColor }}>{t('available')}:</strong> {formatBytes(stats.quota.available)}
+                <div style={{
+                  padding: '16px',
+                  background: theme === 'dark' 
+                    ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                  borderRadius: '12px',
+                  border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`
+                }}>
+                  <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '6px', fontWeight: '500' }}>
+                    {t('available')}
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#2196F3' }}>
+                    {formatBytes(stats.quota.available)}
+                  </div>
                 </div>
               </div>
               <div style={{ 
                 width: '100%', 
-                height: '28px', 
-                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5', 
-                borderRadius: '14px', 
+                height: '36px', 
+                background: theme === 'dark' 
+                  ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                  : 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
+                borderRadius: '18px', 
                 overflow: 'hidden',
-                boxShadow: theme === 'dark' ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.08)',
-                position: 'relative'
+                boxShadow: theme === 'dark' 
+                  ? 'inset 0 4px 8px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2)'
+                  : 'inset 0 4px 8px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05)',
+                position: 'relative',
+                border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`
               }}>
                 {(() => {
                   const percentageRaw = stats.quota.percentageRaw || stats.quota.percentage || 0;
@@ -366,29 +463,52 @@ export default function Dashboard() {
                   const barWidth = stats.quota.used > 0 
                     ? Math.max(percentageRaw, 0.1)
                     : 0;
-                  const barColor = percentageRaw > 80 ? '#f44336' : percentageRaw > 75 ? '#ff9800' : '#4caf50';
+                  const barGradient = percentageRaw > 80 
+                    ? 'linear-gradient(90deg, #f44336 0%, #d32f2f 100%)'
+                    : percentageRaw > 75 
+                    ? 'linear-gradient(90deg, #ff9800 0%, #f57c00 100%)'
+                    : 'linear-gradient(90deg, #4CAF50 0%, #45a049 100%)';
                   
                   return (
                     <div
                       style={{
                         width: `${barWidth}%`,
                         height: '100%',
-                        backgroundColor: barColor,
-                        transition: 'width 0.5s ease',
-                        borderRadius: '14px',
+                        background: barGradient,
+                        transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                        borderRadius: '18px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'flex-end',
-                        paddingRight: '8px',
-                        minWidth: stats.quota.used > 0 ? '3px' : '0'
+                        paddingRight: '12px',
+                        minWidth: stats.quota.used > 0 ? '4px' : '0',
+                        boxShadow: stats.quota.used > 0 
+                          ? '0 2px 8px rgba(0,0,0,0.2), inset 0 -2px 4px rgba(0,0,0,0.1)'
+                          : 'none',
+                        position: 'relative',
+                        overflow: 'hidden'
                       }}
                     >
+                      {/* Effet de brillance */}
+                      {stats.quota.used > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: '40%',
+                          background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)',
+                          borderRadius: '18px'
+                        }}></div>
+                      )}
                       {percentageRaw > 5 && (
                         <span style={{ 
-                          fontSize: '11px', 
-                          fontWeight: '600', 
+                          fontSize: '12px', 
+                          fontWeight: '700', 
                           color: 'white',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                          position: 'relative',
+                          zIndex: 1
                         }}>
                           {stats.quota.percentage < 1 
                             ? stats.quota.percentage.toFixed(2) 
@@ -400,35 +520,73 @@ export default function Dashboard() {
                 })()}
               </div>
               <div style={{ 
-                marginTop: '8px', 
-                fontSize: '13px', 
+                marginTop: '12px', 
+                fontSize: '14px', 
                 color: textSecondary,
-                textAlign: 'center'
+                textAlign: 'center',
+                fontWeight: '500'
               }}>
-                {stats.quota.percentage < 1 
-                  ? stats.quota.percentage.toFixed(2) 
-                  : stats.quota.percentage}% {t('usedOf')} {formatBytes(stats.quota.limit)}
+                <span style={{ color: textColor, fontWeight: '600' }}>
+                  {stats.quota.percentage < 1 
+                    ? stats.quota.percentage.toFixed(2) 
+                    : stats.quota.percentage}%
+                </span> {t('usedOf')} <span style={{ color: textColor, fontWeight: '600' }}>{formatBytes(stats.quota.limit)}</span>
               </div>
             </div>
           </div>
 
-          {/* Répartition avec graphique */}
+          {/* Répartition avec graphique - Design amélioré */}
           <div style={{ 
-            marginBottom: '20px', 
-            padding: '20px', 
-            backgroundColor: cardBg,
+            marginBottom: '24px', 
+            padding: '28px', 
+            background: theme === 'dark' 
+              ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             border: `1px solid ${borderColor}`, 
-            borderRadius: '12px',
-            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
+            borderRadius: '20px',
+            boxShadow: theme === 'dark' 
+              ? '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)'
+              : '0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            <h2 style={{ 
-              fontSize: '18px', 
-              fontWeight: '600', 
-              marginBottom: '20px',
-              color: textColor
-            }}>
-              {t('breakdownByType')}
-            </h2>
+            {/* Effet de brillance décoratif */}
+            <div style={{
+              position: 'absolute',
+              top: '-50%',
+              left: '-50%',
+              width: '200%',
+              height: '200%',
+              background: theme === 'dark'
+                ? 'radial-gradient(circle, rgba(76,175,80,0.1) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(76,175,80,0.05) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }}></div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                boxShadow: '0 4px 12px rgba(76,175,80,0.3)'
+              }}>
+                📊
+              </div>
+              <h2 style={{ 
+                fontSize: '22px', 
+                fontWeight: '700', 
+                margin: 0,
+                color: textColor,
+                letterSpacing: '-0.5px'
+              }}>
+                {t('breakdownByType')}
+              </h2>
+            </div>
             <div style={{ marginTop: '16px' }}>
               {/* Graphique en barres horizontales */}
               {[
@@ -465,21 +623,44 @@ export default function Dashboard() {
                     </div>
                     <div style={{ 
                       width: '100%', 
-                      height: '24px', 
-                      backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5', 
-                      borderRadius: '12px', 
+                      height: '28px', 
+                      background: theme === 'dark' 
+                        ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                        : 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
+                      borderRadius: '14px', 
                       position: 'relative', 
                       overflow: 'hidden',
-                      boxShadow: theme === 'dark' ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.06)'
+                      boxShadow: theme === 'dark' 
+                        ? 'inset 0 4px 8px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2)'
+                        : 'inset 0 4px 8px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05)',
+                      border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`
                     }}>
                       <div style={{
                         width: `${percentage}%`,
                         height: '100%',
-                        backgroundColor: item.color,
-                        transition: 'width 0.5s ease',
-                        borderRadius: '12px',
-                        minWidth: percentage > 0 ? '4px' : '0'
-                      }}></div>
+                        background: `linear-gradient(90deg, ${item.color} 0%, ${item.color}dd 100%)`,
+                        transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                        borderRadius: '14px',
+                        minWidth: percentage > 0 ? '6px' : '0',
+                        boxShadow: percentage > 0 
+                          ? '0 2px 8px rgba(0,0,0,0.2), inset 0 -2px 4px rgba(0,0,0,0.1)'
+                          : 'none',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Effet de brillance */}
+                        {percentage > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '40%',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)',
+                            borderRadius: '14px'
+                          }}></div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -487,31 +668,68 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Fichiers récents */}
+          {/* Fichiers récents - Design amélioré */}
           <div style={{ 
-            marginBottom: '20px', 
-            padding: '20px', 
-            backgroundColor: cardBg,
+            marginBottom: '24px', 
+            padding: '28px', 
+            background: theme === 'dark' 
+              ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             border: `1px solid ${borderColor}`, 
-            borderRadius: '12px',
-            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
+            borderRadius: '20px',
+            boxShadow: theme === 'dark' 
+              ? '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)'
+              : '0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
+            {/* Effet de brillance décoratif */}
+            <div style={{
+              position: 'absolute',
+              top: '-50%',
+              left: '-50%',
+              width: '200%',
+              height: '200%',
+              background: theme === 'dark'
+                ? 'radial-gradient(circle, rgba(255,152,0,0.1) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(255,152,0,0.05) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }}></div>
+            
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              marginBottom: '16px',
+              marginBottom: '20px',
               flexWrap: 'wrap',
-              gap: '12px'
+              gap: '12px',
+              position: 'relative',
+              zIndex: 1
             }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                margin: 0,
-                color: textColor
-              }}>
-                {t('recentFiles')}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #FF9800 0%, #f57c00 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  boxShadow: '0 4px 12px rgba(255,152,0,0.3)'
+                }}>
+                  📄
+                </div>
+                <h2 style={{ 
+                  fontSize: '22px', 
+                  fontWeight: '700', 
+                  margin: 0,
+                  color: textColor,
+                  letterSpacing: '-0.5px'
+                }}>
+                  {t('recentFiles')}
+                </h2>
+              </div>
               <button
                 onClick={() => navigate('/files')}
                 style={{
@@ -577,48 +795,141 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Statistiques générales */}
+          {/* Statistiques générales - Design amélioré */}
           <div style={{ 
-            padding: '20px', 
-            backgroundColor: cardBg,
+            padding: '28px', 
+            background: theme === 'dark' 
+              ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             border: `1px solid ${borderColor}`, 
-            borderRadius: '12px',
-            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
+            borderRadius: '20px',
+            boxShadow: theme === 'dark' 
+              ? '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)'
+              : '0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            <h2 style={{ 
-              fontSize: '18px', 
-              fontWeight: '600', 
-              marginBottom: '16px',
-              color: textColor
-            }}>
-              {t('statistics')}
-            </h2>
+            {/* Effet de brillance décoratif */}
+            <div style={{
+              position: 'absolute',
+              top: '-50%',
+              right: '-50%',
+              width: '200%',
+              height: '200%',
+              background: theme === 'dark'
+                ? 'radial-gradient(circle, rgba(156,39,176,0.1) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(156,39,176,0.05) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }}></div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                boxShadow: '0 4px 12px rgba(156,39,176,0.3)'
+              }}>
+                📈
+              </div>
+              <h2 style={{ 
+                fontSize: '22px', 
+                fontWeight: '700', 
+                margin: 0,
+                color: textColor,
+                letterSpacing: '-0.5px'
+              }}>
+                {t('statistics')}
+              </h2>
+            </div>
             <div style={{ 
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '16px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '20px',
+              position: 'relative',
+              zIndex: 1
             }}>
               <div style={{
-                padding: '16px',
-                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
-                borderRadius: '8px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '24px', fontWeight: '600', color: '#2196F3', marginBottom: '4px' }}>
+                padding: '24px',
+                background: theme === 'dark' 
+                  ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                  : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                borderRadius: '16px',
+                textAlign: 'center',
+                border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                boxShadow: theme === 'dark' 
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.08)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = theme === 'dark' 
+                  ? '0 8px 20px rgba(33,150,243,0.4)'
+                  : '0 8px 20px rgba(33,150,243,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = theme === 'dark' 
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.08)';
+              }}
+              >
+                <div style={{ 
+                  fontSize: '32px', 
+                  fontWeight: '700', 
+                  background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: '8px'
+                }}>
                   {stats.total_files}
                 </div>
-                <div style={{ fontSize: '13px', color: textSecondary }}>{t('totalFiles')}</div>
+                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>{t('totalFiles')}</div>
               </div>
               <div style={{
-                padding: '16px',
-                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f8f9fa',
-                borderRadius: '8px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '24px', fontWeight: '600', color: '#4CAF50', marginBottom: '4px' }}>
+                padding: '24px',
+                background: theme === 'dark' 
+                  ? 'linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%)'
+                  : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                borderRadius: '16px',
+                textAlign: 'center',
+                border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                boxShadow: theme === 'dark' 
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.08)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = theme === 'dark' 
+                  ? '0 8px 20px rgba(76,175,80,0.4)'
+                  : '0 8px 20px rgba(76,175,80,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = theme === 'dark' 
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.08)';
+              }}
+              >
+                <div style={{ 
+                  fontSize: '32px', 
+                  fontWeight: '700', 
+                  background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: '8px'
+                }}>
                   {stats.total_folders}
                 </div>
-                <div style={{ fontSize: '13px', color: textSecondary }}>{t('totalFolders')}</div>
+                <div style={{ fontSize: '14px', color: textSecondary, fontWeight: '500' }}>{t('totalFolders')}</div>
               </div>
             </div>
           </div>
