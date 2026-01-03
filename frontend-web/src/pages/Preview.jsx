@@ -294,8 +294,14 @@ export default function Preview() {
         )}
 
         {previewType === 'text' && (
-          <div style={{ padding: 24, backgroundColor: 'white', height: '80vh', overflow: 'auto' }}>
-            <TextPreview url={`${file.previewUrl}`} token={token} />
+          <div style={{ padding: 24, backgroundColor: cardBg, height: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <TextEditor 
+              url={`${file.previewUrl}`} 
+              token={token} 
+              fileId={id}
+              fileName={file.name}
+              mimeType={fileMetadata?.mime_type}
+            />
           </div>
         )}
 
@@ -930,11 +936,24 @@ function AudioPreview({ url, token }) {
   );
 }
 
-// Composant pour prévisualiser les fichiers texte
-function TextPreview({ url, token }) {
+// Composant éditeur de texte/Markdown avec prévisualisation
+function TextEditor({ url, token, fileId, fileName, mimeType }) {
   const [content, setContent] = useState('');
+  const [originalContent, setOriginalContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [viewMode, setViewMode] = useState('edit'); // 'edit' | 'preview' | 'split'
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const { theme } = useTheme();
+  const isMarkdown = mimeType?.includes('markdown') || fileName?.endsWith('.md');
+  
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const codeBg = theme === 'dark' ? '#2d2d2d' : '#f5f5f5';
 
   useEffect(() => {
     const loadText = async () => {
@@ -952,6 +971,7 @@ function TextPreview({ url, token }) {
         
         const text = await response.text();
         setContent(text);
+        setOriginalContent(text);
       } catch (err) {
         console.error('Failed to load text:', err);
         setError(err.message);
@@ -963,8 +983,59 @@ function TextPreview({ url, token }) {
     loadText();
   }, [url, token]);
 
+  useEffect(() => {
+    setHasChanges(content !== originalContent);
+  }, [content, originalContent]);
+
+  const handleSave = async () => {
+    if (!hasChanges) return;
+    
+    setIsSaving(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const blob = new Blob([content], { type: mimeType || 'text/plain' });
+      const formData = new FormData();
+      formData.append('file', blob, fileName);
+
+      const response = await fetch(`${apiUrl}/api/files/${fileId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: { message: 'Erreur inconnue' } }));
+        throw new Error(errorData.error?.message || 'Erreur lors de la sauvegarde');
+      }
+
+      setOriginalContent(content);
+      setHasChanges(false);
+      alert('✅ Fichier sauvegardé avec succès !');
+    } catch (err) {
+      console.error('Failed to save:', err);
+      alert('❌ Erreur lors de la sauvegarde: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const renderMarkdown = (text) => {
+    // Simple markdown renderer (basique, peut être amélioré avec une bibliothèque)
+    return text
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+      .replace(/`(.*?)`/gim, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
+      .replace(/\n/gim, '<br />');
+  };
+
   if (loading) {
-    return <div style={{ padding: 24, textAlign: 'center' }}>Chargement du texte...</div>;
+    return <div style={{ padding: 24, textAlign: 'center', color: textColor }}>Chargement du texte...</div>;
   }
 
   if (error) {
@@ -972,18 +1043,164 @@ function TextPreview({ url, token }) {
   }
 
   return (
-    <pre style={{ 
-      margin: 0, 
-      whiteSpace: 'pre-wrap', 
-      fontFamily: 'monospace', 
-      fontSize: 14,
-      lineHeight: 1.6,
-      padding: 16,
-      backgroundColor: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: 4
-    }}>
-      {content}
-    </pre>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Barre d'outils */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 16px',
+        backgroundColor: cardBg,
+        borderBottom: `1px solid ${borderColor}`,
+        marginBottom: '16px',
+        borderRadius: '8px',
+      }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isMarkdown && (
+            <>
+              <button
+                onClick={() => setViewMode('edit')}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: viewMode === 'edit' ? '#2196F3' : 'transparent',
+                  color: viewMode === 'edit' ? 'white' : textColor,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                ✏️ Éditer
+              </button>
+              <button
+                onClick={() => setViewMode('preview')}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: viewMode === 'preview' ? '#2196F3' : 'transparent',
+                  color: viewMode === 'preview' ? 'white' : textColor,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                👁️ Prévisualiser
+              </button>
+              <button
+                onClick={() => setViewMode('split')}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: viewMode === 'split' ? '#2196F3' : 'transparent',
+                  color: viewMode === 'split' ? 'white' : textColor,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                ⚡ Split
+              </button>
+            </>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {hasChanges && (
+            <span style={{ fontSize: '12px', color: '#FF9800' }}>● Modifications non sauvegardées</span>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: hasChanges ? '#4CAF50' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: hasChanges ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              fontWeight: '600',
+            }}
+          >
+            {isSaving ? '💾 Sauvegarde...' : '💾 Sauvegarder'}
+          </button>
+        </div>
+      </div>
+
+      {/* Zone d'édition/prévisualisation */}
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        gap: '16px',
+        overflow: 'hidden',
+      }}>
+        {(viewMode === 'edit' || viewMode === 'split') && (
+          <div style={{ 
+            flex: viewMode === 'split' ? 1 : 'none',
+            width: viewMode === 'split' ? '50%' : '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              style={{
+                flex: 1,
+                width: '100%',
+                padding: '16px',
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                lineHeight: 1.6,
+                backgroundColor: codeBg,
+                color: textColor,
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                resize: 'none',
+                outline: 'none',
+              }}
+              placeholder="Tapez votre texte ici..."
+            />
+          </div>
+        )}
+
+        {(viewMode === 'preview' || viewMode === 'split') && isMarkdown && (
+          <div style={{ 
+            flex: viewMode === 'split' ? 1 : 'none',
+            width: viewMode === 'split' ? '50%' : '100%',
+            padding: '16px',
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`,
+            borderRadius: '8px',
+            overflow: 'auto',
+            color: textColor,
+          }}>
+            <div 
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+              style={{
+                lineHeight: 1.8,
+              }}
+            />
+          </div>
+        )}
+
+        {viewMode === 'preview' && !isMarkdown && (
+          <pre style={{ 
+            flex: 1,
+            margin: 0, 
+            whiteSpace: 'pre-wrap', 
+            fontFamily: 'monospace', 
+            fontSize: 14,
+            lineHeight: 1.6,
+            padding: 16,
+            backgroundColor: codeBg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            borderRadius: 8,
+            overflow: 'auto',
+          }}>
+            {content}
+          </pre>
+        )}
+      </div>
+    </div>
   );
 }

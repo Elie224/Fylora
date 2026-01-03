@@ -32,6 +32,9 @@ router.get('/:id/stream', filesController.streamFile);
 // Mettre à jour un fichier (rename/move)
 router.patch('/:id', filesController.updateFile);
 
+// Mettre à jour le contenu d'un fichier texte
+router.put('/:id', filesController.uploadMiddleware, filesController.updateFileContent);
+
 // Supprimer un fichier
 router.delete('/:id', filesController.deleteFile);
 

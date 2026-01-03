@@ -687,6 +687,94 @@ async function updateFile(req, res, next) {
   }
 }
 
+// Mettre à jour le contenu d'un fichier texte
+async function updateFileContent(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: { message: 'No file provided' } });
+    }
+
+    const file = await FileModel.findById(id);
+    if (!file) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ error: { message: 'File not found' } });
+    }
+
+    // Comparer les ObjectId correctement
+    const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : file.owner_id;
+    const userOwnerId = userId?.toString ? userId.toString() : userId;
+    
+    if (fileOwnerId !== userOwnerId) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(403).json({ error: { message: 'Access denied' } });
+    }
+
+    // Vérifier que c'est un fichier texte
+    if (!file.mime_type?.startsWith('text/') && !file.mime_type?.includes('markdown')) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ error: { message: 'Only text files can be updated' } });
+    }
+
+    const oldSize = file.size || 0;
+    const newSize = req.file.size;
+    const sizeDiff = newSize - oldSize;
+
+    // Vérifier le quota
+    const User = require('mongoose').models.User || require('mongoose').model('User');
+    const user = await User.findById(userId).select('quota_used quota_limit').lean();
+    if (!user) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ error: { message: 'User not found' } });
+    }
+
+    const currentUsed = user.quota_used || 0;
+    const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
+
+    if (sizeDiff > 0 && currentUsed + sizeDiff > quotaLimit) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(507).json({ error: { message: 'Insufficient storage quota' } });
+    }
+
+    // Supprimer l'ancien fichier
+    try {
+      await fs.unlink(file.file_path);
+    } catch (unlinkErr) {
+      logger.logWarn('Could not delete old file', { path: file.file_path, error: unlinkErr });
+    }
+
+    // Déplacer le nouveau fichier
+    const finalFilePath = req.file.path;
+
+    // Mettre à jour en base de données
+    const updated = await FileModel.update(id, {
+      size: newSize,
+      file_path: finalFilePath,
+      updated_at: new Date(),
+    });
+
+    // Mettre à jour le quota
+    if (sizeDiff !== 0) {
+      await updateQuotaAfterOperation(userId, sizeDiff);
+    }
+
+    // Invalider le cache
+    const { invalidateUserCache } = require('../utils/cache');
+    invalidateUserCache(userId);
+    smartCache.invalidateFile(id, userId).catch(() => {});
+
+    res.status(200).json({ data: updated, message: 'File content updated successfully' });
+  } catch (err) {
+    if (req.file?.path) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
+    logger.logError(err, { context: 'updateFileContent', userId: req.user?.id, fileId: req.params?.id });
+    next(err);
+  }
+}
+
 // Supprimer un fichier (soft delete)
 async function deleteFile(req, res, next) {
   try {
@@ -858,6 +946,7 @@ module.exports = {
   previewFile,
   streamFile,
   updateFile,
+  updateFileContent,
   deleteFile,
   restoreFile,
   permanentDeleteFile,
