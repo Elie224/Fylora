@@ -97,6 +97,25 @@ exports.getNote = async (req, res, next) => {
     const userId = req.user.id;
     const { id } = req.params;
 
+    // Vérifier que l'ID est valide
+    if (!id || id === 'undefined' || id === '[object Object]') {
+      logger.logError(new Error('Invalid note ID'), { 
+        context: 'getNote',
+        note_id: id,
+        params: req.params
+      });
+      return errorResponse(res, 'Invalid note ID', 400);
+    }
+
+    // Vérifier que l'ID est un ObjectId valide
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      logger.logError(new Error('Invalid ObjectId format'), { 
+        context: 'getNote',
+        note_id: id
+      });
+      return errorResponse(res, 'Invalid note ID format', 400);
+    }
+
     const note = await Note.findById(id)
       .populate('owner_id', 'email display_name avatar_url')
       .populate('last_modified_by', 'email display_name')
