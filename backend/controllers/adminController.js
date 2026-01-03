@@ -167,10 +167,56 @@ async function updateUser(req, res, next) {
     const { display_name, quota_limit, is_active, is_admin } = req.body;
 
     const User = mongoose.models.User || mongoose.model('User');
+    
+    // Récupérer l'utilisateur actuel pour vérifier le quota
+    const currentUser = await User.findById(userId).select('quota_limit quota_used').lean();
+    if (!currentUser) {
+      return res.status(404).json({
+        error: { message: 'Utilisateur non trouvé' }
+      });
+    }
+
     const updateData = {};
 
     if (display_name !== undefined) updateData.display_name = display_name;
-    if (quota_limit !== undefined) updateData.quota_limit = parseInt(quota_limit);
+    
+    // Gestion du quota_limit avec validation
+    if (quota_limit !== undefined) {
+      const newQuotaLimit = parseInt(quota_limit);
+      
+      // Validation : le quota doit être un nombre positif
+      if (isNaN(newQuotaLimit) || newQuotaLimit < 0) {
+        return res.status(400).json({
+          error: { message: 'Le quota doit être un nombre positif' }
+        });
+      }
+
+      // Validation : le nouveau quota doit être supérieur ou égal à l'espace utilisé
+      const currentQuotaUsed = currentUser.quota_used || 0;
+      if (newQuotaLimit < currentQuotaUsed) {
+        return res.status(400).json({
+          error: { 
+            message: `Le nouveau quota (${formatBytes(newQuotaLimit)}) ne peut pas être inférieur à l'espace utilisé (${formatBytes(currentQuotaUsed)})`,
+            quota_used: currentQuotaUsed,
+            quota_limit: newQuotaLimit
+          }
+        });
+      }
+
+      updateData.quota_limit = newQuotaLimit;
+      
+      // Journaliser la modification du quota par l'admin
+      logger.logInfo({
+        message: 'Admin updated user quota',
+        adminId: req.user.id,
+        userId: userId,
+        oldQuota: currentUser.quota_limit,
+        newQuota: newQuotaLimit,
+        quotaUsed: currentQuotaUsed,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     if (is_active !== undefined) updateData.is_active = Boolean(is_active);
     if (is_admin !== undefined) updateData.is_admin = Boolean(is_admin);
 
@@ -186,19 +232,152 @@ async function updateUser(req, res, next) {
       });
     }
 
+    // Calculer le pourcentage d'utilisation
+    const quotaUsed = user.quota_used || 0;
+    const quotaLimit = user.quota_limit || 0;
+    const usagePercent = quotaLimit > 0 ? ((quotaUsed / quotaLimit) * 100).toFixed(2) : 0;
+
     res.status(200).json({
       data: {
         id: user._id.toString(),
         email: user.email,
         display_name: user.display_name,
         quota_limit: user.quota_limit,
+        quota_used: user.quota_used,
+        quota_available: Math.max(0, user.quota_limit - (user.quota_used || 0)),
+        usage_percent: parseFloat(usagePercent),
         is_active: user.is_active,
-        is_admin: user.is_admin || false
+        is_admin: user.is_admin || false,
+        quota_formatted: {
+          limit: formatBytes(user.quota_limit),
+          used: formatBytes(user.quota_used || 0),
+          available: formatBytes(Math.max(0, user.quota_limit - (user.quota_used || 0)))
+        }
       }
     });
   } catch (err) {
     next(err);
   }
+}
+
+// Étendre le stockage d'un utilisateur (fonction dédiée)
+async function extendStorage(req, res, next) {
+  try {
+    const userId = req.params.id;
+    const { additional_storage, new_quota_limit } = req.body;
+
+    const User = mongoose.models.User || mongoose.model('User');
+    const user = await User.findById(userId).select('quota_limit quota_used').lean();
+
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'Utilisateur non trouvé' }
+      });
+    }
+
+    const currentQuotaLimit = user.quota_limit || 0;
+    const currentQuotaUsed = user.quota_used || 0;
+    let newQuotaLimit;
+
+    // Deux modes : extension par ajout ou définition d'un nouveau quota
+    if (additional_storage !== undefined) {
+      // Mode 1 : Ajouter de l'espace supplémentaire
+      const additionalBytes = parseInt(additional_storage);
+      
+      if (isNaN(additionalBytes) || additionalBytes <= 0) {
+        return res.status(400).json({
+          error: { message: 'L\'espace supplémentaire doit être un nombre positif' }
+        });
+      }
+
+      newQuotaLimit = currentQuotaLimit + additionalBytes;
+    } else if (new_quota_limit !== undefined) {
+      // Mode 2 : Définir un nouveau quota total
+      newQuotaLimit = parseInt(new_quota_limit);
+      
+      if (isNaN(newQuotaLimit) || newQuotaLimit < 0) {
+        return res.status(400).json({
+          error: { message: 'Le quota doit être un nombre positif' }
+        });
+      }
+
+      // Validation : le nouveau quota doit être supérieur à l'espace utilisé
+      if (newQuotaLimit < currentQuotaUsed) {
+        return res.status(400).json({
+          error: { 
+            message: `Le nouveau quota (${formatBytes(newQuotaLimit)}) ne peut pas être inférieur à l'espace utilisé (${formatBytes(currentQuotaUsed)})`,
+            quota_used: currentQuotaUsed,
+            quota_limit: newQuotaLimit
+          }
+        });
+      }
+    } else {
+      return res.status(400).json({
+        error: { message: 'Vous devez fournir soit "additional_storage" soit "new_quota_limit"' }
+      });
+    }
+
+    // Mettre à jour le quota
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { quota_limit: newQuotaLimit } },
+      { new: true }
+    ).select('-password_hash').lean();
+
+    // Journaliser l'extension du stockage
+    logger.logInfo({
+      message: 'Admin extended user storage',
+      adminId: req.user.id,
+      userId: userId,
+      oldQuota: currentQuotaLimit,
+      newQuota: newQuotaLimit,
+      additionalStorage: additional_storage ? parseInt(additional_storage) : (newQuotaLimit - currentQuotaLimit),
+      quotaUsed: currentQuotaUsed,
+      timestamp: new Date().toISOString()
+    });
+
+    // Calculer le pourcentage d'utilisation
+    const usagePercent = newQuotaLimit > 0 ? ((currentQuotaUsed / newQuotaLimit) * 100).toFixed(2) : 0;
+
+    res.status(200).json({
+      data: {
+        message: 'Stockage étendu avec succès',
+        user: {
+          id: updatedUser._id.toString(),
+          email: updatedUser.email,
+          display_name: updatedUser.display_name,
+          quota_limit: newQuotaLimit,
+          quota_used: currentQuotaUsed,
+          quota_available: newQuotaLimit - currentQuotaUsed,
+          usage_percent: parseFloat(usagePercent),
+          quota_formatted: {
+            limit: formatBytes(newQuotaLimit),
+            used: formatBytes(currentQuotaUsed),
+            available: formatBytes(newQuotaLimit - currentQuotaUsed)
+          }
+        },
+        extension: {
+          old_quota: currentQuotaLimit,
+          new_quota: newQuotaLimit,
+          additional_storage: newQuotaLimit - currentQuotaLimit,
+          additional_storage_formatted: formatBytes(newQuotaLimit - currentQuotaLimit)
+        }
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Fonction utilitaire pour formater les bytes en format lisible
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // Supprimer un utilisateur

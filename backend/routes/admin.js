@@ -19,6 +19,7 @@ router.get('/stats', adminController.getStats);
 router.get('/users', adminController.getUsers);
 router.get('/users/:id', adminController.getUser);
 router.put('/users/:id', adminController.updateUser);
+router.post('/users/:id/extend-storage', adminController.extendStorage); // Route dédiée pour étendre le stockage
 router.delete('/users/:id', adminController.deleteUser);
 
 // Route temporaire pour définir l'admin (à supprimer après utilisation)
