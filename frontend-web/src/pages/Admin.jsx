@@ -178,8 +178,8 @@ export default function Admin() {
         fontSize: '28px',
         marginBottom: '24px',
         fontWeight: '700',
-        color: '#333'
-      }}>⚙️ Administration</h1>
+        color: textColor
+      }}>⚙️ {t('administration')}</h1>
 
       {message.text && (
         <div style={{
@@ -188,9 +188,13 @@ export default function Admin() {
           backgroundColor: message.type === 'error' 
             ? (theme === 'dark' ? '#3d1f1f' : '#ffebee')
             : (theme === 'dark' ? '#1f3d1f' : '#e8f5e9'),
-          color: message.type === 'error' ? '#c62828' : '#2e7d32',
+          color: message.type === 'error' 
+            ? (theme === 'dark' ? '#ef5350' : '#c62828')
+            : (theme === 'dark' ? '#66bb6a' : '#2e7d32'),
           borderRadius: '8px',
-          border: `1px solid ${message.type === 'error' ? '#ef5350' : '#66bb6a'}`
+          border: `1px solid ${message.type === 'error' 
+            ? (theme === 'dark' ? '#ef5350' : '#ef5350')
+            : (theme === 'dark' ? '#66bb6a' : '#66bb6a')}`
         }}>
           {message.text}
         </div>
@@ -397,7 +401,7 @@ export default function Admin() {
                 >
                   Précédent
                 </button>
-                <span style={{ padding: '8px 16px', color: '#666' }}>
+                <span style={{ padding: '8px 16px', color: textSecondary }}>
                   Page {pagination.page} sur {pagination.pages}
                 </span>
                 <button
@@ -445,12 +449,12 @@ export default function Admin() {
             maxHeight: '90vh',
             overflow: 'auto'
           }}>
-            <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
+            <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: '600', color: textColor }}>
               {t('editUser')} {selectedUser.email}
             </h3>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#555' }}>{t('displayName')}</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: textColor }}>{t('displayName')}</label>
               <input
                 type="text"
                 value={editForm.display_name}
@@ -458,7 +462,9 @@ export default function Admin() {
                 style={{
                   padding: '10px',
                   width: '100%',
-                  border: '1px solid #ddd',
+                  backgroundColor: inputBg,
+                  color: textColor,
+                  border: `1px solid ${borderColor}`,
                   borderRadius: '8px',
                   fontSize: '14px',
                   boxSizing: 'border-box'
@@ -467,7 +473,7 @@ export default function Admin() {
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#555' }}>{t('quotaLimit')} (GB)</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: textColor }}>{t('quotaLimit')} (GB)</label>
               <input
                 type="number"
                 step="0.1"
@@ -476,7 +482,9 @@ export default function Admin() {
                 style={{
                   padding: '10px',
                   width: '100%',
-                  border: '1px solid #ddd',
+                  backgroundColor: inputBg,
+                  color: textColor,
+                  border: `1px solid ${borderColor}`,
                   borderRadius: '8px',
                   fontSize: '14px',
                   boxSizing: 'border-box'
@@ -491,7 +499,7 @@ export default function Admin() {
                   checked={editForm.is_active}
                   onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
                 />
-                <span style={{ fontWeight: '600', color: '#555' }}>{t('accountActive')}</span>
+                <span style={{ fontWeight: '600', color: textColor }}>{t('accountActive')}</span>
               </label>
             </div>
 
@@ -502,7 +510,7 @@ export default function Admin() {
                   checked={editForm.is_admin}
                   onChange={(e) => setEditForm({ ...editForm, is_admin: e.target.checked })}
                 />
-                <span style={{ fontWeight: '600', color: '#555' }}>{t('admin')}</span>
+                <span style={{ fontWeight: '600', color: textColor }}>{t('admin')}</span>
               </label>
             </div>
 
@@ -511,9 +519,9 @@ export default function Admin() {
                 onClick={() => setSelectedUser(null)}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#f5f5f5',
-                  color: '#333',
-                  border: '1px solid #ddd',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+                  color: textColor,
+                  border: `1px solid ${borderColor}`,
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: '600'
