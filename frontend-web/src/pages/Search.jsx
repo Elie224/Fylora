@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { dashboardService } from '../services/api';
+import { dashboardService, fileService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -353,45 +353,53 @@ export default function Search() {
                       </button>
                       {item.item_type !== 'folder' && item.type !== 'folder' && (
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             try {
-                              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                              const token = localStorage.getItem('access_token');
-                              
-                              if (!token) {
-                                alert(t('mustBeConnected') || 'Vous devez être connecté pour télécharger');
-                                return;
-                              }
-                              
                               const itemId = item.id || item._id;
                               if (!itemId) {
                                 alert(t('errorNoItemId') || 'Erreur: l\'élément n\'a pas d\'identifiant');
                                 return;
                               }
                               
-                              const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
-                              });
+                              // Utiliser le service API pour le téléchargement avec responseType: 'blob'
+                              const response = await fileService.download(itemId);
                               
-                              if (!response.ok) {
-                                const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur lors du téléchargement' } }));
-                                throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
+                              // La réponse devrait déjà être un blob
+                              let blob;
+                              if (response.data instanceof Blob) {
+                                blob = response.data;
+                              } else if (response.data instanceof ArrayBuffer) {
+                                blob = new Blob([response.data]);
+                              } else {
+                                // Si ce n'est pas un blob, essayer de le convertir
+                                blob = new Blob([JSON.stringify(response.data)]);
                               }
                               
-                              const blob = await response.blob();
+                              // Créer un lien de téléchargement
                               const url = window.URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.href = url;
                               a.download = item.name || 'file';
+                              a.style.display = 'none';
                               document.body.appendChild(a);
                               a.click();
-                              window.URL.revokeObjectURL(url);
-                              document.body.removeChild(a);
+                              
+                              // Nettoyer après un court délai
+                              setTimeout(() => {
+                                window.URL.revokeObjectURL(url);
+                                if (document.body.contains(a)) {
+                                  document.body.removeChild(a);
+                                }
+                              }, 100);
                             } catch (err) {
                               console.error('Download error:', err);
-                              alert(err.message || t('downloadError') || 'Erreur lors du téléchargement');
+                              const errorMessage = err.response?.data?.error?.message 
+                                || err.message 
+                                || t('downloadError') 
+                                || 'Erreur lors du téléchargement';
+                              alert(errorMessage);
                             }
                           }}
                           style={{

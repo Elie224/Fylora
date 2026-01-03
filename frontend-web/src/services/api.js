@@ -184,7 +184,7 @@ export const fileService = {
     // Utiliser uploadClient qui n'a pas de Content-Type par défaut
     return uploadClient.post('/files/upload', formData, config);
   },
-  download: (fileId) => apiClient.get(`/files/${fileId}/download`),
+  download: (fileId) => apiClient.get(`/files/${fileId}/download`, { responseType: 'blob' }),
   delete: (fileId) => apiClient.delete(`/files/${fileId}`),
   restore: (fileId) => apiClient.post(`/files/${fileId}/restore`),
   permanentDelete: (fileId) => apiClient.delete(`/files/${fileId}/permanent`),
