@@ -75,7 +75,33 @@ async function createIndexes() {
       
       await Share.collection.createIndex({ file_id: 1 });
       await Share.collection.createIndex({ folder_id: 1 });
-      await Share.collection.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+      
+      // Gérer l'index expires_at avec TTL (peut avoir des options différentes)
+      try {
+        // Supprimer l'ancien index s'il existe avec des options différentes
+        try {
+          await Share.collection.dropIndex('expires_at_1');
+        } catch (dropErr) {
+          // Ignorer si l'index n'existe pas
+        }
+        // Créer l'index avec TTL (expireAfterSeconds: 0 signifie pas d'expiration automatique)
+        await Share.collection.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+      } catch (expiresErr) {
+        // Si l'index existe déjà avec les bonnes options, c'est OK
+        if (expiresErr.code !== 85 && expiresErr.codeName !== 'IndexOptionsConflict') {
+          throw expiresErr;
+        }
+        // Vérifier si l'index existe déjà
+        const indexes = await Share.collection.indexes();
+        const expiresIndex = indexes.find(idx => idx.name === 'expires_at_1');
+        if (expiresIndex) {
+          console.log('✓ Share expires_at index already exists');
+        } else {
+          // Si l'index n'existe pas, essayer sans expireAfterSeconds
+          await Share.collection.createIndex({ expires_at: 1 });
+        }
+      }
+      
       console.log('✓ Share indexes created');
     }
 
