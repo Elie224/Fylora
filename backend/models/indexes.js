@@ -119,7 +119,33 @@ async function createIndexes() {
     if (Notification) {
       await Notification.collection.createIndex({ user_id: 1, is_read: 1, created_at: -1 });
       await Notification.collection.createIndex({ user_id: 1, type: 1 });
-      await Notification.collection.createIndex({ read_at: 1 }, { expireAfterSeconds: 2592000, partialFilterExpression: { is_read: true } });
+      
+      // Gérer l'index read_at avec TTL (peut avoir des options différentes)
+      try {
+        // Supprimer l'ancien index s'il existe avec des options différentes
+        try {
+          await Notification.collection.dropIndex('read_at_1');
+        } catch (dropErr) {
+          // Ignorer si l'index n'existe pas
+        }
+        // Créer l'index avec TTL (expire après 30 jours = 2592000 secondes)
+        await Notification.collection.createIndex({ read_at: 1 }, { expireAfterSeconds: 2592000, partialFilterExpression: { is_read: true } });
+      } catch (readAtErr) {
+        // Si l'index existe déjà avec les bonnes options, c'est OK
+        if (readAtErr.code !== 85 && readAtErr.codeName !== 'IndexOptionsConflict') {
+          throw readAtErr;
+        }
+        // Vérifier si l'index existe déjà
+        const indexes = await Notification.collection.indexes();
+        const readAtIndex = indexes.find(idx => idx.name === 'read_at_1');
+        if (readAtIndex) {
+          console.log('✓ Notification read_at index already exists');
+        } else {
+          // Si l'index n'existe pas, essayer sans expireAfterSeconds
+          await Notification.collection.createIndex({ read_at: 1 }, { partialFilterExpression: { is_read: true } });
+        }
+      }
+      
       console.log('✓ Notification indexes created');
     }
 
@@ -129,7 +155,33 @@ async function createIndexes() {
       await ActivityLog.collection.createIndex({ user_id: 1, created_at: -1 });
       await ActivityLog.collection.createIndex({ resource_type: 1, resource_id: 1 });
       await ActivityLog.collection.createIndex({ action_type: 1, created_at: -1 });
-      await ActivityLog.collection.createIndex({ created_at: 1 }, { expireAfterSeconds: 31536000 });
+      
+      // Gérer l'index created_at avec TTL (peut avoir des options différentes)
+      try {
+        // Supprimer l'ancien index s'il existe avec des options différentes
+        try {
+          await ActivityLog.collection.dropIndex('created_at_1');
+        } catch (dropErr) {
+          // Ignorer si l'index n'existe pas
+        }
+        // Créer l'index avec TTL (expire après 1 an = 31536000 secondes)
+        await ActivityLog.collection.createIndex({ created_at: 1 }, { expireAfterSeconds: 31536000 });
+      } catch (createdAtErr) {
+        // Si l'index existe déjà avec les bonnes options, c'est OK
+        if (createdAtErr.code !== 85 && createdAtErr.codeName !== 'IndexOptionsConflict') {
+          throw createdAtErr;
+        }
+        // Vérifier si l'index existe déjà
+        const indexes = await ActivityLog.collection.indexes();
+        const createdAtIndex = indexes.find(idx => idx.name === 'created_at_1');
+        if (createdAtIndex) {
+          console.log('✓ ActivityLog created_at index already exists');
+        } else {
+          // Si l'index n'existe pas, essayer sans expireAfterSeconds
+          await ActivityLog.collection.createIndex({ created_at: 1 });
+        }
+      }
+      
       console.log('✓ ActivityLog indexes created');
     }
 
