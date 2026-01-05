@@ -11,6 +11,17 @@ STRIPE_PRICE_PRO_YEARLY=price_VOTRE_PRICE_ID_ICI
 STRIPE_PRICE_TEAM_MONTHLY=price_VOTRE_PRICE_ID_ICI
 STRIPE_PRICE_TEAM_YEARLY=price_VOTRE_PRICE_ID_ICI
 
+=== NOTE IMPORTANTE ===
+⚠️  Vous avez un Product ID (prod_...), mais nous avons besoin du Price ID (price_...)
+
+Pour trouver le Price ID:
+1. Allez sur la page du produit dans Stripe Dashboard
+2. Cherchez la section "Tarifs" ou "Pricing"
+3. Le Price ID est affiché là (commence par price_...)
+
+Product ID actuel: prod_TjktDJNwddaRhi
+→ Trouvez le Price ID associé sur la page de ce produit
+
 === INSTRUCTIONS ===
 1. Remplacez tous les "VOTRE_XXX_ICI" par vos vraies valeurs
 2. Allez dans Render Dashboard > Votre Service Backend > Environment
