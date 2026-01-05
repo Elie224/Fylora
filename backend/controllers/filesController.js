@@ -658,6 +658,15 @@ async function downloadFile(req, res, next) {
     const { id } = req.params;
     const { token, password } = req.query;
     
+    // IMPORTANT: Si pas de token de partage ET pas d'utilisateur authentifié, exiger l'authentification
+    if (!token && !req.user) {
+      logger.logWarn('Download request without authentication or share token', {
+        fileId: id,
+        hasAuthHeader: !!req.headers.authorization
+      });
+      return res.status(401).json({ error: { message: 'Authentication required or share token required' } });
+    }
+    
     // Logger pour déboguer (toujours logger en production pour diagnostiquer)
     logger.logInfo('Download request', {
       fileId: id,
