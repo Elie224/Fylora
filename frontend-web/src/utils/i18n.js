@@ -441,7 +441,44 @@ const translations = {
     listView: 'Vue liste',
     list: 'Liste',
     gridView: 'Vue grille',
-    grid: 'Grille'
+    grid: 'Grille',
+    
+    // Quota alerts
+    quotaAlertMedium: 'Votre stockage atteint {percentage}%. Vous pouvez mettre à niveau votre plan pour plus d\'espace.',
+    quotaAlertHigh: 'Attention ! Votre stockage atteint {percentage}%. Pensez à mettre à niveau votre plan.',
+    quotaAlertCritical: 'Stockage critique ! Vous avez utilisé {percentage}% de votre espace. Mettez à niveau maintenant pour éviter d\'être bloqué.',
+    
+    // FAQ
+    faqQuestion1: 'Quels sont les moyens de paiement acceptés ?',
+    faqAnswer1: 'Nous acceptons les paiements par carte bancaire via Stripe et PayPal. Tous les paiements sont sécurisés et cryptés.',
+    faqQuestion2: 'Puis-je changer de plan à tout moment ?',
+    faqAnswer2: 'Oui, vous pouvez upgrader votre plan à tout moment. Le nouveau plan sera activé immédiatement après le paiement. Pour rétrograder, contactez notre support.',
+    faqQuestion3: 'Que se passe-t-il si je dépasse mon quota de stockage ?',
+    faqAnswer3: 'Vous recevrez des notifications à 80%, 90% et 95% de votre quota. Une fois le quota atteint, vous ne pourrez plus uploader de nouveaux fichiers jusqu\'à ce que vous mettiez à niveau votre plan.',
+    faqQuestion4: 'Les fichiers sont-ils sécurisés ?',
+    faqAnswer4: 'Oui, tous vos fichiers sont chiffrés et stockés de manière sécurisée. Nous utilisons les meilleures pratiques de sécurité pour protéger vos données.',
+    faqQuestion5: 'Puis-je annuler mon abonnement ?',
+    faqAnswer5: 'Oui, vous pouvez annuler votre abonnement à tout moment depuis les paramètres de votre compte. Vous conserverez l\'accès jusqu\'à la fin de la période payée, puis votre compte sera rétrogradé vers le plan gratuit.',
+    faqQuestion6: 'Y a-t-il un essai gratuit pour les plans payants ?',
+    faqAnswer6: 'Le plan FREE (100 Go) est déjà gratuit et sans engagement. Pour les plans payants, vous pouvez upgrader à tout moment et annuler sans frais si vous n\'êtes pas satisfait.',
+    faqQuestion7: 'Comment puis-je contacter le support ?',
+    faqAnswer7: 'Vous pouvez nous contacter par email à kouroumaelisee@gmail.com ou par téléphone au +33689306432. Notre équipe est disponible pour vous aider.',
+    
+    // Support
+    support: 'Support',
+    supportDescription: 'Nous sommes là pour vous aider. Contactez-nous par email ou téléphone.',
+    phone: 'Téléphone',
+    sendEmail: 'Envoyer un email',
+    call: 'Appeler',
+    copy: 'Copier',
+    emailCopied: 'Email copié dans le presse-papiers !',
+    phoneCopied: 'Numéro de téléphone copié dans le presse-papiers !',
+    supportEmailSubject: 'Support Fylora',
+    supportHours: 'Heures de support',
+    supportHoursDescription: 'Notre équipe de support est disponible du lundi au vendredi, de 9h à 18h (heure de Paris). Nous répondons généralement dans les 24 heures.',
+    commonQuestions: 'Questions fréquentes',
+    commonQuestionsDescription: 'Consultez notre page de tarification pour les questions fréquemment posées sur nos plans et tarifs.',
+    viewFAQ: 'Voir les FAQ'
   },
   en: {
     // Navigation
@@ -920,11 +957,6 @@ const translations = {
     commonQuestions: 'Common Questions',
     commonQuestionsDescription: 'Check our pricing page for frequently asked questions about our plans and pricing.',
     viewFAQ: 'View FAQ'
-    
-    // Quota alerts
-    quotaAlertMedium: 'Your storage has reached {percentage}%. You can upgrade your plan for more space.',
-    quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',
-    quotaAlertCritical: 'Critical storage! You have used {percentage}% of your space. Upgrade now to avoid being blocked.'
   }
 };
 
