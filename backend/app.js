@@ -546,7 +546,29 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+  // Ne pas faire planter l'application pour les erreurs Redis (non critiques)
+  if (reason && typeof reason === 'object' && reason.message) {
+    const errorMessage = reason.message;
+    // Ignorer les erreurs Redis de connexion - elles ne sont pas critiques
+    if (errorMessage.includes('ECONNREFUSED') || 
+        errorMessage.includes('Redis') || 
+        errorMessage.includes('127.0.0.1:6379')) {
+      logger.logWarn(`Redis connection error (non-critical): ${errorMessage}`, { context: 'unhandledRejection' });
+      return; // Ne pas faire planter l'application
+    }
+  }
+  
+  // Pour les autres erreurs, logger et continuer (ne pas faire planter en production)
   logger.logError(new Error(`Unhandled Rejection: ${reason}`), { context: 'unhandledRejection', promise });
+  
+  // En production, ne pas faire planter l'application pour les rejets non gérés
+  // (sauf si c'est une erreur critique)
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('Unhandled rejection in production, continuing...');
+    return;
+  }
+  
+  // En développement, faire planter pour déboguer
   gracefulShutdown('unhandledRejection');
 });
 

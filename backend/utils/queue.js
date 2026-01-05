@@ -133,6 +133,14 @@ class QueueManager {
     // Vérifier si Redis est configuré
     if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
       this.useRedis = false;
+      console.log('ℹ️  Redis not configured for queues, using memory queues');
+      return;
+    }
+
+    // Vérifier que REDIS_URL n'est pas localhost (non disponible sur Render)
+    if (process.env.REDIS_URL && process.env.REDIS_URL.includes('127.0.0.1')) {
+      console.warn('⚠️  REDIS_URL points to localhost, using memory queues instead');
+      this.useRedis = false;
       return;
     }
 
@@ -140,8 +148,9 @@ class QueueManager {
     try {
       const Bull = require('bull');
       this.Bull = Bull;
-      this.useRedis = true;
-      console.log('✅ Redis Bull available for queues');
+      // Ne pas activer Redis automatiquement - tester la connexion d'abord
+      this.useRedis = false; // Désactivé par défaut, sera activé si la connexion réussit
+      console.log('✅ Redis Bull available for queues (will test connection)');
     } catch (error) {
       console.warn('⚠️  Redis Bull not available, using memory queues');
       this.useRedis = false;
@@ -154,63 +163,80 @@ class QueueManager {
     }
 
     let queue;
-    if (this.useRedis && this.Bull) {
-      // Utiliser REDIS_URL si disponible, sinon utiliser les variables individuelles
-      const redisConfig = process.env.REDIS_URL 
-        ? { 
-            url: process.env.REDIS_URL,
-            maxRetriesPerRequest: 3, // Réduire les tentatives pour éviter les erreurs
-            retryStrategy: (times) => {
-              if (times > 3) {
-                return null; // Arrêter après 3 tentatives
-              }
-              return Math.min(times * 50, 500);
-            },
-            connectTimeout: 5000,
-          }
-        : {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: process.env.REDIS_PORT || 6379,
-            password: process.env.REDIS_PASSWORD,
-            maxRetriesPerRequest: 3,
-            retryStrategy: (times) => {
-              if (times > 3) {
-                return null;
-              }
-              return Math.min(times * 50, 500);
-            },
-            connectTimeout: 5000,
-          };
-      
-      queue = new this.Bull(name, {
-        redis: redisConfig,
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 2000,
+    // Vérifier que Redis est vraiment disponible avant d'essayer de l'utiliser
+    if (this.Bull && process.env.REDIS_URL && !process.env.REDIS_URL.includes('127.0.0.1')) {
+      try {
+        // Utiliser REDIS_URL si disponible et valide
+        const redisConfig = { 
+          url: process.env.REDIS_URL,
+          maxRetriesPerRequest: null, // Désactiver les tentatives automatiques
+          retryStrategy: (times) => {
+            // Si Redis n'est pas disponible, arrêter immédiatement
+            if (times > 1) {
+              return null; // Arrêter les tentatives
+            }
+            return 100; // Une seule tentative rapide
           },
-        },
-        settings: {
-          // Réessayer automatiquement en cas de déconnexion Redis
-          retryProcessDelay: 5000,
-        },
-      });
-      
-      // Gérer les erreurs de connexion Redis
-      queue.on('error', (error) => {
-        console.warn(`Redis queue error for ${name}:`, error.message);
-        // Ne pas bloquer l'application si Redis est indisponible
-      });
-      
-      queue.on('waiting', (jobId) => {
-        console.log(`Job ${jobId} is waiting in queue ${name}`);
-      });
-      
-      queue.on('stalled', (jobId) => {
-        console.warn(`Job ${jobId} is stalled in queue ${name}`);
-      });
+          connectTimeout: 2000, // Timeout court
+          lazyConnect: true, // Ne pas se connecter immédiatement
+          enableOfflineQueue: false, // Désactiver la queue offline pour éviter les erreurs
+        };
+        
+        queue = new this.Bull(name, {
+          redis: redisConfig,
+          defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 2000,
+            },
+          },
+          settings: {
+            retryProcessDelay: 5000,
+          },
+        });
+        
+        // Gérer les erreurs de connexion Redis sans faire planter l'application
+        queue.on('error', (error) => {
+          // Ignorer les erreurs de connexion - elles ne sont pas critiques
+          // Les erreurs Redis ne doivent pas faire planter l'application
+          if (error.message && (error.message.includes('ECONNREFUSED') || 
+                                error.message.includes('Connection') ||
+                                error.message.includes('127.0.0.1'))) {
+            // Basculer vers memory queue si Redis n'est pas disponible
+            console.warn(`Redis unavailable for queue ${name}, using memory queue instead`);
+            this.useRedis = false;
+            // Remplacer la queue par une memory queue
+            try {
+              const memoryQueue = new MemoryQueue(name);
+              this.queues.set(name, memoryQueue);
+            } catch (err) {
+              console.error(`Failed to create memory queue for ${name}:`, err.message);
+            }
+            return;
+          }
+          // Logger les autres erreurs mais ne pas faire planter
+          console.warn(`Redis queue error for ${name}:`, error.message);
+        });
+        
+        // Gérer les erreurs de connexion au démarrage
+        queue.on('ready', () => {
+          console.log(`Redis queue ${name} ready`);
+        });
+        
+        // Capturer les erreurs de connexion initiale
+        queue.on('waiting', (jobId) => {
+          // Ne rien faire, juste pour éviter les warnings
+        });
+        
+      } catch (err) {
+        // Si la création de la queue échoue, utiliser memory queue
+        console.warn(`Failed to create Redis queue ${name}, using memory queue:`, err.message);
+        this.useRedis = false;
+        queue = new MemoryQueue(name);
+      }
     } else {
+      // Utiliser memory queue si Redis n'est pas disponible
       queue = new MemoryQueue(name);
     }
 
