@@ -7,7 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../components/Toast';
 
 // Composant pour charger et afficher les miniatures avec authentification
-function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
+function ThumbnailImage({ fileId, fileName, isImage, style, onError, onOrphanDetected }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -20,6 +20,8 @@ function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
       return;
     }
 
+    // Vérifier si le fichier est déjà marqué comme orphelin
+    // (via le callback parent si disponible)
     const loadThumbnail = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -41,6 +43,10 @@ function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
             console.warn('File not found on disk (orphan file):', fileId);
             setError(true);
             setLoading(false);
+            // Notifier le parent que ce fichier est orphelin
+            if (onOrphanDetected) {
+              onOrphanDetected(fileId);
+            }
             return;
           }
           throw new Error('Failed to load');
@@ -168,6 +174,7 @@ export default function Gallery() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [groupedByDate, setGroupedByDate] = useState({});
+  const [orphanFiles, setOrphanFiles] = useState(new Set()); // Fichiers orphelins détectés
 
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
@@ -264,27 +271,9 @@ export default function Gallery() {
       // Le système de nettoyage automatique les supprimera de la base de données
       setMediaFiles(allMediaFiles);
 
-      // Grouper par date pour la vue timeline
-      const grouped = {};
-      allMediaFiles.forEach(file => {
-        try {
-          const date = new Date(file.created_at || file.uploaded_at || Date.now());
-          if (isNaN(date.getTime())) return; // Ignorer les dates invalides
-          
-          const dateKey = date.toLocaleDateString('fr-FR', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          });
-          if (!grouped[dateKey]) {
-            grouped[dateKey] = [];
-          }
-          grouped[dateKey].push(file);
-        } catch (dateErr) {
-          console.warn('Erreur lors du traitement de la date:', dateErr);
-        }
-      });
-      setGroupedByDate(grouped);
+      // Note: Le groupement par date sera mis à jour dynamiquement
+      // quand les fichiers orphelins seront détectés et filtrés
+      setGroupedByDate({});
     } catch (err) {
       console.error('Failed to load media files:', err);
       const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur inconnue';
@@ -310,16 +299,31 @@ export default function Gallery() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Charger une seule fois au montage
 
+  // Filtrer les fichiers orphelins de la liste
+  const validFiles = useMemo(() => {
+    return mediaFiles.filter(file => {
+      if (!file) return false;
+      const fileId = file.id || file._id;
+      return fileId && !orphanFiles.has(String(fileId));
+    });
+  }, [mediaFiles, orphanFiles]);
+
   const filteredFiles = useMemo(() => {
-    if (filterType === 'all') return mediaFiles;
+    let files = validFiles;
+    if (filterType === 'all') return files;
     if (filterType === 'images') {
-      return mediaFiles.filter(f => (f.mime_type || '').startsWith('image/'));
+      return files.filter(f => (f.mime_type || '').startsWith('image/'));
     }
     if (filterType === 'videos') {
-      return mediaFiles.filter(f => (f.mime_type || '').startsWith('video/'));
+      return files.filter(f => (f.mime_type || '').startsWith('video/'));
     }
-    return mediaFiles;
-  }, [mediaFiles, filterType]);
+    return files;
+  }, [validFiles, filterType]);
+
+  // Callback pour détecter les fichiers orphelins
+  const handleOrphanDetected = useCallback((fileId) => {
+    setOrphanFiles(prev => new Set([...prev, String(fileId)]));
+  }, []);
 
   const openLightbox = useCallback((file, index) => {
     setSelectedFile(file);
@@ -452,19 +456,24 @@ export default function Gallery() {
         <div>
           <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>{t('total')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: textColor }}>
-            {mediaFiles.length} {mediaFiles.length === 1 ? t('media') : t('medias')}
+            {validFiles.length} {validFiles.length === 1 ? t('media') : t('medias')}
+            {orphanFiles.size > 0 && (
+              <span style={{ fontSize: '12px', color: textSecondary, marginLeft: '8px', fontWeight: 'normal' }}>
+                ({orphanFiles.size} {t('language') === 'en' ? 'unavailable' : 'indisponible'})
+              </span>
+            )}
           </div>
         </div>
         <div>
           <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>{t('images')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#4CAF50' }}>
-            {mediaFiles.filter(f => (f.mime_type || '').startsWith('image/')).length}
+            {validFiles.filter(f => (f.mime_type || '').startsWith('image/')).length}
           </div>
         </div>
         <div>
           <div style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>{t('videos')}</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#FF9800' }}>
-            {mediaFiles.filter(f => (f.mime_type || '').startsWith('video/')).length}
+            {validFiles.filter(f => (f.mime_type || '').startsWith('video/')).length}
           </div>
         </div>
       </div>
@@ -515,6 +524,7 @@ export default function Gallery() {
                   fileId={fileId}
                   fileName={file.name}
                   isImage={isImage}
+                  onOrphanDetected={handleOrphanDetected}
                 />
                 <div style={{
                   position: 'absolute',
@@ -536,78 +546,102 @@ export default function Gallery() {
       )}
 
       {/* Vue Timeline */}
-      {viewMode === 'timeline' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          {Object.entries(groupedByDate)
-            .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
-            .map(([date, files]) => (
-              <div key={date}>
-                <h2 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: textColor,
-                  paddingBottom: '8px',
-                  borderBottom: `2px solid ${borderColor}`,
-                }}>
-                  {date}
-                </h2>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                  gap: '12px',
-                }}>
-                  {files
-                    .filter(file => {
-                      if (filterType === 'all') return true;
-                      if (filterType === 'images') return (file.mime_type || '').startsWith('image/');
-                      if (filterType === 'videos') return (file.mime_type || '').startsWith('video/');
-                      return true;
-                    })
-                    .map((file, index) => {
-                      if (!file) return null;
-                      const fileId = file.id || file._id;
-                      if (!fileId) return null;
-                      
-                      const isImage = (file.mime_type || '').startsWith('image/');
-                      const fileIndex = filteredFiles.findIndex(f => 
-                        f && (f.id || f._id) === fileId
-                      );
+      {viewMode === 'timeline' && (() => {
+        // Grouper les fichiers valides par date
+        const grouped = {};
+        validFiles.forEach(file => {
+          try {
+            const date = new Date(file.created_at || file.uploaded_at || Date.now());
+            if (isNaN(date.getTime())) return;
+            
+            const dateKey = date.toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            });
+            if (!grouped[dateKey]) {
+              grouped[dateKey] = [];
+            }
+            grouped[dateKey].push(file);
+          } catch (dateErr) {
+            console.warn('Erreur lors du traitement de la date:', dateErr);
+          }
+        });
 
-                      return (
-                        <div
-                          key={file.id || file._id}
-                          onClick={() => openLightbox(file, fileIndex)}
-                          style={{
-                            aspectRatio: '1',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            backgroundColor: cardBg,
-                            border: `1px solid ${borderColor}`,
-                            cursor: 'pointer',
-                            position: 'relative',
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }}
-                        >
-                          <ThumbnailImage
-                            fileId={fileId}
-                            fileName={file.name}
-                            isImage={isImage}
-                          />
-                        </div>
-                      );
-                    })}
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {Object.entries(grouped)
+              .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+              .map(([date, files]) => (
+                <div key={date}>
+                  <h2 style={{
+                    margin: '0 0 16px 0',
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    color: textColor,
+                    paddingBottom: '8px',
+                    borderBottom: `2px solid ${borderColor}`,
+                  }}>
+                    {date}
+                  </h2>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                    gap: '12px',
+                  }}>
+                    {files
+                      .filter(file => {
+                        if (filterType === 'all') return true;
+                        if (filterType === 'images') return (file.mime_type || '').startsWith('image/');
+                        if (filterType === 'videos') return (file.mime_type || '').startsWith('video/');
+                        return true;
+                      })
+                      .map((file, index) => {
+                        if (!file) return null;
+                        const fileId = file.id || file._id;
+                        if (!fileId) return null;
+                        
+                        const isImage = (file.mime_type || '').startsWith('image/');
+                        const fileIndex = filteredFiles.findIndex(f => 
+                          f && (f.id || f._id) === fileId
+                        );
+
+                        return (
+                          <div
+                            key={file.id || file._id}
+                            onClick={() => openLightbox(file, fileIndex)}
+                            style={{
+                              aspectRatio: '1',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              backgroundColor: cardBg,
+                              border: `1px solid ${borderColor}`,
+                              cursor: 'pointer',
+                              position: 'relative',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                          >
+                            <ThumbnailImage
+                              fileId={fileId}
+                              fileName={file.name}
+                              isImage={isImage}
+                              onOrphanDetected={handleOrphanDetected}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
-            ))}
-        </div>
-      )}
+              ))}
+          </div>
+        );
+      })()}
 
       {/* Lightbox */}
       {selectedFile && (() => {
