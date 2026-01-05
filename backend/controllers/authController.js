@@ -636,6 +636,7 @@ async function deleteAccount(req, res, next) {
   try {
     const userId = req.user.id;
     const mongoose = require('../models/db');
+    const User = mongoose.models.User || require('../models/userModel');
     const File = mongoose.models.File;
     const Folder = mongoose.models.Folder;
     const Share = mongoose.models.Share;
