@@ -103,9 +103,10 @@ async function getDashboard(req, res, next) {
       },
       // Limiter les résultats pour éviter les calculs inutiles
       { $limit: 1 }
-      ])
-      .allowDiskUse(true) // Permettre l'utilisation du disque pour les grandes collections
-      .maxTimeMS(2000), // Timeout de 2 secondes pour l'agrégation
+      ], {
+        allowDiskUse: true, // Permettre l'utilisation du disque pour les grandes collections
+        maxTimeMS: 2000 // Timeout de 2 secondes pour l'agrégation
+      }),
       // Récupérer les 5 derniers fichiers modifiés avec requête optimisée
       File.find({ 
         owner_id: ownerObjectId, 
