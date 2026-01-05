@@ -211,15 +211,16 @@ export default function Settings() {
   }
 
   // Couleurs dynamiques selon le thème - Thème clair amélioré
-  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
-  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
-  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
-  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
-  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f0f4f8';
-  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
-  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
-  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
-  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
+  // Thème sombre uniquement
+  const cardBg = '#1e1e1e';
+  const textColor = '#e0e0e0';
+  const borderColor = '#333333';
+  const secondaryBg = '#2d2d2d';
+  const hoverBg = '#2d2d2d';
+  const textSecondary = '#b0b0b0';
+  const bgColor = '#121212';
+  const shadowColor = 'rgba(0, 0, 0, 0.5)';
+  const shadowHover = 'rgba(0, 0, 0, 0.6)';
 
   return (
     <div style={{ 
@@ -567,52 +568,7 @@ export default function Settings() {
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🎨 {t('interfacePreferences') || 'Préférences d\'interface'}</h2>
         
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            padding: '16px',
-            backgroundColor: secondaryBg,
-            borderRadius: 8,
-            border: `1px solid ${borderColor}`
-          }}>
-            <div>
-              <div style={{ fontWeight: 'bold', marginBottom: 4, color: textColor }}>
-                {t('theme') || 'Thème'}
-              </div>
-              <div style={{ fontSize: '0.9em', color: textSecondary }}>
-                {theme === 'dark' ? (t('darkTheme') || 'Thème sombre') : (t('lightTheme') || 'Thème clair')}
-              </div>
-            </div>
-            <button
-              onClick={toggleTheme}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: theme === 'dark' ? '#424242' : '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = theme === 'dark' ? '#616161' : '#1976D2';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = theme === 'dark' ? '#424242' : '#2196F3';
-              }}
-            >
-              {theme === 'dark' ? '🌙' : '☀️'}
-              {theme === 'dark' ? (t('switchToLight') || 'Passer au thème clair') : (t('switchToDark') || 'Passer au thème sombre')}
-            </button>
-          </div>
-        </div>
+        {/* Thème sombre uniquement - section supprimée */}
 
         <div style={{ marginBottom: 24 }}>
           <div style={{ 

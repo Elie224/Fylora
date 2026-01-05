@@ -11,31 +11,25 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    // Récupérer le thème depuis localStorage ou utiliser 'light' par défaut
-    const savedTheme = localStorage.getItem('theme');
-    const initialTheme = savedTheme || 'light';
-    
-    // Appliquer immédiatement le thème au document (avant le premier rendu)
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', initialTheme);
-    }
-    
-    return initialTheme;
-  });
+  // Thème sombre uniquement - toujours 'dark'
+  const theme = 'dark';
 
   useEffect(() => {
-    // Appliquer le thème au document
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    // Forcer le thème sombre au document
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      // Supprimer l'ancien thème du localStorage
+      localStorage.removeItem('theme');
+    }
+  }, []);
 
+  // toggleTheme n'est plus nécessaire mais gardé pour compatibilité
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    // Ne fait rien - thème sombre uniquement
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme: () => {}, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

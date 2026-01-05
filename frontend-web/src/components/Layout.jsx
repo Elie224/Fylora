@@ -14,16 +14,16 @@ export default function Layout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   
-  // Couleurs dynamiques selon le thème - Thème clair amélioré
-  const navBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
-  const navBorder = theme === 'dark' ? '#333333' : '#e2e8f0';
-  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
-  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
-  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
-  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
-  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
-  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
-  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
+  // Couleurs du thème sombre uniquement
+  const navBg = '#1e1e1e';
+  const navBorder = '#333333';
+  const textColor = '#e0e0e0';
+  const textSecondary = '#b0b0b0';
+  const cardBg = '#1e1e1e';
+  const hoverBg = '#2d2d2d';
+  const secondaryBg = '#2d2d2d';
+  const shadowColor = 'rgba(0, 0, 0, 0.5)';
+  const shadowHover = 'rgba(0, 0, 0, 0.6)';
 
   // Fermer les menus quand on change de page
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function Layout({ children }) {
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
       }}>
         <div style={{ 
           display: 'flex', 
@@ -151,7 +151,7 @@ export default function Layout({ children }) {
                 style={{
                   padding: '10px 16px',
                   textDecoration: 'none',
-                  color: location.pathname === link.path ? '#2196F3' : (theme === 'dark' ? '#b0b0b0' : '#666'),
+                  color: location.pathname === link.path ? '#2196F3' : '#b0b0b0',
                   fontWeight: location.pathname === link.path ? '600' : '400',
                   borderRadius: '8px',
                   transition: 'all 0.2s',
@@ -170,7 +170,7 @@ export default function Layout({ children }) {
                 onMouseLeave={(e) => {
                   if (location.pathname !== link.path) {
                     e.target.style.backgroundColor = 'transparent';
-                    e.target.style.color = theme === 'dark' ? '#b0b0b0' : '#666';
+                    e.target.style.color = '#b0b0b0';
                   }
                 }}
               >
@@ -335,7 +335,7 @@ export default function Layout({ children }) {
                 backgroundColor: cardBg,
                 border: `1px solid ${navBorder}`,
                 borderRadius: '12px',
-                boxShadow: theme === 'dark' ? '0 4px 12px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.15)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                 minWidth: '240px',
                 zIndex: 1001,
                 overflow: 'hidden'
@@ -363,27 +363,27 @@ export default function Layout({ children }) {
                   style={{
                     width: '100%',
                     padding: '14px 16px',
-                    backgroundColor: theme === 'dark' ? 'transparent' : '#dc2626',
-                    border: theme === 'dark' ? 'none' : `2px solid #dc2626`,
+                    backgroundColor: 'transparent',
+                    border: 'none',
                     borderRadius: '10px',
                     textAlign: 'center',
                     cursor: 'pointer',
                     fontSize: '15px',
-                    color: theme === 'dark' ? '#f44336' : '#ffffff',
+                    color: '#f44336',
                     fontWeight: '700',
                     transition: 'all 0.2s',
-                    boxShadow: theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)'
+                    boxShadow: 'none'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = theme === 'dark' ? '#3d1f1f' : '#b91c1c';
-                    e.target.style.borderColor = theme === 'dark' ? 'transparent' : '#b91c1c';
-                    e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.4)';
+                    e.target.style.backgroundColor = '#3d1f1f';
+                    e.target.style.borderColor = 'transparent';
+                    e.target.style.boxShadow = 'none';
                     e.target.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = theme === 'dark' ? 'transparent' : '#dc2626';
-                    e.target.style.borderColor = theme === 'dark' ? 'transparent' : '#dc2626';
-                    e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)';
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.borderColor = 'transparent';
+                    e.target.style.boxShadow = 'none';
                     e.target.style.transform = 'translateY(0)';
                   }}
                 >
@@ -405,7 +405,7 @@ export default function Layout({ children }) {
           width: '280px',
           height: '100vh',
           backgroundColor: cardBg,
-          boxShadow: theme === 'dark' ? '2px 0 8px rgba(0,0,0,0.5)' : '2px 0 8px rgba(0,0,0,0.15)',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.5)',
           zIndex: 1002,
           transition: 'left 0.3s ease-out',
           overflowY: 'auto',
@@ -485,7 +485,7 @@ export default function Layout({ children }) {
               {user.email && (
                 <div style={{
                   fontSize: '12px',
-                  color: theme === 'dark' ? '#b0b0b0' : '#666',
+                  color: '#b0b0b0',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -497,11 +497,11 @@ export default function Layout({ children }) {
               {/* Informations utilisateur améliorées */}
               <div style={{
                 fontSize: '11px',
-                color: theme === 'dark' ? '#90caf9' : '#2196F3',
+                color: '#90caf9',
                 fontWeight: '600',
                 marginTop: '4px',
                 padding: '4px 8px',
-                backgroundColor: theme === 'dark' ? '#1a237e' : '#e3f2fd',
+                backgroundColor: '#1a237e',
                 borderRadius: '6px',
                 display: 'inline-block'
               }}>
@@ -527,7 +527,7 @@ export default function Layout({ children }) {
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 minHeight: '52px',
-                backgroundColor: location.pathname === link.path ? (theme === 'dark' ? '#1a237e' : '#e3f2fd') : 'transparent',
+                backgroundColor: location.pathname === link.path ? '#1a237e' : 'transparent',
                 transition: 'all 0.2s ease',
                 borderLeft: location.pathname === link.path ? '4px solid #2196F3' : '4px solid transparent',
                 fontSize: '16px',
@@ -598,12 +598,12 @@ export default function Layout({ children }) {
             }}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = '#b91c1c';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.4)';
+              e.target.style.boxShadow = 'none';
               e.target.style.transform = 'translateY(-1px)';
             }}
             onMouseLeave={(e) => {
               e.target.style.backgroundColor = '#dc2626';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 2px 8px rgba(220, 38, 38, 0.3)';
+              e.target.style.boxShadow = 'none';
               e.target.style.transform = 'translateY(0)';
             }}
           >
