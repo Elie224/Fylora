@@ -10,6 +10,10 @@ const FileSchema = new Schema({
   file_path: { type: String, required: true, unique: true },
   is_deleted: { type: Boolean, default: false },
   deleted_at: Date,
+  // Champs pour les limitations
+  last_accessed_at: { type: Date, default: Date.now },
+  cold_storage: { type: Boolean, default: false },
+  cold_storage_date: Date,
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 // Indexes optimisés pour les performances
@@ -22,6 +26,8 @@ FileSchema.index({ owner_id: 1, is_deleted: 1, updated_at: -1 }); // Pour les fi
 FileSchema.index({ owner_id: 1, mime_type: 1, is_deleted: 1 }); // Pour les recherches par type
 FileSchema.index({ name: 'text', mime_type: 'text' }); // Index texte pour la recherche
 FileSchema.index({ updated_at: -1 }); // Pour le tri par date
+FileSchema.index({ owner_id: 1, last_accessed_at: 1 }); // Pour cold storage
+FileSchema.index({ owner_id: 1, cold_storage: 1 }); // Pour cold storage queries
 
 const File = mongoose.models.File || mongoose.model('File', FileSchema);
 
@@ -251,6 +257,9 @@ const FileModel = {
       deleted_at: formatDate(file.deleted_at),
       created_at: formatDate(file.created_at),
       updated_at: formatDate(file.updated_at),
+      last_accessed_at: formatDate(file.last_accessed_at),
+      cold_storage: file.cold_storage || false,
+      cold_storage_date: formatDate(file.cold_storage_date),
     };
   },
 };

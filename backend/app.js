@@ -510,6 +510,8 @@ app.use('/api/plugins', require('./routes/plugins'));
 app.use('/api/offline-sync', require('./routes/offlineSync'));
 // Routes de gestion des plans
 app.use('/api/plans', require('./routes/plans'));
+// Routes de billing (Stripe & PayPal)
+app.use('/api/billing', require('./routes/billing'));
 
 // 404 handler (doit être avant errorHandler)
 app.use((req, res) => {

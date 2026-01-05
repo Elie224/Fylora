@@ -73,11 +73,19 @@ async function signup(req, res, next) {
     // Hacher le mot de passe de manière sécurisée
     const motDePasseHache = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Créer le nouvel utilisateur
+    // Créer le nouvel utilisateur avec plan FREE par défaut
+    const planService = require('../services/planService');
+    const freeQuota = planService.getStorageQuota('free');
+    
     let nouvelUtilisateur;
     try {
-      nouvelUtilisateur = await User.create({ email, passwordHash: motDePasseHache });
-      logger.logInfo(`Nouvel utilisateur créé: ${email}`, { userId: nouvelUtilisateur.id });
+      nouvelUtilisateur = await User.create({ 
+        email, 
+        passwordHash: motDePasseHache,
+        plan: 'free',
+        quota_limit: freeQuota
+      });
+      logger.logInfo(`Nouvel utilisateur créé: ${email}`, { userId: nouvelUtilisateur.id, plan: 'free' });
     } catch (erreur) {
       logger.logError(erreur, { contexte: 'création_utilisateur', email });
       if (erreur.message && erreur.message.includes('MongoDB')) {
@@ -523,7 +531,10 @@ async function verifyGoogleToken(req, res, next) {
     let utilisateur = await User.findByEmail(email_final);
 
     if (!utilisateur) {
-      // Créer un nouvel utilisateur OAuth
+      // Créer un nouvel utilisateur OAuth avec plan FREE par défaut
+      const planService = require('../services/planService');
+      const freeQuota = planService.getStorageQuota('free');
+      
       utilisateur = await User.create({
         email: email_final,
         display_name: displayName_final,
@@ -531,8 +542,10 @@ async function verifyGoogleToken(req, res, next) {
         passwordHash: null, // Pas de mot de passe pour les comptes OAuth
         oauth_provider: 'google',
         oauth_id: google_id || null,
+        plan: 'free',
+        quota_limit: freeQuota
       });
-      logger.logInfo(`Nouvel utilisateur Google créé: ${email_final}`, { userId: utilisateur.id });
+      logger.logInfo(`Nouvel utilisateur Google créé: ${email_final}`, { userId: utilisateur.id, plan: 'free' });
 
       // Créer le dossier racine
       const FolderModel = require('../models/folderModel');

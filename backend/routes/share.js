@@ -6,7 +6,8 @@ const { validate, publicShareSchema } = require('../middlewares/validation');
 const { validateObjectId } = require('../middlewares/security');
 
 // Créer un partage public (authentifié)
-router.post('/public', authMiddleware, publicShareSchema, validate, shareController.createPublicShare);
+const { checkPublicSharing, attachPlanInfo } = require('../middlewares/planMiddleware');
+router.post('/public', authMiddleware, attachPlanInfo, checkPublicSharing, publicShareSchema, validate, shareController.createPublicShare);
 
 // Créer un partage interne (authentifié)
 router.post('/internal', authMiddleware, shareController.createInternalShare);

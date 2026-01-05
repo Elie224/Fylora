@@ -29,6 +29,7 @@ const Activity = lazy(() => import('./pages/Activity'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const SetAdmin = lazy(() => import('./pages/SetAdmin'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Pricing = lazy(() => import('./pages/Pricing'));
 
 // Composant de chargement
 const LoadingFallback = () => (
@@ -99,6 +100,7 @@ function App() {
         {/* Pages d'authentification - redirigent vers dashboard si déjà connecté */}
         <Route path="/login" element={user && accessToken ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/signup" element={user && accessToken ? <Navigate to="/dashboard" replace /> : <Signup />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/auth/callback" element={<OAuthCallback />} />
         {/* Routes de proxy pour les callbacks OAuth directs depuis les providers */}
         <Route path="/auth/callback/google" element={<OAuthProxy provider="google" />} />

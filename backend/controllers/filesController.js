@@ -355,6 +355,35 @@ async function uploadFile(req, res, next) {
 
     let fileSize = req.file.size;
     const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+    
+    // Vérifier la taille maximale de fichier selon le plan
+    const planService = require('../services/planService');
+    const User = require('mongoose').models.User || require('mongoose').model('User');
+    const user = await User.findById(userId).select('plan').lean();
+    const planId = user?.plan || 'free';
+    const fileSizeCheck = planService.canUploadFile(planId, fileSize);
+    
+    if (!fileSizeCheck.allowed) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(413).json({
+        error: { message: fileSizeCheck.reason || 'File size exceeds plan limit' }
+      });
+    }
+    
+    // Vérifier le bandwidth (pour upload)
+    const limitationsService = require('../services/limitationsService');
+    const bandwidthCheck = await limitationsService.checkBandwidthLimit(userId, fileSize);
+    
+    if (!bandwidthCheck.allowed) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(429).json({
+        error: {
+          message: bandwidthCheck.reason || 'Bandwidth limit exceeded',
+          used: bandwidthCheck.used,
+          limit: bandwidthCheck.limit
+        }
+      });
+    }
 
     // Compression automatique des images
     const isImage = req.file.mimetype?.startsWith('image/');
@@ -817,12 +846,38 @@ async function downloadFile(req, res, next) {
     res.setHeader('Content-Disposition', `attachment; filename="${file.name}"`);
     res.setHeader('Content-Length', file.size);
 
+    // Vérifier les limitations de bandwidth
+    if (userId) {
+      const limitationsService = require('../services/limitationsService');
+      const bandwidthCheck = await limitationsService.checkBandwidthLimit(userId, file.size);
+      
+      if (!bandwidthCheck.allowed) {
+        return res.status(429).json({
+          error: {
+            message: bandwidthCheck.reason || 'Bandwidth limit exceeded',
+            used: bandwidthCheck.used,
+            limit: bandwidthCheck.limit
+          }
+        });
+      }
+    }
+
     // Tracker l'utilisation
     if (userId) {
       trackFileUsage(id, userId, 'download', {
         ip_address: req.ip,
         user_agent: req.get('user-agent'),
       }).catch(() => {}); // Ne pas bloquer si le tracking échoue
+      
+      // Mettre à jour last_accessed_at
+      const File = mongoose.models.File || mongoose.model('File');
+      await File.findByIdAndUpdate(id, {
+        last_accessed_at: new Date()
+      }).catch(() => {});
+      
+      // Ajouter au bandwidth utilisé
+      const limitationsService = require('../services/limitationsService');
+      await limitationsService.addBandwidthUsage(userId, file.size).catch(() => {});
     }
 
     res.sendFile(path.resolve(file.file_path));
@@ -936,6 +991,20 @@ async function previewFile(req, res, next) {
       res.setHeader('Content-Type', file.mime_type);
       res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name || 'file')}"`);
       
+      // Vérifier les limitations de bandwidth
+      const limitationsService = require('../services/limitationsService');
+      const bandwidthCheck = await limitationsService.checkBandwidthLimit(userId, file.size);
+      
+      if (!bandwidthCheck.allowed) {
+        return res.status(429).json({
+          error: {
+            message: bandwidthCheck.reason || 'Bandwidth limit exceeded',
+            used: bandwidthCheck.used,
+            limit: bandwidthCheck.limit
+          }
+        });
+      }
+
       // Tracker l'utilisation (ne pas bloquer si le tracking échoue)
       try {
         trackFileUsage(id, userId, 'preview', {
@@ -944,6 +1013,15 @@ async function previewFile(req, res, next) {
         }).catch((trackErr) => {
           logger.logError('Failed to track file usage', { error: trackErr.message, fileId: id, userId });
         });
+        
+        // Mettre à jour last_accessed_at
+        const File = mongoose.models.File || mongoose.model('File');
+        await File.findByIdAndUpdate(id, {
+          last_accessed_at: new Date()
+        }).catch(() => {});
+        
+        // Ajouter au bandwidth utilisé
+        await limitationsService.addBandwidthUsage(userId, file.size).catch(() => {});
       } catch (trackErr) {
         logger.logError('Failed to track file usage', { error: trackErr.message, fileId: id, userId });
       }

@@ -55,7 +55,7 @@ export default function Pricing() {
     }
   };
 
-  const handleUpgrade = async (planId) => {
+  const handleUpgrade = async (planId, paymentMethod = 'stripe') => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
@@ -63,25 +63,73 @@ export default function Pricing() {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_URL}/api/plans/upgrade`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          planId,
-          period: billingPeriod
-        })
-      });
+      
+      if (paymentMethod === 'stripe') {
+        // Créer une session Stripe
+        const response = await fetch(`${API_URL}/api/billing/stripe/checkout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            planId,
+            period: billingPeriod
+          })
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        alert(t('planUpgraded') || 'Plan upgraded successfully!');
-        loadCurrentPlan();
+        if (response.ok) {
+          const data = await response.json();
+          // Rediriger vers Stripe Checkout
+          window.location.href = data.data.url;
+        } else {
+          const error = await response.json();
+          alert(error.error?.message || 'Stripe checkout failed');
+        }
+      } else if (paymentMethod === 'paypal') {
+        // Créer un paiement PayPal
+        const response = await fetch(`${API_URL}/api/billing/paypal/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            planId,
+            period: billingPeriod
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Rediriger vers PayPal
+          window.location.href = data.data.approvalUrl;
+        } else {
+          const error = await response.json();
+          alert(error.error?.message || 'PayPal payment failed');
+        }
       } else {
-        const error = await response.json();
-        alert(error.error?.message || 'Upgrade failed');
+        // Upgrade direct (pour tests ou plans gratuits)
+        const response = await fetch(`${API_URL}/api/plans/upgrade`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            planId,
+            period: billingPeriod
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          alert(t('planUpgraded') || 'Plan upgraded successfully!');
+          loadCurrentPlan();
+        } else {
+          const error = await response.json();
+          alert(error.error?.message || 'Upgrade failed');
+        }
       }
     } catch (error) {
       console.error('Error upgrading plan:', error);
@@ -328,7 +376,9 @@ export default function Pricing() {
                         navigate('/signup');
                       }
                     } else {
-                      handleUpgrade(plan.id);
+                      // Pour les plans payants, demander la méthode de paiement
+                      const useStripe = window.confirm('Use Stripe for payment? (Cancel for PayPal)');
+                      handleUpgrade(plan.id, useStripe ? 'stripe' : 'paypal');
                     }
                   }}
                   disabled={isCurrentPlan}

@@ -18,7 +18,8 @@ router.use(validateObjectId); // Valider tous les ObjectIds dans les paramètres
 router.get('/', filesController.listFiles);
 
 // Uploader un fichier (avec rate limiting et validation)
-router.post('/upload', uploadLimiter, filesController.uploadMiddleware, validateFilePath, validateFileUpload, filesController.uploadFile);
+const { checkFileSizeLimit, attachPlanInfo } = require('../middlewares/planMiddleware');
+router.post('/upload', uploadLimiter, attachPlanInfo, checkFileSizeLimit, filesController.uploadMiddleware, validateFilePath, validateFileUpload, filesController.uploadFile);
 
 // Lister les fichiers supprimés (corbeille) - DOIT être avant les autres routes /:id
 router.get('/trash', filesController.listTrash);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fileVersionsController = require('../controllers/fileVersionsController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const { checkFileVersions, attachPlanInfo } = require('../middlewares/planMiddleware');
 
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
