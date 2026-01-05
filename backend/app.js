@@ -161,6 +161,11 @@ app.use(helmet({
         // hCaptcha (si utilisé)
         "https://js.hcaptcha.com",
         "https://newassets.hcaptcha.com",
+        // Hashes pour scripts inline spécifiques (extensions navigateur, etc.)
+        "'sha256-BNulBYV1JXGvq9NQg7814ZyyVZCqfRI1aq5d+PSIdgI='",
+        "'sha256-blrFnNhiZZnnF4nqRORUSibtvc3ITkJsB5GKleGrw4o='",
+        "'sha256-4LRRm+CrRt91043ELDDzsKtE9mgb52p2iOlf9CRXTJ0='",
+        "'sha256-pShsw8meIjhx77fl5AYeHiS3c1TOGl7Bx2eEqNo+OCk='",
         // Autoriser les scripts inline pour les extensions de navigateur
         // Note: En production, cela permet aussi aux extensions comme Google Translate de fonctionner
         "'unsafe-inline'"
