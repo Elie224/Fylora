@@ -11,6 +11,7 @@ const planService = require('../services/planService');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const mongoose = require('mongoose');
 const User = mongoose.models.User || mongoose.model('User');
+const logger = require('../utils/logger');
 
 /**
  * Obtenir tous les plans disponibles

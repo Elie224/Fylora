@@ -173,18 +173,6 @@ const useAuthStore = create(
   )
 );
 
-// Ajouter un getter pour isAuthenticated
-useAuthStore.getState = (() => {
-  const original = useAuthStore.getState;
-  return () => {
-    const state = original();
-    return {
-      ...state,
-      isAuthenticated: !!(state.user && state.accessToken),
-    };
-  };
-})();
-
 export { useAuthStore };
 
 
