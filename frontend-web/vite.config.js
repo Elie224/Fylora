@@ -45,9 +45,11 @@ export default defineConfig({
             if (id.includes('react-router')) {
               return 'vendor-router';
             }
-            // Regrouper les autres vendors plus petits
+            // Regrouper les autres vendors
             return 'vendor';
           }
+          // Ne pas créer de chunks pour le code source (tout dans index.js)
+          return undefined;
         },
         // Optimiser les noms de chunks pour le cache
         chunkFileNames: 'assets/[name]-[hash:8].js',
@@ -56,11 +58,11 @@ export default defineConfig({
         // Optimiser la taille des chunks
         compact: true,
       },
-      // Tree shaking agressif
+      // Tree shaking - moins agressif pour éviter de supprimer le code nécessaire
       treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-        tryCatchDeoptimization: false,
+        moduleSideEffects: 'no-external', // Garder les side effects pour les modules internes
+        propertyReadSideEffects: true, // Garder les propriétés lues
+        tryCatchDeoptimization: true, // Garder les try/catch
       },
     },
     // Augmenter la limite de taille pour les warnings
