@@ -237,8 +237,8 @@ export default function Settings() {
           padding: 12,
           marginBottom: 24,
           backgroundColor: message.type === 'error' 
-            ? (theme === 'dark' ? '#3d1f1f' : '#ffebee') 
-            : (theme === 'dark' ? '#1f3d1f' : '#e8f5e9'),
+            ? '#3d1f1f'
+            : '#1f3d1f',
           color: message.type === 'error' ? '#f44336' : '#4caf50',
           borderRadius: 8,
           border: `1px solid ${message.type === 'error' ? '#f44336' : '#4caf50'}`
@@ -262,7 +262,7 @@ export default function Settings() {
         padding: 24, 
         backgroundColor: cardBg, 
         borderRadius: 12, 
-        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
         border: `1px solid ${borderColor}`
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>📊 {t('accountInfo')}</h2>
@@ -338,7 +338,7 @@ export default function Settings() {
                 <div style={{
                   width: '100%',
                   height: 12,
-                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e0e0e0',
+                  backgroundColor: '#2d2d2d',
                   borderRadius: 6,
                   overflow: 'hidden',
                   position: 'relative'
@@ -403,7 +403,7 @@ export default function Settings() {
         padding: 24, 
         backgroundColor: cardBg, 
         borderRadius: 12, 
-        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
         border: `1px solid ${borderColor}`
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>👤 {t('profile')}</h2>
@@ -472,7 +472,7 @@ export default function Settings() {
         padding: 24, 
         backgroundColor: cardBg, 
         borderRadius: 12, 
-        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
         border: `1px solid ${borderColor}`
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🔒 {t('security')}</h2>
@@ -563,7 +563,7 @@ export default function Settings() {
         padding: 24, 
         backgroundColor: cardBg, 
         borderRadius: 12, 
-        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
         border: `1px solid ${borderColor}`
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🎨 {t('interfacePreferences') || 'Préférences d\'interface'}</h2>
