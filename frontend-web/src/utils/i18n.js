@@ -887,6 +887,11 @@ const translations = {
     // Quota alerts
     quotaAlertMedium: 'Your storage has reached {percentage}%. You can upgrade your plan for more space.',
     quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',
+    quotaAlertCritical: 'Critical storage! You have used {percentage}% of your space. Upgrade now to avoid being blocked.',
+    
+    // Quota alerts
+    quotaAlertMedium: 'Your storage has reached {percentage}%. You can upgrade your plan for more space.',
+    quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',
     quotaAlertCritical: 'Critical storage! You have used {percentage}% of your space. Upgrade now to avoid being blocked.'
   }
 };
