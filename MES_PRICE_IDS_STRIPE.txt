@@ -1,0 +1,50 @@
+=== MES PRICE IDS STRIPE ===
+Notez tous vos Price IDs ici au fur et à mesure
+
+✅ STRIPE_PRICE_PLUS_MONTHLY=price_1SmHNJRdHWsgpzD61N0x9eWg
+⏳ STRIPE_PRICE_PLUS_YEARLY=price_XXXXXXXXXXXXX
+⏳ STRIPE_PRICE_PRO_MONTHLY=price_XXXXXXXXXXXXX
+⏳ STRIPE_PRICE_PRO_YEARLY=price_XXXXXXXXXXXXX
+⏳ STRIPE_PRICE_TEAM_MONTHLY=price_XXXXXXXXXXXXX
+⏳ STRIPE_PRICE_TEAM_YEARLY=price_XXXXXXXXXXXXX
+
+=== PROCHAINES ÉTAPES ===
+
+1. ✅ Vous avez créé: Fylora Plus - Monthly
+   Price ID: price_1SmHNJRdHWsgpzD61N0x9eWg
+
+2. ⏳ Créer: Fylora Plus - Yearly
+   - Nom: Fylora Plus - Yearly
+   - Description: 500 GB storage plan - Yearly subscription
+   - Tarif: Récurrent, Annuel, 49.00 USD
+   - Copier le Price ID
+
+3. ⏳ Créer: Fylora Pro - Monthly
+   - Nom: Fylora Pro - Monthly
+   - Description: 1 TB storage plan - Monthly subscription
+   - Tarif: Récurrent, Mensuel, 9.99 USD
+   - Copier le Price ID
+
+4. ⏳ Créer: Fylora Pro - Yearly
+   - Nom: Fylora Pro - Yearly
+   - Description: 1 TB storage plan - Yearly subscription
+   - Tarif: Récurrent, Annuel, 99.00 USD
+   - Copier le Price ID
+
+5. ⏳ Créer: Fylora Team - Monthly
+   - Nom: Fylora Team - Monthly
+   - Description: 5 TB storage plan - Monthly subscription
+   - Tarif: Récurrent, Mensuel, 24.99 USD
+   - Copier le Price ID
+
+6. ⏳ Créer: Fylora Team - Yearly
+   - Nom: Fylora Team - Yearly
+   - Description: 5 TB storage plan - Yearly subscription
+   - Tarif: Récurrent, Annuel, 249.00 USD
+   - Copier le Price ID
+
+=== RAPPEL ===
+- Product ID (prod_...) ≠ Price ID (price_...)
+- Nous avons besoin du Price ID pour la configuration
+- Le Price ID se trouve dans la section "Tarifs" de chaque produit
+
