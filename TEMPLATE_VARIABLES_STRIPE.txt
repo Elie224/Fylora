@@ -1,0 +1,35 @@
+=== STRIPE CONFIGURATION ===
+Copiez ces variables dans Render Dashboard > Environment
+
+STRIPE_SECRET_KEY=sk_test_VOTRE_CLE_ICI
+STRIPE_WEBHOOK_SECRET=whsec_VOTRE_SECRET_ICI
+
+STRIPE_PRICE_PLUS_MONTHLY=price_VOTRE_PRICE_ID_ICI
+STRIPE_PRICE_PLUS_YEARLY=price_VOTRE_PRICE_ID_ICI
+STRIPE_PRICE_PRO_MONTHLY=price_VOTRE_PRICE_ID_ICI
+STRIPE_PRICE_PRO_YEARLY=price_VOTRE_PRICE_ID_ICI
+STRIPE_PRICE_TEAM_MONTHLY=price_VOTRE_PRICE_ID_ICI
+STRIPE_PRICE_TEAM_YEARLY=price_VOTRE_PRICE_ID_ICI
+
+=== INSTRUCTIONS ===
+1. Remplacez tous les "VOTRE_XXX_ICI" par vos vraies valeurs
+2. Allez dans Render Dashboard > Votre Service Backend > Environment
+3. Ajoutez chaque variable une par une
+4. Redéployez le service
+
+=== OÙ TROUVER LES VALEURS ===
+
+STRIPE_SECRET_KEY:
+- Stripe Dashboard > Developers > API keys
+- Cliquez sur "Reveal test key"
+
+STRIPE_WEBHOOK_SECRET:
+- Stripe Dashboard > Developers > Webhooks
+- Cliquez sur votre endpoint
+- Cliquez sur "Reveal" pour le Signing secret
+
+STRIPE_PRICE_XXX:
+- Stripe Dashboard > Products
+- Cliquez sur chaque produit
+- Copiez le Price ID (commence par price_...)
+
