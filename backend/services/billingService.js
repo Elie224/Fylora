@@ -340,11 +340,130 @@ async function handleStripeWebhook(event) {
   }
 }
 
+/**
+ * Vérifier et capturer un paiement PayPal
+ * @param {string} orderId - ID de la commande PayPal
+ * @returns {Promise<Object>} { status, userId, planId, period }
+ */
+async function verifyPayPalPayment(orderId) {
+  const paypal = require('@paypal/checkout-server-sdk');
+  
+  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+    throw new Error('PayPal not configured');
+  }
+
+  const environment = process.env.PAYPAL_ENVIRONMENT === 'production'
+    ? new paypal.core.LiveEnvironment(process.env.PAYPAL_CLIENT_ID, process.env.PAYPAL_CLIENT_SECRET)
+    : new paypal.core.SandboxEnvironment(process.env.PAYPAL_CLIENT_ID, process.env.PAYPAL_CLIENT_SECRET);
+
+  const client = new paypal.core.PayPalHttpClient(environment);
+
+  try {
+    const request = new paypal.orders.OrdersGetRequest(orderId);
+    const order = await client.execute(request);
+    
+    if (order.result.status === 'COMPLETED' || order.result.status === 'APPROVED') {
+      // Extraire les métadonnées depuis custom_id
+      const customId = order.result.purchase_units?.[0]?.custom_id || '';
+      const [userId, planId, period] = customId.split('_');
+      
+      // Capturer le paiement si nécessaire
+      if (order.result.status === 'APPROVED') {
+        const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
+        await client.execute(captureRequest);
+      }
+      
+      return {
+        status: 'success',
+        userId,
+        planId,
+        period,
+        orderId: order.result.id
+      };
+    }
+
+    return {
+      status: 'pending',
+      orderId: order.result.id
+    };
+  } catch (error) {
+    logger.logError(error, { context: 'verify_paypal_payment', orderId });
+    throw error;
+  }
+}
+
+/**
+ * Gérer un webhook PayPal
+ * @param {Object} event - Événement PayPal
+ * @returns {Promise<void>}
+ */
+async function handlePayPalWebhook(event) {
+  const mongoose = require('mongoose');
+  const User = mongoose.models.User || mongoose.model('User');
+
+  try {
+    const eventType = event.event_type;
+    const resource = event.resource;
+
+    switch (eventType) {
+      case 'PAYMENT.CAPTURE.COMPLETED':
+      case 'PAYMENT.SALE.COMPLETED':
+        // Extraire les métadonnées depuis custom_id ou invoice_id
+        const customId = resource.custom_id || resource.invoice_id || '';
+        const [userId, planId, period] = customId.split('_');
+        
+        if (userId && planId) {
+          await User.findByIdAndUpdate(userId, {
+            plan: planId,
+            quota_limit: planService.getStorageQuota(planId),
+          });
+          
+          logger.logInfo('User plan updated from PayPal webhook', {
+            userId,
+            planId,
+            period,
+            orderId: resource.id || resource.order_id
+          });
+        }
+        break;
+
+      case 'BILLING.SUBSCRIPTION.CANCELLED':
+      case 'BILLING.SUBSCRIPTION.EXPIRED':
+        // Rétrograder vers FREE si l'abonnement est annulé
+        const subscriptionCustomId = resource.custom_id || '';
+        const [subUserId] = subscriptionCustomId.split('_');
+        
+        if (subUserId) {
+          await User.findByIdAndUpdate(subUserId, {
+            plan: 'free',
+            quota_limit: planService.getStorageQuota('free'),
+          });
+          
+          logger.logInfo('User plan downgraded to FREE (PayPal subscription canceled)', {
+            userId: subUserId,
+            subscriptionId: resource.id
+          });
+        }
+        break;
+
+      default:
+        logger.logInfo('Unhandled PayPal webhook event', {
+          type: eventType
+        });
+    }
+  } catch (error) {
+    logger.logError(error, { context: 'handle_paypal_webhook', eventType: event.event_type });
+    throw error;
+  }
+}
+
 module.exports = {
   createStripeCheckoutSession,
   createPayPalPayment,
   verifyStripePayment,
+  verifyPayPalPayment,
   handleStripeWebhook,
+  handlePayPalWebhook,
   isStripeConfigured: () => !!stripe,
   isPayPalConfigured: () => !!(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
 };
