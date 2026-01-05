@@ -441,7 +441,8 @@ export default function Pricing() {
           margin: '0 auto',
           padding: '40px',
           backgroundColor: cardBg,
-          borderRadius: '16px'
+          borderRadius: '16px',
+          marginBottom: '40px'
         }}>
           <h2 style={{
             fontSize: '32px',
@@ -452,7 +453,77 @@ export default function Pricing() {
           }}>
             {t('faq') || 'Frequently Asked Questions'}
           </h2>
-          {/* FAQ items can be added here */}
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {[
+              {
+                question: t('faqQuestion1') || 'Quels sont les moyens de paiement acceptés ?',
+                answer: t('faqAnswer1') || 'Nous acceptons les paiements par carte bancaire via Stripe et PayPal. Tous les paiements sont sécurisés et cryptés.'
+              },
+              {
+                question: t('faqQuestion2') || 'Puis-je changer de plan à tout moment ?',
+                answer: t('faqAnswer2') || 'Oui, vous pouvez upgrader votre plan à tout moment. Le nouveau plan sera activé immédiatement après le paiement. Pour rétrograder, contactez notre support.'
+              },
+              {
+                question: t('faqQuestion3') || 'Que se passe-t-il si je dépasse mon quota de stockage ?',
+                answer: t('faqAnswer3') || 'Vous recevrez des notifications à 80%, 90% et 95% de votre quota. Une fois le quota atteint, vous ne pourrez plus uploader de nouveaux fichiers jusqu\'à ce que vous mettiez à niveau votre plan.'
+              },
+              {
+                question: t('faqQuestion4') || 'Les fichiers sont-ils sécurisés ?',
+                answer: t('faqAnswer4') || 'Oui, tous vos fichiers sont chiffrés et stockés de manière sécurisée. Nous utilisons les meilleures pratiques de sécurité pour protéger vos données.'
+              },
+              {
+                question: t('faqQuestion5') || 'Puis-je annuler mon abonnement ?',
+                answer: t('faqAnswer5') || 'Oui, vous pouvez annuler votre abonnement à tout moment depuis les paramètres de votre compte. Vous conserverez l\'accès jusqu\'à la fin de la période payée, puis votre compte sera rétrogradé vers le plan gratuit.'
+              },
+              {
+                question: t('faqQuestion6') || 'Y a-t-il un essai gratuit pour les plans payants ?',
+                answer: t('faqAnswer6') || 'Le plan FREE (100 Go) est déjà gratuit et sans engagement. Pour les plans payants, vous pouvez upgrader à tout moment et annuler sans frais si vous n\'êtes pas satisfait.'
+              },
+              {
+                question: t('faqQuestion7') || 'Comment puis-je contacter le support ?',
+                answer: t('faqAnswer7') || 'Vous pouvez nous contacter par email à kouroumaelisee@gmail.com ou par téléphone au +33689306432. Notre équipe est disponible pour vous aider.'
+              }
+            ].map((faq, index) => (
+              <div
+                key={index}
+                style={{
+                  padding: '20px',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f7fafc',
+                  borderRadius: '12px',
+                  border: `1px solid ${borderColor}`,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = primaryColor;
+                  e.currentTarget.style.boxShadow = theme === 'dark'
+                    ? '0 4px 12px rgba(33, 150, 243, 0.2)'
+                    : '0 4px 12px rgba(33, 150, 243, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = borderColor;
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: textColor,
+                  marginBottom: '12px'
+                }}>
+                  {faq.question}
+                </h3>
+                <p style={{
+                  fontSize: '14px',
+                  color: textSecondary,
+                  lineHeight: '1.6',
+                  margin: 0
+                }}>
+                  {faq.answer}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

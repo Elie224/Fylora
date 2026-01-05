@@ -889,6 +889,38 @@ const translations = {
     quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',
     quotaAlertCritical: 'Critical storage! You have used {percentage}% of your space. Upgrade now to avoid being blocked.',
     
+    // FAQ
+    faqQuestion1: 'What payment methods are accepted?',
+    faqAnswer1: 'We accept credit card payments via Stripe and PayPal. All payments are secure and encrypted.',
+    faqQuestion2: 'Can I change my plan at any time?',
+    faqAnswer2: 'Yes, you can upgrade your plan at any time. The new plan will be activated immediately after payment. To downgrade, please contact our support.',
+    faqQuestion3: 'What happens if I exceed my storage quota?',
+    faqAnswer3: 'You will receive notifications at 80%, 90%, and 95% of your quota. Once the quota is reached, you will not be able to upload new files until you upgrade your plan.',
+    faqQuestion4: 'Are my files secure?',
+    faqAnswer4: 'Yes, all your files are encrypted and stored securely. We use industry best practices to protect your data.',
+    faqQuestion5: 'Can I cancel my subscription?',
+    faqAnswer5: 'Yes, you can cancel your subscription at any time from your account settings. You will retain access until the end of the paid period, then your account will be downgraded to the free plan.',
+    faqQuestion6: 'Is there a free trial for paid plans?',
+    faqAnswer6: 'The FREE plan (100 GB) is already free and requires no commitment. For paid plans, you can upgrade at any time and cancel without fees if you are not satisfied.',
+    faqQuestion7: 'How can I contact support?',
+    faqAnswer7: 'You can contact us by email at kouroumaelisee@gmail.com or by phone at +33689306432. Our team is available to help you.',
+    
+    // Support
+    support: 'Support',
+    supportDescription: 'We are here to help you. Contact us by email or phone.',
+    phone: 'Phone',
+    sendEmail: 'Send email',
+    call: 'Call',
+    copy: 'Copy',
+    emailCopied: 'Email copied to clipboard!',
+    phoneCopied: 'Phone number copied to clipboard!',
+    supportEmailSubject: 'Fylora Support',
+    supportHours: 'Support Hours',
+    supportHoursDescription: 'Our support team is available Monday through Friday, from 9 AM to 6 PM (Paris time). We typically respond within 24 hours.',
+    commonQuestions: 'Common Questions',
+    commonQuestionsDescription: 'Check our pricing page for frequently asked questions about our plans and pricing.',
+    viewFAQ: 'View FAQ'
+    
     // Quota alerts
     quotaAlertMedium: 'Your storage has reached {percentage}%. You can upgrade your plan for more space.',
     quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',

@@ -62,6 +62,7 @@ export default function Layout({ children }) {
     { path: '/trash', label: t('trash'), icon: '🗑️' },
     { path: '/activity', label: t('activity'), icon: '📋' },
     { path: '/settings', label: t('settings'), icon: '⚙️' },
+    { path: '/support', label: t('support'), icon: '💬' },
     ...(user?.is_admin ? [{ path: '/admin', label: t('administration'), icon: '🔐' }] : []),
   ];
 
