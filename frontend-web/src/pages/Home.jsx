@@ -448,17 +448,13 @@ export default function Home() {
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = primaryColor;
-                        e.currentTarget.style.backgroundColor = theme === 'dark' 
-                          ? '#2d2d2d' 
-                          : hoverBg;
+                        e.currentTarget.style.backgroundColor = '#2d2d2d';
                         e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = theme === 'dark' 
-                          ? `0 6px 20px ${primaryColor}30` 
-                          : `0 6px 20px ${primaryColor}20`;
+                        e.currentTarget.style.boxShadow = `0 6px 20px ${primaryColor}30`;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.borderColor = borderColor;
-                        e.currentTarget.style.backgroundColor = theme === 'dark' ? '#252525' : secondaryBg;
+                        e.currentTarget.style.backgroundColor = '#252525';
                         e.currentTarget.style.transform = 'translateY(0) scale(1)';
                         e.currentTarget.style.boxShadow = 'none';
                       }}
@@ -471,7 +467,7 @@ export default function Home() {
                         width: '36px',
                         height: '36px',
                         borderRadius: '8px',
-                        backgroundColor: theme === 'dark' ? '#1a1a1a' : cardBg,
+                        backgroundColor: '#1a1a1a',
                         flexShrink: 0
                       }}>
                         {item.icon}
@@ -601,7 +597,7 @@ export default function Home() {
                 }}
                 onMouseEnter={(e) => {
                   if (!isTransitioning) {
-                    e.target.style.backgroundColor = theme === 'dark' ? '#1976D2' : '#1976D2';
+                    e.target.style.backgroundColor = '#1976D2';
                     e.target.style.transform = 'translateY(-2px)';
                     e.target.style.boxShadow = `0 6px 20px ${primaryColor}50`;
                   }
@@ -625,14 +621,14 @@ export default function Home() {
       {/* Footer */}
       <footer style={{
         padding: 'clamp(20px, 4vw, 30px) clamp(16px, 4vw, 40px)',
-        backgroundColor: theme === 'dark' ? '#0f0f0f' : cardBg,
+        backgroundColor: '#0f0f0f',
         borderTop: `1px solid ${borderColor}`,
         textAlign: 'center',
-        boxShadow: theme === 'dark' ? 'none' : '0 -1px 3px rgba(0,0,0,0.05)'
+        boxShadow: 'none'
       }}>
         <p style={{
           fontSize: '14px',
-          color: theme === 'dark' ? '#b0b0b0' : textSecondary,
+          color: '#b0b0b0',
           margin: 0
         }}>
           © {new Date().getFullYear()} Fylora. {t('copyright')}
