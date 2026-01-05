@@ -7,9 +7,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import performanceMetrics from './utils/performanceMetrics';
-import { viewPreloader } from './utils/viewPreloader';
-import { initKeyboardShortcuts } from './utils/keyboardShortcuts';
 import './styles.css';
 
 // Lazy loading des pages pour améliorer les performances
@@ -59,21 +56,47 @@ function App() {
   useEffect(() => {
     // Initialiser de manière asynchrone pour vérifier la validité du token
     const initAuth = async () => {
-      await initialize();
-      
-      // Précharger les vues clés après connexion
-      if (user && accessToken) {
-        viewPreloader.preloadKeyViews(user.id);
+      try {
+        await initialize();
+        
+        // Précharger les vues clés après connexion (optionnel)
+        if (user && accessToken) {
+          try {
+            const { viewPreloader } = await import('./utils/viewPreloader');
+            viewPreloader.preloadKeyViews(user.id);
+          } catch (e) {
+            // Ignorer silencieusement
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
       }
     };
     initAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // initialize est stable avec Zustand
 
-  // Initialiser les raccourcis clavier globaux
+  // Initialiser les raccourcis clavier globaux (optionnel)
   useEffect(() => {
-    const cleanup = initKeyboardShortcuts();
-    return cleanup;
+    const initShortcuts = async () => {
+      try {
+        const { initKeyboardShortcuts } = await import('./utils/keyboardShortcuts');
+        const cleanup = initKeyboardShortcuts();
+        return cleanup;
+      } catch (e) {
+        // Ignorer silencieusement
+        return () => {};
+      }
+    };
+    
+    let cleanup = () => {};
+    initShortcuts().then((fn) => {
+      cleanup = fn;
+    });
+    
+    return () => {
+      cleanup();
+    };
   }, []);
 
   // Gérer la déconnexion automatique depuis l'intercepteur API
@@ -229,18 +252,66 @@ function App() {
   );
 }
 
+// Gestion globale des erreurs non capturées
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error, event.error?.stack);
+  // Afficher l'erreur dans la console pour le débogage
+  if (event.error) {
+    console.error('Error details:', {
+      message: event.error.message,
+      stack: event.error.stack,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno
+    });
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  if (event.reason) {
+    console.error('Rejection details:', {
+      message: event.reason?.message,
+      stack: event.reason?.stack
+    });
+  }
+});
+
+// Log de démarrage
+console.log('🚀 Starting Fylora application...');
+console.log('React version:', React.version);
+console.log('Environment:', import.meta.env.MODE);
+
 // Vérifier que React est chargé avant de rendre
 if (!React || !ReactDOM) {
-  console.error('React or ReactDOM is not loaded');
-}
-
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  console.error('Root element not found');
+  console.error('❌ React or ReactDOM is not loaded');
+  document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Erreur de chargement</h1><p>React n\'a pas pu être chargé. Vérifiez la console pour plus de détails.</p></div>';
 } else {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>,
-  );
+  const rootElement = document.getElementById('root');
+  if (!rootElement) {
+    console.error('❌ Root element not found');
+    document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Erreur de chargement</h1><p>L\'élément root n\'a pas été trouvé.</p></div>';
+  } else {
+    console.log('✅ Root element found, rendering app...');
+    try {
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+      console.log('✅ App rendered successfully');
+    } catch (error) {
+      console.error('❌ Error rendering app:', error);
+      console.error('Error stack:', error.stack);
+      rootElement.innerHTML = `
+        <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+          <h1 style="color: #d32f2f;">Erreur de rendu</h1>
+          <p>Une erreur s'est produite lors du chargement de l'application.</p>
+          <pre style="text-align: left; background: #f5f5f5; padding: 15px; border-radius: 4px; overflow: auto; max-width: 800px; margin: 20px auto;">${error.toString()}\n\n${error.stack || ''}</pre>
+          <button onclick="window.location.reload()" style="margin-top: 20px; padding: 12px 24px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">Recharger la page</button>
+        </div>
+      `;
+    }
+  }
 }

@@ -132,13 +132,16 @@ class PerformanceMetrics {
   async sendMetric(type, value, metadata = {}) {
     try {
       // Import dynamique pour éviter les erreurs si le module n'est pas disponible
-      const { default: apiClient } = await import('../services/api');
-      await apiClient.post('/kpi/frontend', {
-        type,
-        value,
-        metadata,
-        timestamp: new Date().toISOString(),
-      });
+      const apiModule = await import('../services/api');
+      const apiClient = apiModule.default || apiModule.apiClient;
+      if (apiClient && typeof apiClient.post === 'function') {
+        await apiClient.post('/kpi/frontend', {
+          type,
+          value,
+          metadata,
+          timestamp: new Date().toISOString(),
+        });
+      }
     } catch (error) {
       // Ignorer les erreurs silencieusement
       console.debug('Could not send frontend metric:', error);
