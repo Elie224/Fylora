@@ -444,9 +444,9 @@ const translations = {
     grid: 'Grille',
     
     // Quota alerts
-    quotaAlertMedium: 'Votre stockage atteint {percentage}%. Vous pouvez mettre à niveau votre plan pour plus d\'espace.',
-    quotaAlertHigh: 'Attention ! Votre stockage atteint {percentage}%. Pensez à mettre à niveau votre plan.',
-    quotaAlertCritical: 'Stockage critique ! Vous avez utilisé {percentage}% de votre espace. Mettez à niveau maintenant pour éviter d\'être bloqué.',
+    quotaAlertMedium: 'Votre stockage atteint {{percentage}}%. Vous pouvez mettre à niveau votre plan pour plus d\'espace.',
+    quotaAlertHigh: 'Attention ! Votre stockage atteint {{percentage}}%. Pensez à mettre à niveau votre plan.',
+    quotaAlertCritical: 'Stockage critique ! Vous avez utilisé {{percentage}}% de votre espace. Mettez à niveau maintenant pour éviter d\'être bloqué.',
     
     // FAQ
     faqQuestion1: 'Quels sont les moyens de paiement acceptés ?',
@@ -937,9 +937,9 @@ const translations = {
     getStarted: 'Get Started',
     
     // Quota alerts
-    quotaAlertMedium: 'Your storage has reached {percentage}%. You can upgrade your plan for more space.',
-    quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',
-    quotaAlertCritical: 'Critical storage! You have used {percentage}% of your space. Upgrade now to avoid being blocked.',
+    quotaAlertMedium: 'Your storage has reached {{percentage}}%. You can upgrade your plan for more space.',
+    quotaAlertHigh: 'Warning! Your storage has reached {{percentage}}%. Consider upgrading your plan.',
+    quotaAlertCritical: 'Critical storage! You have used {{percentage}}% of your space. Upgrade now to avoid being blocked.',
     
     // FAQ
     faqQuestion1: 'What payment methods are accepted?',
@@ -1059,9 +1059,20 @@ export const setLanguage = (lang) => {
   }
 };
 
-// Fonction de traduction améliorée avec support des clés imbriquées
-export const t = (key, lang = null) => {
-  const currentLang = lang || getCurrentLanguage();
+// Fonction de traduction améliorée avec support des clés imbriquées et des placeholders
+export const t = (key, params = null, lang = null) => {
+  // Si le deuxième paramètre est une string, c'est probablement l'ancien format (key, lang)
+  // On détecte cela et on ajuste
+  let actualParams = params;
+  let actualLang = lang;
+  
+  if (typeof params === 'string' && lang === null) {
+    // Ancien format: t(key, lang)
+    actualParams = null;
+    actualLang = params;
+  }
+  
+  const currentLang = actualLang || getCurrentLanguage();
   const keys = key.split('.');
   let value = translations[currentLang] || translations.fr;
   
@@ -1082,6 +1093,13 @@ export const t = (key, lang = null) => {
   if (value === undefined) {
     console.warn(`Translation missing for key: ${key} in language: ${currentLang}`);
     return key;
+  }
+  
+  // Remplacer les placeholders si des paramètres sont fournis
+  if (actualParams && typeof value === 'string') {
+    return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+      return actualParams[paramKey] !== undefined ? actualParams[paramKey] : match;
+    });
   }
   
   return value;
