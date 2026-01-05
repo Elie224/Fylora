@@ -437,8 +437,7 @@ async function uploadFile(req, res, next) {
 
     // OPTIMISATION: Utiliser quota_used stocké au lieu de recalculer (beaucoup plus rapide)
     // Utiliser mongoose directement pour avoir accès à .select()
-    const mongoose = require('mongoose');
-    const User = mongoose.models.User || mongoose.model('User');
+    // Réutiliser la variable User déjà déclarée plus haut dans la fonction
     const user = await User.findById(userId).select('quota_used quota_limit').lean();
     if (!user) {
       await fs.unlink(req.file.path).catch(() => {});
