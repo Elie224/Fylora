@@ -175,31 +175,43 @@ if (process.env.REDIS_URL) {
           if (retries > 3) return false;
           return Math.min(retries * 50, 500);
         },
-        connectTimeout: 2000,
+        connectTimeout: 5000, // Augmenté à 5 secondes pour Render
       }
     });
+    
+    let redisErrorLogged = false;
     redisClient.on('error', (err) => {
-      console.error('❌ Redis session store error:', {
-        message: err.message,
-        code: err.code,
-        redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
-      });
+      // Ne logger que les erreurs importantes, pas les timeouts initiaux qui se résolvent
+      if (!redisErrorLogged && !err.message.includes('Connection timeout')) {
+        console.error('❌ Redis session store error:', {
+          message: err.message,
+          code: err.code,
+          redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
+        });
+        redisErrorLogged = true;
+      }
     });
     
     redisClient.on('connect', () => {
       console.log('🔄 Redis session store connecting...');
+      redisErrorLogged = false; // Réinitialiser le flag lors d'une nouvelle connexion
     });
     
     redisClient.on('ready', () => {
       console.log('✅ Redis session store ready');
+      redisErrorLogged = false; // Réinitialiser le flag quand Redis est prêt
     });
     
     redisClient.connect().catch((err) => {
-      console.error('❌ Redis session store connection failed:', {
-        message: err.message,
-        code: err.code,
-        redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
-      });
+      // Ne logger que si ce n'est pas un timeout initial (qui se résout souvent)
+      if (!err.message.includes('Connection timeout') || redisErrorLogged) {
+        console.error('❌ Redis session store connection failed:', {
+          message: err.message,
+          code: err.code,
+          redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set' : 'REDIS_URL is NOT set'
+        });
+        redisErrorLogged = true;
+      }
     });
     sessionStore = new RedisStore({ client: redisClient });
     console.log('✅ Redis session store configured');
