@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { userService, dashboardService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';

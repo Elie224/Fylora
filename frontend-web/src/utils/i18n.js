@@ -430,7 +430,18 @@ const translations = {
     upgrade: 'Mettre à niveau',
     mostPopular: 'LE PLUS POPULAIRE',
     faq: 'Questions fréquemment posées',
-    getStarted: 'Commencer'
+    getStarted: 'Commencer',
+    
+    // Plan names
+    free: 'Gratuit',
+    premium: 'Premium',
+    accountActive: 'Compte actif',
+    
+    // View modes
+    listView: 'Vue liste',
+    list: 'Liste',
+    gridView: 'Vue grille',
+    grid: 'Grille'
   },
   en: {
     // Navigation
