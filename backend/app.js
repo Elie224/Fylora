@@ -154,9 +154,13 @@ app.use(helmet({
         "https://apis.google.com",
         // Stripe Checkout
         "https://js.stripe.com",
+        "https://m.stripe.network",
         // PayPal SDK
         "https://www.paypal.com",
         "https://www.paypalobjects.com",
+        // hCaptcha (si utilisé)
+        "https://js.hcaptcha.com",
+        "https://newassets.hcaptcha.com",
         // Autoriser les scripts inline pour les extensions de navigateur
         // Note: En production, cela permet aussi aux extensions comme Google Translate de fonctionner
         "'unsafe-inline'"
@@ -170,9 +174,13 @@ app.use(helmet({
         "https://github.com",
         // Stripe API
         "https://api.stripe.com",
+        "https://m.stripe.network",
         // PayPal API
         "https://api.sandbox.paypal.com",
-        "https://api.paypal.com"
+        "https://api.paypal.com",
+        // hCaptcha API
+        "https://hcaptcha.com",
+        "https://newassets.hcaptcha.com"
       ],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
