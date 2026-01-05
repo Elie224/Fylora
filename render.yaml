@@ -9,6 +9,7 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
+    dockerfilePath: ""  # Désactiver Docker explicitement
     envVars:
       - key: NODE_ENV
         value: production
@@ -27,6 +28,7 @@ services:
     rootDir: frontend-web
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    dockerfilePath: ""  # Désactiver Docker explicitement
     # Configuration pour le routing SPA - toutes les routes pointent vers index.html
     routes:
       - type: rewrite

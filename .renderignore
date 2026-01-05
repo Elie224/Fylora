@@ -1,0 +1,6 @@
+# Ignorer les Dockerfiles pour forcer Render à utiliser render.yaml
+backend/Dockerfile
+frontend-web/Dockerfile
+mobile-app/Dockerfile
+docker-compose.yml
+
