@@ -730,7 +730,10 @@ export default function Settings() {
           {t('youCanLogoutAnytime')}
         </p>
         <button
-          onClick={handleLogout}
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
           style={{
             padding: '12px 24px',
             backgroundColor: '#f44336',
