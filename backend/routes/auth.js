@@ -25,6 +25,10 @@ router.get('/google/callback', handleOAuthCallback('google'));
 // Route pour vérifier les tokens Google natifs (mobile)
 router.post('/google/verify', authController.verifyGoogleToken);
 
+// Route pour supprimer définitivement le compte (nécessite authentification)
+const authMiddleware = require('../middlewares/authMiddleware');
+router.delete('/account', authMiddleware, authController.deleteAccount);
+
 module.exports = router;
 
 

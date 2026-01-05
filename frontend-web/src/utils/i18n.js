@@ -478,7 +478,19 @@ const translations = {
     supportHoursDescription: 'Notre équipe de support est disponible du lundi au vendredi, de 9h à 18h (heure de Paris). Nous répondons généralement dans les 24 heures.',
     commonQuestions: 'Questions fréquentes',
     commonQuestionsDescription: 'Consultez notre page de tarification pour les questions fréquemment posées sur nos plans et tarifs.',
-    viewFAQ: 'Voir les FAQ'
+    viewFAQ: 'Voir les FAQ',
+    
+    // Account deletion
+    deleteAccount: 'Supprimer mon compte',
+    deleteAccountWarning: 'Cette action est irréversible. Toutes vos données (fichiers, dossiers, partages, etc.) seront définitivement supprimées.',
+    deleteAccountConfirm: 'SUPPRIMER',
+    deleteAccountPrompt: '⚠️ ATTENTION : Cette action est définitive et irréversible.\n\nTapez "SUPPRIMER" pour confirmer la suppression de votre compte :',
+    deleteAccountFinalConfirm: 'Êtes-vous ABSOLUMENT certain(e) de vouloir supprimer définitivement votre compte ? Cette action ne peut pas être annulée.',
+    deleteAccountButton: 'Supprimer définitivement mon compte',
+    deleteAccountSuccess: 'Votre compte a été supprimé avec succès.',
+    deleteAccountError: 'Erreur lors de la suppression du compte.',
+    deleteAccountCancelled: 'Suppression annulée. Le texte saisi ne correspond pas.',
+    deleting: 'Suppression...'
   },
   en: {
     // Navigation

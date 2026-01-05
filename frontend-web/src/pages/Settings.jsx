@@ -9,6 +9,7 @@ import QuotaAlert from '../components/QuotaAlert';
 export default function Settings() {
   const navigate = useNavigate();
   const { user, logout, setUser } = useAuthStore();
+  const navigate = useNavigate();
   const { t, setLanguage: setLang, language, supportedLanguages } = useLanguage();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);

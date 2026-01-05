@@ -629,11 +629,144 @@ async function verifyGoogleToken(req, res, next) {
   }
 }
 
+/**
+ * Supprimer définitivement le compte utilisateur et toutes ses données
+ */
+async function deleteAccount(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const mongoose = require('../models/db');
+    const File = mongoose.models.File;
+    const Folder = mongoose.models.Folder;
+    const Share = mongoose.models.Share;
+    const Session = mongoose.models.Session;
+    const Notification = mongoose.models.Notification;
+    const ActivityLog = mongoose.models.ActivityLog;
+    const Comment = mongoose.models.Comment;
+    const Tag = mongoose.models.Tag;
+    const Note = mongoose.models.Note;
+    const FileVersion = mongoose.models.FileVersion;
+    const Team = mongoose.models.Team;
+    const fs = require('fs').promises;
+    const path = require('path');
+
+    logger.logInfo('Starting account deletion', { userId });
+
+    // 1. Supprimer tous les fichiers physiques et métadonnées
+    const files = await File.find({ owner_id: userId });
+    logger.logInfo(`Deleting ${files.length} files`, { userId });
+    
+    for (const file of files) {
+      // Supprimer le fichier physique s'il existe
+      if (file.file_path) {
+        try {
+          await fs.unlink(file.file_path);
+        } catch (err) {
+          logger.logWarn(`Could not delete physical file: ${file.file_path}`, { userId, error: err.message });
+        }
+      }
+      
+      // Supprimer les versions du fichier
+      if (FileVersion) {
+        await FileVersion.deleteMany({ file_id: file._id });
+      }
+    }
+    
+    // Supprimer toutes les métadonnées de fichiers
+    await File.deleteMany({ owner_id: userId });
+
+    // 2. Supprimer tous les dossiers
+    const folders = await Folder.find({ owner_id: userId });
+    logger.logInfo(`Deleting ${folders.length} folders`, { userId });
+    await Folder.deleteMany({ owner_id: userId });
+
+    // 3. Supprimer tous les partages créés par l'utilisateur
+    await Share.deleteMany({ owner_id: userId });
+    
+    // Supprimer l'utilisateur des partages où il est destinataire
+    if (Share.schema.paths.shared_with) {
+      await Share.updateMany(
+        { 'shared_with.user_id': userId },
+        { $pull: { shared_with: { user_id: userId } } }
+      );
+    }
+
+    // 4. Supprimer toutes les sessions
+    await Session.deleteMany({ user_id: userId });
+
+    // 5. Supprimer toutes les notifications
+    if (Notification) {
+      await Notification.deleteMany({ user_id: userId });
+    }
+
+    // 6. Supprimer toutes les activités
+    if (ActivityLog) {
+      await ActivityLog.deleteMany({ user_id: userId });
+    }
+
+    // 7. Supprimer tous les commentaires
+    if (Comment) {
+      await Comment.deleteMany({ user_id: userId });
+      // Supprimer aussi les commentaires sur les fichiers de l'utilisateur
+      await Comment.deleteMany({ file_id: { $in: files.map(f => f._id) } });
+    }
+
+    // 8. Supprimer tous les tags
+    if (Tag) {
+      await Tag.deleteMany({ user_id: userId });
+    }
+
+    // 9. Supprimer toutes les notes
+    if (Note) {
+      await Note.deleteMany({ owner_id: userId });
+    }
+
+    // 10. Gérer les équipes
+    if (Team) {
+      // Retirer l'utilisateur de toutes les équipes où il est membre
+      await Team.updateMany(
+        { 'members.user_id': userId },
+        { $pull: { members: { user_id: userId } } }
+      );
+      
+      // Supprimer les équipes dont l'utilisateur est propriétaire
+      const ownedTeams = await Team.find({ owner_id: userId });
+      for (const team of ownedTeams) {
+        team.is_active = false;
+        await team.save();
+        logger.logInfo('Team deactivated due to owner account deletion', { userId, teamId: team._id });
+      }
+    }
+
+    // 11. Supprimer le dossier utilisateur s'il existe
+    const uploadDir = path.join(__dirname, '../uploads', `user_${userId}`);
+    try {
+      await fs.rm(uploadDir, { recursive: true, force: true });
+    } catch (err) {
+      logger.logWarn(`Could not delete user directory: ${uploadDir}`, { userId, error: err.message });
+    }
+
+    // 12. Supprimer l'utilisateur de la base de données
+    await User.findByIdAndDelete(userId);
+
+    logger.logInfo('Account deleted successfully', { userId });
+
+    res.status(200).json({
+      message: 'Account deleted successfully',
+      data: { deleted: true }
+    });
+  } catch (error) {
+    logger.logError(error, { context: 'deleteAccount', userId: req.user?.id });
+    next(error);
+  }
+}
+
 module.exports = {
   signup,
   login,
   refresh,
   logout,
   verifyGoogleToken,
+  deleteAccount,
 };
 
