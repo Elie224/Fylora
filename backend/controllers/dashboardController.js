@@ -11,17 +11,34 @@ async function getDashboard(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Vérifier le cache Redis en premier pour éviter les requêtes coûteuses
+    // OPTIMISATION: Vérifier le cache Redis en premier pour éviter les requêtes coûteuses
+    const redisCache = require('../utils/redisCache');
+    const cacheKey = `dashboard:${userId}`;
+    
     try {
-      const cachedDashboard = await smartCache.getCachedDashboard(userId);
-      if (cachedDashboard) {
+      const cached = await redisCache.get(cacheKey);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT-REDIS');
         return res.status(200).json({
-          data: cachedDashboard,
+          data: cached,
         });
       }
     } catch (cacheErr) {
       // Si le cache échoue, continuer avec la requête normale
-      logger.logWarn('Cache check failed, proceeding with normal query', { userId, error: cacheErr.message });
+      logger.logWarn('Redis cache check failed, trying smartCache', { userId, error: cacheErr.message });
+      
+      // Fallback sur smartCache
+      try {
+        const cachedDashboard = await smartCache.getCachedDashboard(userId);
+        if (cachedDashboard) {
+          res.setHeader('X-Cache', 'HIT-SMARTCACHE');
+          return res.status(200).json({
+            data: cachedDashboard,
+          });
+        }
+      } catch (smartCacheErr) {
+        logger.logWarn('SmartCache check failed, proceeding with normal query', { userId, error: smartCacheErr.message });
+      }
     }
 
     const user = await UserModel.findById(userId);
@@ -196,9 +213,11 @@ async function getDashboard(req, res, next) {
       total_folders: totalFolders,
     };
 
-    // Mettre en cache (TTL 5 minutes)
-    await smartCache.cacheDashboard(userId, dashboardData, 300);
+    // OPTIMISATION: Mettre en cache Redis (TTL 5 minutes) + smartCache
+    redisCache.set(cacheKey, dashboardData, 300).catch(() => {});
+    smartCache.cacheDashboard(userId, dashboardData, 300).catch(() => {});
 
+    res.setHeader('X-Cache', 'MISS');
     res.status(200).json({
       data: dashboardData,
     });

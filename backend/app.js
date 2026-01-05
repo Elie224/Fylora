@@ -114,6 +114,12 @@ app.use(optimizedCompression);
 app.use(cacheHeaders);
 app.use(optimizeJsonResponse);
 
+// Initialiser Redis cache au démarrage
+const redisCache = require('./utils/redisCache');
+redisCache.initRedis().catch(err => {
+  logger.logWarn('Redis cache initialization failed, using memory cache', { error: err.message });
+});
+
 // Performance monitoring
 app.use(performanceMiddleware);
 

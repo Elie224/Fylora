@@ -1,230 +1,288 @@
 /**
- * Cache Redis avec fallback mémoire
- * Supporte Redis pour la production, mémoire pour le développement
+ * Cache Redis haute performance pour Fylora
+ * Optimisé pour supporter des millions d'utilisateurs
  */
-const MemoryCache = require('./cache').cache;
 
-class RedisCache {
-  constructor() {
-    this.redis = null;
-    this.memoryCache = MemoryCache;
-    this.useRedis = false;
-    this.connectionAttempted = false;
-    this.connectionFailed = false;
-    this.init();
+const redis = require('redis');
+const config = require('../config');
+const logger = require('./logger');
+
+let redisClient = null;
+let isConnected = false;
+
+// Configuration Redis optimisée
+const redisConfig = {
+  socket: {
+    connectTimeout: 5000,
+    reconnectStrategy: (retries) => {
+      if (retries > 10) {
+        logger.logError(new Error('Redis max reconnection attempts reached'), { retries });
+        return new Error('Redis connection failed');
+      }
+      return Math.min(retries * 100, 3000);
+    }
+  },
+  maxRetriesPerRequest: 3,
+  enableReadyCheck: true,
+  enableOfflineQueue: false, // Ne pas mettre en queue si déconnecté
+};
+
+/**
+ * Initialiser la connexion Redis
+ */
+async function initRedis() {
+  if (redisClient && isConnected) {
+    return redisClient;
   }
 
-  async init() {
-    // Éviter les tentatives multiples
-    if (this.connectionAttempted) {
-      return;
-    }
-    this.connectionAttempted = true;
-
-    // Si REDIS_URL n'est pas défini, utiliser directement le cache mémoire sans essayer Redis
-    if (!process.env.REDIS_URL) {
-      this.useRedis = false;
-      // Message informatif mais discret
-      if (process.env.NODE_ENV === 'production') {
-        // En production, message discret pour indiquer que Redis n'est pas configuré
-        console.log('ℹ️  Redis not configured (REDIS_URL not set), using memory cache');
-      } else {
-        console.log('ℹ️  Redis not configured (REDIS_URL not set), using memory cache');
-      }
-      return;
-    }
-
-    try {
-      // Essayer de se connecter à Redis si REDIS_URL est défini
-      const redis = require('redis');
-      const client = redis.createClient({
-        url: process.env.REDIS_URL,
-        socket: {
-          reconnectStrategy: (retries) => {
-            // Arrêter les tentatives après 3 essais
-            if (retries > 3) {
-              if (!this.connectionFailed) {
-                // En production, message plus discret
-                const message = process.env.NODE_ENV === 'production'
-                  ? 'Redis unavailable, using memory cache'
-                  : '⚠️  Redis connection failed after 3 attempts, using memory cache';
-                console.warn(message);
-                this.connectionFailed = true;
-              }
-              return false;
-            }
-            return Math.min(retries * 50, 500);
-          },
-          connectTimeout: 2000, // Timeout de 2 secondes
-        }
-      });
-
-      // Supprimer les erreurs répétées - ne logger qu'une seule fois
-      let errorLogged = false;
-      client.on('error', (err) => {
-        if (!errorLogged && !this.connectionFailed) {
-          // Ne logger que les erreurs importantes, pas les ECONNRESET répétés
-          if (!err.message.includes('ECONNRESET') && !err.message.includes('Socket closed')) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn('Redis error:', err.message);
-            }
-          }
-          errorLogged = true;
-        }
-        this.useRedis = false;
-      });
-
-      // Timeout pour la connexion initiale (augmenté à 5 secondes)
-      const connectPromise = client.connect();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 5000)
-      );
-
-      await Promise.race([connectPromise, timeoutPromise]);
-      
-      // Tester la connexion avec un ping pour vérifier qu'elle fonctionne vraiment
-      try {
-        const pong = await client.ping();
-        if (pong === 'PONG') {
-          this.redis = client;
-          this.useRedis = true;
-          console.log('✅ Redis cache connected successfully');
-        } else {
-          throw new Error('Redis ping returned unexpected value: ' + pong);
-        }
-      } catch (pingErr) {
-        console.error('❌ Redis connection test failed:', {
-          message: pingErr.message,
-          code: pingErr.code,
-          redisUrl: process.env.REDIS_URL ? 'REDIS_URL is set (but connection failed)' : 'REDIS_URL is NOT set'
-        });
-        await client.quit().catch(() => {});
-        this.useRedis = false;
-        this.connectionFailed = true;
-      }
-    } catch (error) {
-      if (!this.connectionFailed) {
-        // Message plus informatif selon le contexte
-        if (process.env.NODE_ENV === 'production') {
-          // En production, vérifier si c'est une erreur de connexion ou simplement non configuré
-          if (error.message.includes('timeout') || error.message.includes('ECONNREFUSED')) {
-            console.warn('⚠️  Redis connection failed, using memory cache');
-          } else {
-            console.warn('⚠️  Redis unavailable, using memory cache');
-          }
-        } else {
-          console.warn('⚠️  Redis not available, using memory cache');
-        }
-        this.connectionFailed = true;
-      }
-      this.useRedis = false;
-      // Nettoyer le client si créé
-      if (this.redis) {
-        try {
-          await this.redis.quit();
-        } catch (e) {
-          // Ignorer les erreurs de fermeture
-        }
-        this.redis = null;
-      }
-    }
-  }
-
-  async get(key) {
-    if (this.useRedis && this.redis && !this.connectionFailed) {
-      try {
-        const value = await this.redis.get(key);
-        return value ? JSON.parse(value) : null;
-      } catch (error) {
-        // Si erreur de connexion, désactiver Redis et utiliser mémoire
-        if (error.message.includes('closed') || error.message.includes('ECONNRESET')) {
-          this.useRedis = false;
-          this.connectionFailed = true;
-        }
-        return this.memoryCache.get(key);
-      }
-    }
-    return this.memoryCache.get(key);
-  }
-
-  async set(key, value, ttl = 300) {
-    const serialized = JSON.stringify(value);
+  try {
+    const redisUrl = process.env.REDIS_URL;
     
-    if (this.useRedis && this.redis && !this.connectionFailed) {
-      try {
-        await this.redis.setEx(key, ttl, serialized);
-        return;
-      } catch (error) {
-        // Si erreur de connexion, désactiver Redis et utiliser mémoire
-        if (error.message.includes('closed') || error.message.includes('ECONNRESET')) {
-          this.useRedis = false;
-          this.connectionFailed = true;
-        }
-      }
+    // Si pas de Redis URL ou si c'est localhost (Render free tier), utiliser cache mémoire
+    if (!redisUrl || redisUrl.includes('127.0.0.1') || redisUrl.includes('localhost')) {
+      logger.logWarn('Redis not available, using in-memory cache');
+      return null;
     }
-    
-    // Fallback sur mémoire (ttl en millisecondes)
-    this.memoryCache.set(key, value, ttl * 1000);
-  }
 
-  async delete(key) {
-    if (this.useRedis && this.redis) {
-      try {
-        await this.redis.del(key);
-      } catch (error) {
-        console.error('Redis delete error:', error);
-      }
-    }
-    this.memoryCache.delete(key);
-  }
+    redisClient = redis.createClient({
+      url: redisUrl,
+      ...redisConfig
+    });
 
-  async deletePattern(pattern) {
-    if (this.useRedis && this.redis) {
-      try {
-        const keys = await this.redis.keys(pattern);
-        if (keys.length > 0) {
-          await this.redis.del(keys);
-        }
-      } catch (error) {
-        console.error('Redis deletePattern error:', error);
-      }
-    }
-    // Pour mémoire, on doit itérer manuellement
-    const stats = this.memoryCache.getStats();
-    for (const key of stats.keys) {
-      if (key.includes(pattern.replace('*', ''))) {
-        this.memoryCache.delete(key);
-      }
-    }
-  }
+    redisClient.on('error', (err) => {
+      logger.logError(err, { context: 'redis_error' });
+      isConnected = false;
+    });
 
-  async clear() {
-    if (this.useRedis && this.redis) {
-      try {
-        await this.redis.flushAll();
-      } catch (error) {
-        console.error('Redis clear error:', error);
-      }
-    }
-    this.memoryCache.clear();
-  }
+    redisClient.on('connect', () => {
+      logger.logInfo('Redis cache connected');
+      isConnected = true;
+    });
 
-  async getStats() {
-    if (this.useRedis && this.redis) {
-      try {
-        const info = await this.redis.info('stats');
-        return { type: 'redis', info };
-      } catch (error) {
-        return { type: 'memory', stats: this.memoryCache.getStats() };
-      }
-    }
-    return { type: 'memory', stats: this.memoryCache.getStats() };
+    redisClient.on('ready', () => {
+      logger.logInfo('Redis cache ready');
+      isConnected = true;
+    });
+
+    redisClient.on('end', () => {
+      logger.logWarn('Redis connection ended');
+      isConnected = false;
+    });
+
+    await redisClient.connect();
+    return redisClient;
+  } catch (err) {
+    logger.logError(err, { context: 'redis_init' });
+    return null;
   }
 }
 
-// Instance singleton
-const redisCache = new RedisCache();
+// Cache mémoire de fallback
+const memoryCache = new Map();
+const memoryCacheTTL = new Map();
 
-module.exports = redisCache;
+/**
+ * Obtenir une valeur du cache
+ */
+async function get(key) {
+  try {
+    if (redisClient && isConnected) {
+      const value = await redisClient.get(key);
+      if (value) {
+        return JSON.parse(value);
+      }
+      return null;
+    }
+  } catch (err) {
+    logger.logWarn('Redis get error, using memory cache', { error: err.message });
+  }
 
+  // Fallback: cache mémoire
+  if (memoryCache.has(key)) {
+    const ttl = memoryCacheTTL.get(key);
+    if (ttl && Date.now() < ttl) {
+      return memoryCache.get(key);
+    }
+    memoryCache.delete(key);
+    memoryCacheTTL.delete(key);
+  }
+  return null;
+}
 
+/**
+ * Définir une valeur dans le cache
+ */
+async function set(key, value, ttlSeconds = 300) {
+  try {
+    if (redisClient && isConnected) {
+      await redisClient.setEx(key, ttlSeconds, JSON.stringify(value));
+      return true;
+    }
+  } catch (err) {
+    logger.logWarn('Redis set error, using memory cache', { error: err.message });
+  }
+
+  // Fallback: cache mémoire
+  memoryCache.set(key, value);
+  memoryCacheTTL.set(key, Date.now() + (ttlSeconds * 1000));
+  
+  // Nettoyer le cache mémoire périodiquement
+  if (memoryCache.size > 10000) {
+    const now = Date.now();
+    for (const [k, ttl] of memoryCacheTTL.entries()) {
+      if (now >= ttl) {
+        memoryCache.delete(k);
+        memoryCacheTTL.delete(k);
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Supprimer une clé du cache
+ */
+async function del(key) {
+  try {
+    if (redisClient && isConnected) {
+      await redisClient.del(key);
+    }
+  } catch (err) {
+    logger.logWarn('Redis del error', { error: err.message });
+  }
+
+  // Fallback: cache mémoire
+  memoryCache.delete(key);
+  memoryCacheTTL.delete(key);
+}
+
+/**
+ * Supprimer toutes les clés correspondant à un pattern
+ */
+async function delPattern(pattern) {
+  try {
+    if (redisClient && isConnected) {
+      const keys = await redisClient.keys(pattern);
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+      }
+    }
+  } catch (err) {
+    logger.logWarn('Redis delPattern error', { error: err.message });
+  }
+
+  // Fallback: cache mémoire
+  for (const key of memoryCache.keys()) {
+    if (key.includes(pattern.replace('*', ''))) {
+      memoryCache.delete(key);
+      memoryCacheTTL.delete(key);
+    }
+  }
+}
+
+/**
+ * Incrémenter une valeur (pour les compteurs)
+ */
+async function incr(key, ttlSeconds = 3600) {
+  try {
+    if (redisClient && isConnected) {
+      const value = await redisClient.incr(key);
+      if (value === 1) {
+        await redisClient.expire(key, ttlSeconds);
+      }
+      return value;
+    }
+  } catch (err) {
+    logger.logWarn('Redis incr error', { error: err.message });
+  }
+
+  // Fallback: cache mémoire
+  const current = memoryCache.get(key) || 0;
+  const newValue = current + 1;
+  memoryCache.set(key, newValue);
+  memoryCacheTTL.set(key, Date.now() + (ttlSeconds * 1000));
+  return newValue;
+}
+
+/**
+ * Obtenir plusieurs clés en une seule requête (pipeline)
+ */
+async function mget(keys) {
+  try {
+    if (redisClient && isConnected && keys.length > 0) {
+      const values = await redisClient.mGet(keys);
+      return values.map(v => v ? JSON.parse(v) : null);
+    }
+  } catch (err) {
+    logger.logWarn('Redis mget error', { error: err.message });
+  }
+
+  // Fallback: cache mémoire
+  return keys.map(key => {
+    if (memoryCache.has(key)) {
+      const ttl = memoryCacheTTL.get(key);
+      if (ttl && Date.now() < ttl) {
+        return memoryCache.get(key);
+      }
+      memoryCache.delete(key);
+      memoryCacheTTL.delete(key);
+    }
+    return null;
+  });
+}
+
+/**
+ * Middleware de cache pour Express
+ */
+function cacheMiddleware(ttlSeconds = 300) {
+  return async (req, res, next) => {
+    // Ne pas mettre en cache les requêtes POST/PUT/DELETE
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+      return next();
+    }
+
+    const cacheKey = `cache:${req.method}:${req.originalUrl}:${req.user?.id || 'anonymous'}`;
+    
+    try {
+      const cached = await get(cacheKey);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.status(200).json(cached);
+      }
+    } catch (err) {
+      // Continuer si le cache échoue
+    }
+
+    // Sauvegarder la fonction json originale
+    const originalJson = res.json.bind(res);
+    
+    // Intercepter la réponse
+    res.json = function(data) {
+      // Mettre en cache seulement les réponses 200
+      if (res.statusCode === 200) {
+        set(cacheKey, data, ttlSeconds).catch(() => {});
+      }
+      return originalJson(data);
+    };
+
+    res.setHeader('X-Cache', 'MISS');
+    next();
+  };
+}
+
+// Initialiser Redis au démarrage
+initRedis().catch(err => {
+  logger.logError(err, { context: 'redis_init_startup' });
+});
+
+module.exports = {
+  initRedis,
+  get,
+  set,
+  del,
+  delPattern,
+  incr,
+  mget,
+  cacheMiddleware,
+  isConnected: () => isConnected,
+};

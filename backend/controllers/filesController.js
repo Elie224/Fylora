@@ -110,10 +110,13 @@ const uploadMiddleware = (req, res, next) => {
   });
 };
 
-// Cache simple en mémoire pour les Root folders (évite les requêtes répétées)
+// Utiliser le cache Redis si disponible, sinon cache mémoire
+const redisCache = require('../utils/redisCache');
+
+// Cache simple en mémoire pour les Root folders (fallback si Redis indisponible)
 const rootFolderCache = new Map();
 
-// Cache simple en mémoire pour les listes de fichiers (évite les requêtes répétées)
+// Cache simple en mémoire pour les listes de fichiers (fallback si Redis indisponible)
 const filesListCache = new Map();
 
 // Lister les fichiers d'un dossier
@@ -124,12 +127,26 @@ async function listFiles(req, res, next) {
     const userId = req.user.id; // Toujours utiliser req.user.id, jamais permettre l'accès aux fichiers d'autres utilisateurs
     const { folder_id, skip = 0, limit = 50, sort_by = 'name', sort_order = 'asc' } = req.query;
     
-    // OPTIMISATION: Vérifier le cache en mémoire pour les requêtes identiques
-    const cacheKey = `files_${userId}_${folder_id || 'root'}_${skip}_${limit}_${sort_by}_${sort_order}`;
+    // OPTIMISATION: Vérifier le cache Redis d'abord, puis cache mémoire
+    const cacheKey = `files:${userId}:${folder_id || 'root'}:${skip}:${limit}:${sort_by}:${sort_order}`;
+    
+    // Essayer Redis cache d'abord
+    try {
+      const cached = await redisCache.get(cacheKey);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT-REDIS');
+        return res.status(200).json(cached);
+      }
+    } catch (err) {
+      // Fallback sur cache mémoire si Redis échoue
+    }
+    
+    // Fallback: cache mémoire
     if (filesListCache.has(cacheKey)) {
       const cached = filesListCache.get(cacheKey);
       // Cache valide pendant 30 secondes
       if (Date.now() - cached.timestamp < 30000) {
+        res.setHeader('X-Cache', 'HIT-MEMORY');
         return res.status(200).json(cached.data);
       } else {
         filesListCache.delete(cacheKey);
@@ -304,6 +321,10 @@ async function listFiles(req, res, next) {
     
     // OPTIMISATION: Mettre en cache la réponse (seulement pour les petites requêtes)
     if (skipNum === 0 && limitNum <= 50) {
+      // Mettre en cache Redis (TTL 30 secondes)
+      redisCache.set(cacheKey, responseData, 30).catch(() => {});
+      
+      // Fallback: cache mémoire
       filesListCache.set(cacheKey, {
         data: responseData,
         timestamp: Date.now()
@@ -313,6 +334,8 @@ async function listFiles(req, res, next) {
         filesListCache.delete(cacheKey);
       }, 30000);
     }
+    
+    res.setHeader('X-Cache', 'MISS');
 
     res.status(200).json(responseData);
   } catch (err) {
