@@ -968,7 +968,19 @@ const translations = {
     supportHoursDescription: 'Our support team is available Monday through Friday, from 9 AM to 6 PM (Paris time). We typically respond within 24 hours.',
     commonQuestions: 'Common Questions',
     commonQuestionsDescription: 'Check our pricing page for frequently asked questions about our plans and pricing.',
-    viewFAQ: 'View FAQ'
+    viewFAQ: 'View FAQ',
+    
+    // Account deletion
+    deleteAccount: 'Delete my account',
+    deleteAccountWarning: 'This action is irreversible. All your data (files, folders, shares, etc.) will be permanently deleted.',
+    deleteAccountConfirm: 'DELETE',
+    deleteAccountPrompt: '⚠️ WARNING: This action is permanent and irreversible.\n\nType "DELETE" to confirm account deletion:',
+    deleteAccountFinalConfirm: 'Are you ABSOLUTELY sure you want to permanently delete your account? This action cannot be undone.',
+    deleteAccountButton: 'Permanently delete my account',
+    deleteAccountSuccess: 'Your account has been successfully deleted.',
+    deleteAccountError: 'Error deleting account.',
+    deleteAccountCancelled: 'Deletion cancelled. The entered text does not match.',
+    deleting: 'Deleting...'
   }
 };
 
