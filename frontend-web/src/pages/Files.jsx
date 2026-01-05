@@ -742,7 +742,66 @@ export default function Files() {
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Sélecteur de vue */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '4px', 
+              backgroundColor: secondaryBg, 
+              padding: '4px', 
+              borderRadius: '8px',
+              border: `1px solid ${borderColor}`
+            }}>
+              <button
+                onClick={() => {
+                  setViewMode('list');
+                  localStorage.setItem('filesViewMode', 'list');
+                }}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: viewMode === 'list' ? '#2196F3' : 'transparent',
+                  color: viewMode === 'list' ? 'white' : textColor,
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title={t('listView') || 'Vue liste'}
+              >
+                <span>☰</span>
+                <span style={{ display: window.innerWidth < 768 ? 'none' : 'inline' }}>{t('list') || 'Liste'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode('grid');
+                  localStorage.setItem('filesViewMode', 'grid');
+                }}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: viewMode === 'grid' ? '#2196F3' : 'transparent',
+                  color: viewMode === 'grid' ? 'white' : textColor,
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title={t('gridView') || 'Vue grille'}
+              >
+                <span>⊞</span>
+                <span style={{ display: window.innerWidth < 768 ? 'none' : 'inline' }}>{t('grid') || 'Grille'}</span>
+              </button>
+            </div>
+            
             <input
               type="file"
               multiple
@@ -1093,6 +1152,219 @@ export default function Files() {
               {t('dragDropFiles')}
             </p>
           </div>
+        ) : viewMode === 'grid' ? (
+          // Vue Grille Moderne
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '20px',
+            padding: '20px',
+            borderRadius: '12px',
+            backgroundColor: cardBg,
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${borderColor}`
+          }}>
+            {items.map((item, index) => {
+              const itemType = item.type || (item.folder_id === null && item.parent_id === null ? 'folder' : 'file');
+              const rawId = item.id || item._id;
+              let itemId;
+              if (typeof rawId === 'object' && rawId !== null) {
+                itemId = String(rawId.id || rawId._id || rawId);
+              } else {
+                itemId = String(rawId || '');
+              }
+              
+              if (!itemId || itemId === 'undefined' || itemId === 'null' || itemId === '[object Object]') {
+                itemId = `invalid-${index}`;
+              }
+              
+              const isSelected = selectedItems.has(itemId);
+              
+              return (
+                <div
+                  key={itemId}
+                  onClick={() => {
+                    if (itemType === 'folder') {
+                      openFolder({ ...item, type: itemType, id: itemId });
+                    } else {
+                      navigate(`/preview/${itemId}`);
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    toggleSelection(itemId);
+                  }}
+                  style={{
+                    backgroundColor: isSelected ? (theme === 'dark' ? '#1a237e' : '#e3f2fd') : cardBg,
+                    border: `2px solid ${isSelected ? '#2196F3' : borderColor}`,
+                    borderRadius: '12px',
+                    padding: '20px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: isSelected 
+                      ? (theme === 'dark' ? '0 8px 24px rgba(33, 150, 243, 0.4)' : '0 8px 24px rgba(33, 150, 243, 0.25)')
+                      : (theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)'),
+                    transform: 'scale(1)',
+                    minHeight: '180px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                      e.currentTarget.style.boxShadow = theme === 'dark' 
+                        ? '0 12px 32px rgba(0,0,0,0.4)' 
+                        : '0 12px 32px rgba(0,0,0,0.15)';
+                      e.currentTarget.style.borderColor = '#2196F3';
+                    }
+                    // Afficher les actions au survol
+                    const actions = e.currentTarget.querySelector('.file-card-actions');
+                    if (actions) actions.style.opacity = '1';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = theme === 'dark' 
+                        ? '0 2px 8px rgba(0,0,0,0.3)' 
+                        : '0 2px 8px rgba(0,0,0,0.08)';
+                      e.currentTarget.style.borderColor = borderColor;
+                    }
+                    // Masquer les actions
+                    const actions = e.currentTarget.querySelector('.file-card-actions');
+                    if (actions) actions.style.opacity = '0';
+                  }}
+                >
+                  {/* Icône principale */}
+                  <div style={{
+                    fontSize: '64px',
+                    marginBottom: '8px',
+                    filter: isSelected ? 'drop-shadow(0 4px 8px rgba(33, 150, 243, 0.5))' : 'none',
+                    transition: 'all 0.3s'
+                  }}>
+                    {itemType === 'folder' ? '📁' : '📄'}
+                  </div>
+                  
+                  {/* Nom du fichier */}
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: textColor,
+                    textAlign: 'center',
+                    wordBreak: 'break-word',
+                    width: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    lineHeight: '1.4'
+                  }}>
+                    {item.name}
+                  </div>
+                  
+                  {/* Métadonnées */}
+                  <div style={{
+                    fontSize: '12px',
+                    color: textSecondary,
+                    textAlign: 'center',
+                    width: '100%',
+                    marginTop: 'auto',
+                    paddingTop: '8px',
+                    borderTop: `1px solid ${borderColor}`
+                  }}>
+                    <div>{formatBytes(item.size || 0)}</div>
+                    <div style={{ marginTop: '4px' }}>
+                      {new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { 
+                        day: 'numeric', 
+                        month: 'short' 
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Menu d'actions au survol */}
+                  <div 
+                    className="file-card-actions"
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      display: 'flex',
+                      gap: '4px',
+                      opacity: 0,
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.stopPropagation();
+                      e.currentTarget.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = '0';
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (itemType === 'file') {
+                          setShowShareModal({ id: itemId, name: item.name, type: 'file' });
+                        } else {
+                          setShowShareModal({ id: itemId, name: item.name, type: 'folder' });
+                        }
+                      }}
+                      style={{
+                        padding: '6px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '28px',
+                        height: '28px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }}
+                      title={t('share')}
+                    >
+                      🔗
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteItem({ ...item, type: itemType, id: itemId });
+                      }}
+                      style={{
+                        padding: '6px',
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '28px',
+                        height: '28px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }}
+                      title={t('delete')}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <div style={{ 
             overflowX: 'auto', 
@@ -1234,173 +1506,181 @@ export default function Files() {
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{formatBytes(item.size || 0)}</td>
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td style={{ padding: '16px' }}>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {itemType === 'file' && (
-                        <>
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              try {
-                                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                                const token = localStorage.getItem('access_token');
-                                
-                                if (!token) {
-                                  alert(t('mustBeConnected'));
-                                  return;
-                                }
-                                
-                                const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
-                                  headers: {
-                                    'Authorization': `Bearer ${token}`
-                                  }
-                                });
-                                
-                                if (!response.ok) {
-                                  const error = await response.json().catch(() => ({ error: { message: t('downloadError') } }));
-                                  throw new Error(error.error?.message || `${t('error')} ${response.status}`);
-                                }
-                                
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = item.name;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                document.body.removeChild(a);
-                              } catch (err) {
-                                console.error('Download failed:', err);
-                                alert(err.message || t('downloadError'));
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                              const token = localStorage.getItem('access_token');
+                              
+                              if (!token) {
+                                alert(t('mustBeConnected'));
+                                return;
                               }
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#2196F3',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              fontSize: '0.9em',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                            title={t('download')}
-                          >
-                            ⬇️ {t('download')}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setShowShareModal({ id: itemId, name: item.name, type: 'file' });
-                              setShareLink('');
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#4CAF50',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              fontSize: '0.9em',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                            title={t('share')}
-                          >
-                            🔗 {t('share')}
-                          </button>
-                        </>
+                              
+                              const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              
+                              if (!response.ok) {
+                                const error = await response.json().catch(() => ({ error: { message: t('downloadError') } }));
+                                throw new Error(error.error?.message || `${t('error')} ${response.status}`);
+                              }
+                              
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = item.name;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } catch (err) {
+                              console.error('Download failed:', err);
+                              alert(err.message || t('downloadError'));
+                            }
+                          }}
+                          style={{
+                            padding: '8px 14px',
+                            backgroundColor: '#2196F3',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            transition: 'all 0.2s',
+                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#1976D2';
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#2196F3';
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+                          }}
+                          title={t('download')}
+                        >
+                          ⬇️ {t('download')}
+                        </button>
                       )}
                       {itemType === 'folder' && (
-                        <>
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              try {
-                                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                                const token = localStorage.getItem('access_token');
-                                
-                                if (!token) {
-                                  alert(t('mustBeConnected'));
-                                  return;
-                                }
-                                
-                                const response = await fetch(`${apiUrl}/api/folders/${itemId}/download`, {
-                                  headers: {
-                                    'Authorization': `Bearer ${token}`
-                                  }
-                                });
-                                
-                                if (!response.ok) {
-                                  const error = await response.json().catch(() => ({ error: { message: t('downloadError') } }));
-                                  throw new Error(error.error?.message || `${t('error')} ${response.status}`);
-                                }
-                                
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `${item.name}.zip`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                document.body.removeChild(a);
-                              } catch (err) {
-                                console.error('Download failed:', err);
-                                alert(err.message || t('downloadError'));
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                              const token = localStorage.getItem('access_token');
+                              
+                              if (!token) {
+                                alert(t('mustBeConnected'));
+                                return;
                               }
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#2196F3',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              fontSize: '0.9em',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                            title={t('downloadZip')}
-                          >
-                            ⬇️ {t('downloadZip')}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setShowShareModal({ id: itemId, name: item.name, type: 'folder' });
-                              setShareLink('');
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#4CAF50',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: 4,
-                              cursor: 'pointer',
-                              fontSize: '0.9em',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                            title={t('share')}
-                          >
-                            🔗 {t('share')}
-                          </button>
-                        </>
+                              
+                              const response = await fetch(`${apiUrl}/api/folders/${itemId}/download`, {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              
+                              if (!response.ok) {
+                                const error = await response.json().catch(() => ({ error: { message: t('downloadError') } }));
+                                throw new Error(error.error?.message || `${t('error')} ${response.status}`);
+                              }
+                              
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `${item.name}.zip`;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } catch (err) {
+                              console.error('Download failed:', err);
+                              alert(err.message || t('downloadError'));
+                            }
+                          }}
+                          style={{
+                            padding: '8px 14px',
+                            backgroundColor: '#2196F3',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            transition: 'all 0.2s',
+                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#1976D2';
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#2196F3';
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+                          }}
+                          title={t('downloadZip')}
+                        >
+                          ⬇️ {t('downloadZip')}
+                        </button>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowShareModal({ id: itemId, name: item.name, type: itemType });
+                          setShareLink('');
+                        }}
+                        style={{
+                          padding: '8px 14px',
+                          backgroundColor: '#4CAF50',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#45a049';
+                          e.target.style.transform = 'translateY(-1px)';
+                          e.target.style.boxShadow = '0 4px 8px rgba(76, 175, 80, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#4CAF50';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 4px rgba(76, 175, 80, 0.3)';
+                        }}
+                        title={t('share')}
+                      >
+                        🔗 {t('share')}
+                      </button>
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -1409,17 +1689,29 @@ export default function Files() {
                           setEditName(item.name);
                         }}
                         style={{
-                          padding: '6px 12px',
+                          padding: '8px 14px',
                           backgroundColor: '#FF9800',
                           color: 'white',
                           border: 'none',
-                          borderRadius: 4,
+                          borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '0.9em',
-                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 4
+                          gap: 6,
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 4px rgba(255, 152, 0, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#f57c00';
+                          e.target.style.transform = 'translateY(-1px)';
+                          e.target.style.boxShadow = '0 4px 8px rgba(255, 152, 0, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#FF9800';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 4px rgba(255, 152, 0, 0.3)';
                         }}
                         title={t('rename')}
                       >
@@ -1432,17 +1724,29 @@ export default function Files() {
                           openMoveModal({ ...item, type: itemType, id: itemId });
                         }}
                         style={{
-                          padding: '6px 12px',
+                          padding: '8px 14px',
                           backgroundColor: '#9C27B0',
                           color: 'white',
                           border: 'none',
-                          borderRadius: 4,
+                          borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '0.9em',
-                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 4
+                          gap: 6,
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 4px rgba(156, 39, 176, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#7b1fa2';
+                          e.target.style.transform = 'translateY(-1px)';
+                          e.target.style.boxShadow = '0 4px 8px rgba(156, 39, 176, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#9C27B0';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 4px rgba(156, 39, 176, 0.3)';
                         }}
                         title={t('move')}
                       >
@@ -1455,17 +1759,29 @@ export default function Files() {
                           deleteItem({ ...item, type: itemType, id: itemId });
                         }}
                         style={{
-                          padding: '6px 12px',
+                          padding: '8px 14px',
                           backgroundColor: '#f44336',
                           color: 'white',
                           border: 'none',
-                          borderRadius: 4,
+                          borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '0.9em',
-                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 4
+                          gap: 6,
+                          transition: 'all 0.2s',
+                          boxShadow: '0 2px 4px rgba(244, 67, 54, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#d32f2f';
+                          e.target.style.transform = 'translateY(-1px)';
+                          e.target.style.boxShadow = '0 4px 8px rgba(244, 67, 54, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#f44336';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 4px rgba(244, 67, 54, 0.3)';
                         }}
                         title={t('delete')}
                       >

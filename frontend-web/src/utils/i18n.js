@@ -231,7 +231,7 @@ const translations = {
       previous: 'Précédent',
       start: 'Commencer'
     },
-    copyright: '© 2025 Fylora. Tous droits réservés.',
+    copyright: 'Tous droits réservés.',
     
     // Preview
     technicalDetails: 'Détails techniques',
@@ -649,7 +649,7 @@ const translations = {
       previous: 'Previous',
       start: 'Get Started'
     },
-    copyright: '© 2025 Fylora. All rights reserved.',
+    copyright: 'All rights reserved.',
     
     // Preview
     technicalDetails: 'Technical details',

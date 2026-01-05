@@ -712,7 +712,7 @@ export default function Home() {
           color: theme === 'dark' ? '#b0b0b0' : textSecondary,
           margin: 0
         }}>
-          {t('copyright')}
+          © {new Date().getFullYear()} Fylora. {t('copyright')}
         </p>
       </footer>
 
