@@ -91,11 +91,6 @@ export default function Files() {
       setCurrentFolder(null);
     }
   }, [searchParams, currentFolder?.id, t]);
-  
-  // Recharger les fichiers quand le dossier courant change
-  useEffect(() => {
-    loadFiles(true);
-  }, [currentFolder?.id, loadFiles]);
 
   const loadTags = useCallback(async () => {
     try {
@@ -203,10 +198,15 @@ export default function Files() {
     }
   }, [currentFolder?.id, t]);
 
+  // Charger les fichiers et tags au montage
   useEffect(() => {
-    loadFiles();
     loadTags();
-  }, [loadFiles, loadTags]);
+  }, [loadTags]);
+  
+  // Recharger les fichiers quand le dossier change
+  useEffect(() => {
+    loadFiles(true);
+  }, [currentFolder?.id, loadFiles]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -604,9 +604,6 @@ export default function Files() {
       setFolderHistory([...folderHistory, currentFolder]);
     }
     setCurrentFolder(folder);
-    
-    // Recharger les fichiers du nouveau dossier
-    // Le useEffect se chargera de recharger via searchParams
   };
 
   const goBack = () => {
