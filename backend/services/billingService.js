@@ -208,7 +208,7 @@ async function handleStripeWebhook(event) {
             quota_limit: planService.getStorageQuota(planId),
           });
           
-          logger.logInfo('User plan updated from Stripe webhook', {
+          logger.logInfo('User plan updated from Stripe webhook (checkout completed)', {
             userId,
             planId,
             sessionId: session.id
@@ -216,12 +216,61 @@ async function handleStripeWebhook(event) {
         }
         break;
 
-      case 'customer.subscription.deleted':
+      case 'customer.subscription.updated':
         const subscription = event.data.object;
-        // Gérer l'annulation d'abonnement
-        logger.logInfo('Subscription canceled', {
-          subscriptionId: subscription.id
-        });
+        // Récupérer le plan depuis les metadata de la subscription ou depuis le price
+        const subscriptionPlanId = subscription.metadata?.planId;
+        
+        if (subscriptionPlanId && subscription.status === 'active') {
+          // Récupérer le customer pour trouver l'utilisateur
+          const customer = await stripe.customers.retrieve(subscription.customer);
+          const customerUserId = customer.metadata?.userId || customer.id;
+          
+          // Chercher l'utilisateur par email ou metadata
+          let user = null;
+          if (customer.email) {
+            user = await User.findOne({ email: customer.email });
+          }
+          if (!user && customerUserId) {
+            user = await User.findById(customerUserId);
+          }
+          
+          if (user) {
+            await User.findByIdAndUpdate(user._id, {
+              plan: subscriptionPlanId,
+              quota_limit: planService.getStorageQuota(subscriptionPlanId),
+            });
+            
+            logger.logInfo('User plan updated from Stripe webhook (subscription updated)', {
+              userId: user._id,
+              planId: subscriptionPlanId,
+              subscriptionId: subscription.id
+            });
+          }
+        }
+        break;
+
+      case 'customer.subscription.deleted':
+        const deletedSubscription = event.data.object;
+        // Récupérer le customer pour trouver l'utilisateur
+        const deletedCustomer = await stripe.customers.retrieve(deletedSubscription.customer);
+        let deletedUser = null;
+        if (deletedCustomer.email) {
+          deletedUser = await User.findOne({ email: deletedCustomer.email });
+        }
+        
+        if (deletedUser) {
+          // Rétrograder vers le plan FREE
+          await User.findByIdAndUpdate(deletedUser._id, {
+            plan: 'free',
+            quota_limit: planService.getStorageQuota('free'),
+          });
+          
+          logger.logInfo('User plan downgraded to FREE (subscription canceled)', {
+            userId: deletedUser._id,
+            subscriptionId: deletedSubscription.id
+          });
+        }
         break;
 
       default:

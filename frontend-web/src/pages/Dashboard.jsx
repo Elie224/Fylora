@@ -4,6 +4,7 @@ import { useAuthStore } from '../services/authStore';
 import { dashboardService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import QuotaAlert from '../components/QuotaAlert';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -231,6 +232,9 @@ export default function Dashboard() {
       
       {stats && (
         <>
+          {/* Alerte de quota (non intrusive) */}
+          {stats.quota && <QuotaAlert quota={stats.quota} />}
+          
           {/* Quota avec évolution - Design amélioré */}
           <div style={{ 
             marginBottom: '24px', 

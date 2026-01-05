@@ -4,6 +4,7 @@ import { useAuthStore } from '../services/authStore';
 import { userService, dashboardService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import QuotaAlert from '../components/QuotaAlert';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -243,6 +244,15 @@ export default function Settings() {
         }}>
           {message.text}
         </div>
+      )}
+
+      {/* Alerte de quota (non intrusive) */}
+      {quotaLimit > 0 && quotaUsed > 0 && (
+        <QuotaAlert quota={{
+          used: quotaUsed,
+          limit: quotaLimit,
+          percentage: (quotaUsed / quotaLimit) * 100
+        }} />
       )}
 
       {/* Informations du compte */}

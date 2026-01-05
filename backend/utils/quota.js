@@ -70,6 +70,15 @@ async function updateQuotaAfterOperation(userId, sizeChange) {
     await User.findByIdAndUpdate(userId, { quota_used: newQuotaUsed });
     
     logger.debug(`Quota updated for user ${userId}: ${currentQuotaUsed} -> ${newQuotaUsed} (change: ${sizeChange > 0 ? '+' : ''}${sizeChange})`);
+    
+    // Vérifier et notifier si nécessaire (en arrière-plan, non bloquant)
+    if (sizeChange > 0) { // Seulement si on ajoute du stockage
+      const quotaNotificationService = require('../services/quotaNotificationService');
+      quotaNotificationService.checkQuotaAfterOperation(userId).catch(err => {
+        logger.error('Error checking quota notifications:', err);
+      });
+    }
+    
     return newQuotaUsed;
   } catch (error) {
     logger.error('Error updating quota after operation:', error);

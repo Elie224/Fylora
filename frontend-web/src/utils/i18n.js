@@ -882,7 +882,12 @@ const translations = {
     upgrade: 'Upgrade',
     mostPopular: 'MOST POPULAR',
     faq: 'Frequently Asked Questions',
-    getStarted: 'Get Started'
+    getStarted: 'Get Started',
+    
+    // Quota alerts
+    quotaAlertMedium: 'Your storage has reached {percentage}%. You can upgrade your plan for more space.',
+    quotaAlertHigh: 'Warning! Your storage has reached {percentage}%. Consider upgrading your plan.',
+    quotaAlertCritical: 'Critical storage! You have used {percentage}% of your space. Upgrade now to avoid being blocked.'
   }
 };
 
