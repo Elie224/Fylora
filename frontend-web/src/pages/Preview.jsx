@@ -358,12 +358,19 @@ export default function Preview() {
             color: 'white',
             textDecoration: 'none',
             borderRadius: 8,
-            fontWeight: '500',
-            transition: 'background-color 0.2s',
-            display: 'inline-block'
+            fontWeight: '600',
+            transition: 'all 0.2s',
+            display: 'inline-block',
+            boxShadow: theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)'
           }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#1976D2';
+            e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(33, 150, 243, 0.5)' : '0 4px 12px rgba(33, 150, 243, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = '#2196F3';
+            e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)';
+          }}
         >
           ⬇️ {t('download') || 'Télécharger'}
         </a>
