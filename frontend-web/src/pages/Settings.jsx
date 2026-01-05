@@ -9,7 +9,7 @@ import QuotaAlert from '../components/QuotaAlert';
 export default function Settings() {
   const navigate = useNavigate();
   const { user, logout, setUser } = useAuthStore();
-  const { t, setLanguage: setLang, language, supportedLanguages } = useLanguage();
+  const { t, setLanguage, language, supportedLanguages } = useLanguage();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -586,7 +586,9 @@ export default function Settings() {
               </div>
               <select
                 value={language}
-                onChange={(e) => setLang(e.target.value)}
+                onChange={(e) => {
+                  setLanguage(e.target.value);
+                }}
                 style={{
                   padding: '10px 16px',
                   width: '100%',

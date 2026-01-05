@@ -490,7 +490,10 @@ const translations = {
     deleteAccountSuccess: 'Votre compte a été supprimé avec succès.',
     deleteAccountError: 'Erreur lors de la suppression du compte.',
     deleteAccountCancelled: 'Suppression annulée. Le texte saisi ne correspond pas.',
-    deleting: 'Suppression...'
+    deleting: 'Suppression...',
+    
+    // Plan upgrade
+    planUpgraded: 'Plan mis à niveau avec succès !'
   },
   en: {
     // Navigation
@@ -980,7 +983,10 @@ const translations = {
     deleteAccountSuccess: 'Your account has been successfully deleted.',
     deleteAccountError: 'Error deleting account.',
     deleteAccountCancelled: 'Deletion cancelled. The entered text does not match.',
-    deleting: 'Deleting...'
+    deleting: 'Deleting...',
+    
+    // Plan upgrade
+    planUpgraded: 'Plan upgraded successfully!'
   }
 };
 
