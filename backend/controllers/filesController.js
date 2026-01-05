@@ -653,9 +653,19 @@ async function uploadFile(req, res, next) {
 // Télécharger un fichier
 async function downloadFile(req, res, next) {
   try {
-    const userId = req.user?.id; // Peut être undefined pour les partages publics
+    // Récupérer l'ID utilisateur - peut être id ou _id selon le format du JWT
+    const userId = req.user?.id || req.user?._id; // Peut être undefined pour les partages publics
     const { id } = req.params;
     const { token, password } = req.query;
+    
+    // Logger pour déboguer
+    logger.logInfo('Download request', {
+      fileId: id,
+      userId: userId,
+      hasUser: !!req.user,
+      userKeys: req.user ? Object.keys(req.user) : [],
+      hasToken: !!token
+    });
 
     // Utiliser mongoose directement pour avoir accès à tous les champs, y compris is_deleted
     const mongoose = require('mongoose');
