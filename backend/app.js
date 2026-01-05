@@ -120,6 +120,17 @@ redisCache.initRedis().catch(err => {
   logger.logWarn('Redis cache initialization failed, using memory cache', { error: err.message });
 });
 
+// OPTIMISATION ULTRA: Précharger les données communes au démarrage
+const dbOptimizer = require('./utils/dbOptimizer');
+setTimeout(() => {
+  // Analyser les collections après 30 secondes (une fois MongoDB prêt)
+  if (mongoose.connection.readyState === 1) {
+    ['files', 'folders', 'users'].forEach(collection => {
+      dbOptimizer.analyzeCollection(collection).catch(() => {});
+    });
+  }
+}, 30000);
+
 // Performance monitoring
 app.use(performanceMiddleware);
 

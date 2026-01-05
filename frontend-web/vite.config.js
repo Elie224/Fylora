@@ -14,33 +14,71 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    // S'assurer que le dossier public est copié (incluant _redirects)
     copyPublicDir: true,
-    // Optimisations de build
+    // OPTIMISATION ULTRA: Minification agressive
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Supprimer console.log en production
+        drop_console: true,
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
+        passes: 3, // Multi-pass compression pour meilleure réduction
+        unsafe: true, // Optimisations non sécurisées mais plus agressives
+        unsafe_comps: true,
+        unsafe_math: true,
+        unsafe_methods: true,
+      },
+      mangle: {
+        safari10: true,
+      },
+      format: {
+        comments: false, // Supprimer tous les commentaires
       },
     },
-    // Code splitting désactivé temporairement pour résoudre l'erreur React
-    // Tous les vendors seront dans un seul chunk pour éviter les problèmes d'ordre de chargement
+    // OPTIMISATION ULTRA: Code splitting intelligent pour réduire la taille initiale
     rollupOptions: {
       output: {
-        manualChunks: undefined, // Désactiver le code splitting pour tester
-        // Optimiser les noms de chunks
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        manualChunks: (id) => {
+          // Séparer les vendors par taille et fréquence d'utilisation
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('react-router')) {
+              return 'vendor-router';
+            }
+            // Regrouper les autres vendors plus petits
+            return 'vendor';
+          }
+        },
+        // Optimiser les noms de chunks pour le cache
+        chunkFileNames: 'assets/[name]-[hash:8].js',
+        entryFileNames: 'assets/[name]-[hash:8].js',
+        assetFileNames: 'assets/[name]-[hash:8].[ext]',
+        // Optimiser la taille des chunks
+        compact: true,
+      },
+      // Tree shaking agressif
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false,
       },
     },
     // Augmenter la limite de taille pour les warnings
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500, // Réduire pour forcer l'optimisation
+    // Compression des assets
+    assetsInlineLimit: 4096, // Inline les petits assets (< 4KB)
     // S'assurer que React est correctement externalisé
     commonjsOptions: {
       include: [/node_modules/],
+      transformMixedEsModules: true,
     },
+    // Source maps seulement en développement
+    sourcemap: false, // Désactiver en production pour réduire la taille
+    // Optimisation CSS
+    cssCodeSplit: true,
+    cssMinify: true,
   },
   // Optimisations de développement
   optimizeDeps: {

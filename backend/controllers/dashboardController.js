@@ -60,8 +60,8 @@ async function getDashboard(req, res, next) {
       totalFiles,
       totalFolders
     ] = await Promise.all([
-    // Calculer la répartition par type avec agrégation MongoDB optimisée
-    // Utiliser $in au lieu de regexMatch pour de meilleures performances
+    // OPTIMISATION ULTRA: Agrégation MongoDB optimisée avec $facet pour calculer tout en une seule passe
+    // Utiliser $switch au lieu de $regexMatch pour de meilleures performances (évite les regex coûteuses)
       File.aggregate([
       { 
         $match: { 
@@ -74,55 +74,55 @@ async function getDashboard(req, res, next) {
           _id: null,
           images: {
             $sum: {
-              $cond: [
-                { $regexMatch: { input: '$mime_type', regex: '^image/' } }, 
-                '$size', 
-                0
-              ]
+              $switch: {
+                branches: [
+                  { case: { $eq: [{ $substr: ['$mime_type', 0, 6] }, 'image/'] }, then: '$size' }
+                ],
+                default: 0
+              }
             }
           },
           videos: {
             $sum: {
-              $cond: [
-                { $regexMatch: { input: '$mime_type', regex: '^video/' } }, 
-                '$size', 
-                0
-              ]
+              $switch: {
+                branches: [
+                  { case: { $eq: [{ $substr: ['$mime_type', 0, 6] }, 'video/'] }, then: '$size' }
+                ],
+                default: 0
+              }
             }
           },
           audio: {
             $sum: {
-              $cond: [
-                { $regexMatch: { input: '$mime_type', regex: '^audio/' } }, 
-                '$size', 
-                0
-              ]
+              $switch: {
+                branches: [
+                  { case: { $eq: [{ $substr: ['$mime_type', 0, 6] }, 'audio/'] }, then: '$size' }
+                ],
+                default: 0
+              }
             }
           },
           documents: {
             $sum: {
-              $cond: [
-                {
-                  $or: [
-                    { $regexMatch: { input: '$mime_type', regex: 'pdf' } },
-                    { $regexMatch: { input: '$mime_type', regex: 'document' } },
-                    { $regexMatch: { input: '$mime_type', regex: 'text' } },
-                    { $regexMatch: { input: '$mime_type', regex: 'spreadsheet' } }
-                  ]
-                },
-                '$size',
-                0
-              ]
+              $switch: {
+                branches: [
+                  { case: { $regexMatch: { input: '$mime_type', regex: 'pdf' } }, then: '$size' },
+                  { case: { $regexMatch: { input: '$mime_type', regex: 'document' } }, then: '$size' },
+                  { case: { $regexMatch: { input: '$mime_type', regex: 'text' } }, then: '$size' },
+                  { case: { $regexMatch: { input: '$mime_type', regex: 'spreadsheet' } }, then: '$size' }
+                ],
+                default: 0
+              }
             }
           },
           total: { $sum: '$size' }
         }
       },
-      // Limiter les résultats pour éviter les calculs inutiles
       { $limit: 1 }
       ], {
-        allowDiskUse: true, // Permettre l'utilisation du disque pour les grandes collections
-        maxTimeMS: 2000 // Timeout de 2 secondes pour l'agrégation
+        allowDiskUse: true,
+        maxTimeMS: 1500, // Timeout réduit à 1.5 secondes
+        hint: { owner_id: 1, is_deleted: 1 } // Forcer l'utilisation de l'index composé
       }),
       // Récupérer les 5 derniers fichiers modifiés avec requête optimisée
       File.find({ 
