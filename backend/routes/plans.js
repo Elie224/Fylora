@@ -12,12 +12,10 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 const mongoose = require('mongoose');
 const User = mongoose.models.User || mongoose.model('User');
 
-// Toutes les routes nécessitent une authentification
-router.use(authMiddleware);
-
 /**
  * Obtenir tous les plans disponibles
  * GET /api/plans
+ * Route publique - accessible sans authentification
  */
 router.get('/', (req, res) => {
   const plans = planService.getAllPlans().map(plan => ({
@@ -39,8 +37,9 @@ router.get('/', (req, res) => {
 /**
  * Obtenir le plan actuel de l'utilisateur
  * GET /api/plans/current
+ * Nécessite une authentification
  */
-router.get('/current', async (req, res, next) => {
+router.get('/current', authMiddleware, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select('plan quota_limit quota_used').lean();
@@ -87,8 +86,9 @@ router.get('/current', async (req, res, next) => {
  * Upgrader le plan d'un utilisateur
  * POST /api/plans/upgrade
  * Body: { planId, period: 'monthly'|'yearly' }
+ * Nécessite une authentification
  */
-router.post('/upgrade', async (req, res, next) => {
+router.post('/upgrade', authMiddleware, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { planId, period = 'monthly' } = req.body;

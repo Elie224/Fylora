@@ -13,7 +13,9 @@ import { API_URL } from '../config';
 export default function Pricing() {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthenticated = !!(user && accessToken);
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [currentPlan, setCurrentPlan] = useState(null);
@@ -33,10 +35,17 @@ export default function Pricing() {
       const response = await fetch(`${API_URL}/api/plans`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       setPlans(data.data || []);
     } catch (error) {
       console.error('Error loading plans:', error);
+      // En cas d'erreur, utiliser les plans par défaut
+      setPlans([]);
     } finally {
       setLoading(false);
     }
