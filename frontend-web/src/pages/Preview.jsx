@@ -318,13 +318,24 @@ export default function Preview() {
             onClick={() => navigate(-1)}
             style={{
               padding: '8px 16px',
-              backgroundColor: 'transparent',
-              color: theme === 'dark' ? '#90caf9' : '#2196F3',
-              border: `1px solid ${theme === 'dark' ? '#404040' : '#e0e0e0'}`,
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: theme === 'dark' ? '#90caf9' : '#1a202c',
+              border: `1px solid ${theme === 'dark' ? '#404040' : '#d1d5db'}`,
               borderRadius: 6,
               cursor: 'pointer',
               marginBottom: 8,
-              fontSize: '14px'
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+              boxShadow: theme === 'dark' ? 'none' : '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f3f4f6';
+              e.target.style.borderColor = theme === 'dark' ? '#555' : '#9ca3af';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+              e.target.style.borderColor = theme === 'dark' ? '#404040' : '#d1d5db';
             }}
           >
             ← {t('back') || 'Retour'}

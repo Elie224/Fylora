@@ -723,7 +723,7 @@ export default function Files() {
               fontWeight: '700',
               color: textColor
             }}>📁 {t('myFiles')}</h1>
-            {breadcrumbs.length > 0 && (
+            {(currentFolder || folderHistory.length > 0) && (
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -735,24 +735,26 @@ export default function Files() {
                 <button 
                   onClick={goBack} 
                   style={{ 
-                    padding: '6px 12px',
+                    padding: '8px 16px',
                     backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
-                    border: `1px solid ${theme === 'dark' ? '#444' : '#d1d5db'}`,
+                    border: `2px solid ${theme === 'dark' ? '#444' : '#9ca3af'}`,
                     borderRadius: '6px',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    fontWeight: '500',
+                    fontWeight: '600',
                     transition: 'all 0.2s',
                     color: theme === 'dark' ? '#e0e0e0' : '#1a202c',
-                    boxShadow: theme === 'dark' ? 'none' : '0 1px 2px rgba(0,0,0,0.05)'
+                    boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f3f4f6';
-                    e.target.style.borderColor = theme === 'dark' ? '#555' : '#9ca3af';
+                    e.target.style.borderColor = theme === 'dark' ? '#555' : '#6b7280';
+                    e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(0,0,0,0.4)' : '0 4px 8px rgba(0,0,0,0.15)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
-                    e.target.style.borderColor = theme === 'dark' ? '#444' : '#d1d5db';
+                    e.target.style.borderColor = theme === 'dark' ? '#444' : '#9ca3af';
+                    e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)';
                   }}
                 >
                   ← {t('back')}
@@ -1602,12 +1604,12 @@ export default function Files() {
                           onMouseEnter={(e) => {
                             e.target.style.backgroundColor = '#1976D2';
                             e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                            e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(33, 150, 243, 0.5)' : '0 4px 12px rgba(33, 150, 243, 0.6)';
                           }}
                           onMouseLeave={(e) => {
                             e.target.style.backgroundColor = '#2196F3';
                             e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+                            e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)';
                           }}
                           title={t('download')}
                         >
@@ -1671,12 +1673,12 @@ export default function Files() {
                           onMouseEnter={(e) => {
                             e.target.style.backgroundColor = '#1976D2';
                             e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                            e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(33, 150, 243, 0.5)' : '0 4px 12px rgba(33, 150, 243, 0.6)';
                           }}
                           onMouseLeave={(e) => {
                             e.target.style.backgroundColor = '#2196F3';
                             e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+                            e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)';
                           }}
                           title={t('downloadZip')}
                         >
