@@ -191,6 +191,24 @@ class QueueManager {
             delay: 2000,
           },
         },
+        settings: {
+          // Réessayer automatiquement en cas de déconnexion Redis
+          retryProcessDelay: 5000,
+        },
+      });
+      
+      // Gérer les erreurs de connexion Redis
+      queue.on('error', (error) => {
+        console.warn(`Redis queue error for ${name}:`, error.message);
+        // Ne pas bloquer l'application si Redis est indisponible
+      });
+      
+      queue.on('waiting', (jobId) => {
+        console.log(`Job ${jobId} is waiting in queue ${name}`);
+      });
+      
+      queue.on('stalled', (jobId) => {
+        console.warn(`Job ${jobId} is stalled in queue ${name}`);
       });
     } else {
       queue = new MemoryQueue(name);

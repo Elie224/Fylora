@@ -103,6 +103,8 @@ export default function Preview() {
       // Récupérer le Content-Type depuis l'endpoint preview pour déterminer le type
       let contentType = '';
       let previewError = null;
+      let isOrphanFile = false;
+      
       try {
         const previewHeadResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
           method: 'HEAD',
@@ -114,26 +116,58 @@ export default function Preview() {
         if (previewHeadResponse.ok) {
           contentType = previewHeadResponse.headers.get('content-type') || '';
         } else if (previewHeadResponse.status === 404) {
-          // Le fichier n'existe pas physiquement - c'est un fichier orphelin
+          // Le fichier n'existe pas physiquement (fichier orphelin)
+          isOrphanFile = true;
           try {
             const errorData = await previewHeadResponse.json().catch(() => ({}));
-            previewError = errorData.error?.message || errorData.error?.details || t('fileNotFound') || 'File not found';
-          } catch (parseErr) {
-            previewError = t('fileNotFound') || 'File not found';
+            previewError = errorData.error?.message || 'File not found on disk';
+          } catch (e) {
+            previewError = 'File not found on disk';
           }
-        } else if (previewHeadResponse.status === 401) {
-          // Erreur d'authentification - laisser l'intercepteur gérer
-          previewError = 'Unauthorized';
         }
       } catch (headErr) {
         console.warn('Could not fetch preview headers:', headErr);
+        // Si c'est une erreur réseau, essayer quand même avec GET
+        if (headErr.message && headErr.message.includes('404')) {
+          isOrphanFile = true;
+          previewError = 'File not found on disk';
+        }
       }
       
-      // Si le fichier n'existe pas physiquement, afficher un message d'erreur
-      if (previewError && previewError.includes('not found')) {
-        setError(t('fileNotFoundOnDisk') || 'The file exists in the database but the physical file is missing. This can happen if the server was restarted.');
+      // Si le fichier n'existe pas physiquement, afficher un message d'erreur clair
+      if (isOrphanFile || (previewError && (previewError.includes('not found') || previewError.includes('missing')))) {
+        setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
         setLoading(false);
         return;
+      }
+      
+      // Essayer aussi avec GET si HEAD a échoué
+      if (!contentType && !isOrphanFile) {
+        try {
+          const previewGetResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (previewGetResponse.ok) {
+            contentType = previewGetResponse.headers.get('content-type') || '';
+          } else if (previewGetResponse.status === 404) {
+            isOrphanFile = true;
+            setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
+            setLoading(false);
+            return;
+          }
+        } catch (getErr) {
+          console.warn('Could not fetch preview with GET:', getErr);
+          if (getErr.message && getErr.message.includes('404')) {
+            isOrphanFile = true;
+            setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
+            setLoading(false);
+            return;
+          }
+        }
       }
       
       // Construire les métadonnées du fichier
