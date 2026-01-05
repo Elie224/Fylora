@@ -77,8 +77,13 @@ export default function Files() {
       // Charger les informations du dossier
       folderService.get(folderId).then(response => {
         if (response && response.data && response.data.data) {
-          setCurrentFolder(response.data.data);
+          const folder = response.data.data;
+          setCurrentFolder(folder);
           setError(null);
+          // Recharger les fichiers après avoir chargé le dossier
+          setTimeout(() => {
+            loadFiles(true);
+          }, 100);
         } else {
           throw new Error(t('invalidResponseStructure'));
         }
@@ -89,8 +94,12 @@ export default function Files() {
     } else if (!folderId) {
       // Si pas de folderId dans l'URL, réinitialiser le dossier courant
       setCurrentFolder(null);
+      // Recharger les fichiers de la racine
+      setTimeout(() => {
+        loadFiles(true);
+      }, 100);
     }
-  }, [searchParams, currentFolder?.id, t]);
+  }, [searchParams, t]);
 
   const loadTags = useCallback(async () => {
     try {
@@ -602,14 +611,19 @@ export default function Files() {
       return;
     }
     
-    // Mettre à jour l'URL pour permettre le partage et le rafraîchissement
-    navigate(`/files?folder=${folder.id}`, { replace: false });
-    
-    // Mettre à jour l'état local
+    // Mettre à jour l'état local d'abord
     if (currentFolder) {
       setFolderHistory([...folderHistory, currentFolder]);
     }
     setCurrentFolder(folder);
+    
+    // Mettre à jour l'URL pour permettre le partage et le rafraîchissement
+    navigate(`/files?folder=${folder.id}`, { replace: false });
+    
+    // Recharger les fichiers immédiatement
+    setTimeout(() => {
+      loadFiles(true);
+    }, 0);
   };
 
   const goBack = () => {
