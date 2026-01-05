@@ -26,7 +26,7 @@ export default function Settings() {
   
   // Statistiques
   const [quotaUsed, setQuotaUsed] = useState(0);
-  const [quotaLimit, setQuotaLimit] = useState(32212254720);
+  const [quotaLimit, setQuotaLimit] = useState(100 * 1024 * 1024 * 1024); // 100 Go par défaut (plan FREE)
   const [accountCreated, setAccountCreated] = useState('');
   const [lastLogin, setLastLogin] = useState('');
 
@@ -50,7 +50,7 @@ export default function Settings() {
       setAvatarUrl(userData.avatar_url || '');
       // Ne pas forcer la langue - utiliser celle de l'utilisateur
       setQuotaUsed(stats.quota?.used || 0);
-      setQuotaLimit(stats.quota?.limit || 32212254720);
+      setQuotaLimit(stats.quota?.limit || 100 * 1024 * 1024 * 1024); // 100 Go par défaut (plan FREE)
       // Formater la date de création en français
       if (userData.created_at) {
         const createdDate = new Date(userData.created_at);

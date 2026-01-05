@@ -1,5 +1,5 @@
 /**
- * Service de Gestion de Quota (1 To par utilisateur)
+ * Service de Gestion de Quota (100 Go par défaut pour plan FREE)
  * Gestion asynchrone avec cache Redis
  * 
  * Architecture: Mise à jour async, vérification synchrone rapide

@@ -18,7 +18,7 @@ const USER_ID_FILTER = process.argv.find(arg => arg.startsWith('--user-id='))?.s
 
 async function migrateUser(user) {
   const currentPlan = user.plan || null;
-  const currentQuota = user.quota_limit || 1099511627776; // 1 To par défaut
+  const currentQuota = user.quota_limit || 100 * 1024 * 1024 * 1024; // 100 Go par défaut (plan FREE)
   const freeQuota = planService.getStorageQuota('free'); // 100 Go
 
   // Vérifier si déjà migré
