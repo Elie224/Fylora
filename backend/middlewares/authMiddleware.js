@@ -42,14 +42,33 @@ function authMiddleware(req, res, next) {
  */
 function optionalAuthMiddleware(req, res, next) {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
 
     if (token) {
       try {
         const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] });
         req.user = decoded;
+        // Logger pour déboguer
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Optional auth: User authenticated', {
+            userId: decoded.id || decoded._id,
+            hasId: !!decoded.id,
+            has_id: !!decoded._id,
+            keys: Object.keys(decoded)
+          });
+        }
       } catch (err) {
-        // Ignorer l'erreur - route publique
+        // Si le token est invalide ou expiré, ne pas définir req.user
+        // Logger seulement en développement
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Optional auth: Token invalid or expired', err.message);
+        }
+      }
+    } else {
+      // Pas de token - route publique
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Optional auth: No token provided');
       }
     }
 

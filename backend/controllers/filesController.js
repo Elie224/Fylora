@@ -658,13 +658,19 @@ async function downloadFile(req, res, next) {
     const { id } = req.params;
     const { token, password } = req.query;
     
-    // Logger pour déboguer
+    // Logger pour déboguer (toujours logger en production pour diagnostiquer)
     logger.logInfo('Download request', {
       fileId: id,
       userId: userId,
       hasUser: !!req.user,
       userKeys: req.user ? Object.keys(req.user) : [],
-      hasToken: !!token
+      userValues: req.user ? {
+        id: req.user.id,
+        _id: req.user._id,
+        email: req.user.email
+      } : null,
+      hasToken: !!token,
+      authHeader: req.headers.authorization ? 'present' : 'missing'
     });
 
     // Utiliser mongoose directement pour avoir accès à tous les champs, y compris is_deleted
