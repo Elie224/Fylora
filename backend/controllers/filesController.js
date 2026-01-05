@@ -359,7 +359,8 @@ async function uploadFile(req, res, next) {
     // Vérifier la taille maximale de fichier selon le plan
     const planService = require('../services/planService');
     const User = require('mongoose').models.User || require('mongoose').model('User');
-    const user = await User.findById(userId).select('plan').lean();
+    // Récupérer tous les champs nécessaires en une seule requête (plan, quota_used, quota_limit)
+    const user = await User.findById(userId).select('plan quota_used quota_limit').lean();
     const planId = user?.plan || 'free';
     const fileSizeCheck = planService.canUploadFile(planId, fileSize);
     
@@ -436,9 +437,7 @@ async function uploadFile(req, res, next) {
     }
 
     // OPTIMISATION: Utiliser quota_used stocké au lieu de recalculer (beaucoup plus rapide)
-    // Utiliser mongoose directement pour avoir accès à .select()
-    // Réutiliser la variable User déjà déclarée plus haut dans la fonction
-    const user = await User.findById(userId).select('quota_used quota_limit').lean();
+    // Réutiliser la variable user déjà récupérée plus haut avec tous les champs nécessaires
     if (!user) {
       await fs.unlink(req.file.path).catch(() => {});
       return res.status(404).json({ error: { message: 'User not found' } });
