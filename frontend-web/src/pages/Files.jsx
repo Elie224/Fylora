@@ -736,20 +736,23 @@ export default function Files() {
                   onClick={goBack} 
                   style={{ 
                     padding: '6px 12px',
-                    backgroundColor: secondaryBg,
-                    border: `1px solid ${borderColor}`,
+                    backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                    border: `1px solid ${theme === 'dark' ? '#444' : '#d1d5db'}`,
                     borderRadius: '6px',
                     cursor: 'pointer',
                     fontSize: '14px',
                     fontWeight: '500',
                     transition: 'all 0.2s',
-                    color: textColor
+                    color: theme === 'dark' ? '#e0e0e0' : '#1a202c',
+                    boxShadow: theme === 'dark' ? 'none' : '0 1px 2px rgba(0,0,0,0.05)'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = hoverBg;
+                    e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f3f4f6';
+                    e.target.style.borderColor = theme === 'dark' ? '#555' : '#9ca3af';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = secondaryBg;
+                    e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+                    e.target.style.borderColor = theme === 'dark' ? '#444' : '#d1d5db';
                   }}
                 >
                   ← {t('back')}
