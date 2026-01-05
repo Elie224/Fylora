@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const { language, setLanguage, t, supportedLanguages } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -194,74 +194,7 @@ export default function Home() {
             ))}
           </select>
 
-          <div style={{
-            display: 'flex',
-            gap: '4px',
-            backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f7fafc',
-            padding: '4px',
-            borderRadius: '12px',
-            border: theme === 'dark' ? `1.5px solid ${borderColor}` : `1.5px solid #e2e8f0`,
-            boxShadow: theme === 'dark' ? 'none' : '0 1px 3px rgba(0,0,0,0.08)'
-          }}>
-            <button
-              onClick={() => setTheme('light')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: theme === 'light' ? primaryColor : 'transparent',
-                color: theme === 'light' ? '#ffffff' : textColor,
-                cursor: 'pointer',
-                fontSize: '18px',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: theme === 'light' ? '700' : '500'
-              }}
-              onMouseEnter={(e) => {
-                if (theme !== 'light') {
-                  e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#e3f2fd';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (theme !== 'light') {
-                  e.target.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              ☀️
-            </button>
-            <button
-              onClick={() => setTheme('dark')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: theme === 'dark' ? primaryColor : 'transparent',
-                color: theme === 'dark' ? '#ffffff' : textColor,
-                cursor: 'pointer',
-                fontSize: '18px',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: theme === 'dark' ? '700' : '500'
-              }}
-              onMouseEnter={(e) => {
-                if (theme !== 'dark') {
-                  e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#e3f2fd';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (theme !== 'dark') {
-                  e.target.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              🌙
-            </button>
-          </div>
+          {/* Toggle de thème supprimé - thème sombre uniquement */}
 
           <button
             onClick={handleSkip}

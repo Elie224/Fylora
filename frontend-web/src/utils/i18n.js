@@ -196,7 +196,7 @@ const translations = {
       title: 'Gratuit pour toujours',
       subtitle: 'Découvrez ce qui est inclus dans votre compte gratuit',
       items: {
-        storage: '1 To de stockage gratuit',
+        storage: '100 Go de stockage gratuit',
         folders: 'Dossiers illimités',
         sharing: 'Partage de fichiers illimité',
         encryption: 'Chiffrement de bout en bout',
@@ -686,7 +686,7 @@ const translations = {
       title: 'Free forever',
       subtitle: 'Discover what\'s included in your free account',
       items: {
-        storage: '1 TB free storage',
+        storage: '100 GB free storage',
         folders: 'Unlimited folders',
         sharing: 'Unlimited file sharing',
         encryption: 'End-to-end encryption',
