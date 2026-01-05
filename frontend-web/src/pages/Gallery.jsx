@@ -35,27 +35,22 @@ function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
           }
         });
 
-        if (response.ok) {
-          const blob = await response.blob();
-          const objectUrl = URL.createObjectURL(blob);
-          setImageUrl(objectUrl);
-          setError(false);
-        } else if (response.status === 404) {
-          // Fichier orphelin - n'existe pas physiquement
-          setError(true);
-          // Ne pas logger car c'est attendu pour les fichiers orphelins
-        } else if (response.status === 401) {
-          // Erreur d'authentification - laisser l'intercepteur gérer
-          setError(true);
-        } else {
-          console.warn('Failed to load thumbnail:', response.status);
-          setError(true);
+        if (!response.ok) {
+          // Si 404, le fichier n'existe plus sur le disque (orphan file)
+          if (response.status === 404) {
+            console.warn('File not found on disk (orphan file):', fileId);
+            setError(true);
+            setLoading(false);
+            return;
+          }
+          throw new Error('Failed to load');
         }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageUrl(objectUrl);
       } catch (err) {
-        // Ne pas logger les erreurs 401 - l'intercepteur gère
-        if (err.message && !err.message.includes('401')) {
-          console.error('Failed to load thumbnail:', err);
-        }
+        console.error('Failed to load thumbnail:', err);
         setError(true);
       } finally {
         setLoading(false);
@@ -123,13 +118,22 @@ function ThumbnailImage({ fileId, fileName, isImage, style, onError }) {
         width: '100%',
         height: '100%',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f5f5f5',
         color: textSecondary,
+        padding: '12px',
+        textAlign: 'center',
         ...style
       }}>
-        🖼️ {fileName}
+        <div style={{ fontSize: '32px', marginBottom: '8px', opacity: 0.5 }}>🖼️</div>
+        <div style={{ fontSize: '11px', wordBreak: 'break-word', opacity: 0.7 }}>
+          {fileName}
+        </div>
+        <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.5 }}>
+          Fichier non disponible
+        </div>
       </div>
     );
   }
@@ -255,6 +259,9 @@ export default function Gallery() {
         return dateB - dateA;
       });
 
+      // Note: Les fichiers orphelins (qui n'existent plus sur le disque) seront détectés
+      // lors du chargement des miniatures et affichés avec un message d'erreur
+      // Le système de nettoyage automatique les supprimera de la base de données
       setMediaFiles(allMediaFiles);
 
       // Grouper par date pour la vue timeline
@@ -768,6 +775,13 @@ function ImagePreview({ url, token }) {
         });
         
         if (!response.ok) {
+          // Si 404, le fichier n'existe plus sur le disque (orphan file)
+          if (response.status === 404) {
+            console.warn('File not found on disk (orphan file)');
+            setError('Fichier non disponible sur le serveur');
+            setLoading(false);
+            return;
+          }
           throw new Error('Failed to load image');
         }
         
@@ -776,7 +790,7 @@ function ImagePreview({ url, token }) {
         setImageUrl(objectUrl);
       } catch (err) {
         console.error('Failed to load image:', err);
-        setError(err.message);
+        setError(err.message || 'Erreur de chargement');
       } finally {
         setLoading(false);
       }
@@ -798,7 +812,25 @@ function ImagePreview({ url, token }) {
   }
 
   if (error || !imageUrl) {
-    return <div style={{ padding: 24, textAlign: 'center', color: 'white' }}>❌ Erreur de chargement</div>;
+    return (
+      <div style={{ 
+        padding: 24, 
+        textAlign: 'center', 
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <div style={{ fontSize: '48px', opacity: 0.7 }}>🖼️</div>
+        <div style={{ fontSize: '16px', fontWeight: '500' }}>
+          {error || 'Erreur de chargement'}
+        </div>
+        <div style={{ fontSize: '12px', opacity: 0.7 }}>
+          Le fichier n'est plus disponible sur le serveur
+        </div>
+      </div>
+    );
   }
 
   return (
