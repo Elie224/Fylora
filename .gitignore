@@ -59,6 +59,7 @@ mobile-app/ios/Flutter/Flutter.podspec
 
 # Fichiers avec secrets (ne jamais commiter)
 VARIABLES_RENDER_STRIPE_LOCAL.txt
+VARIABLES_PAYPAL_RENDER.txt
 *_LOCAL.txt
 *_SECRETS.txt
 *_KEYS.txt
