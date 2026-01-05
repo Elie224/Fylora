@@ -16,25 +16,23 @@ export default defineConfig({
     outDir: 'dist',
     copyPublicDir: true,
     // OPTIMISATION ULTRA: Minification agressive
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 3, // Multi-pass compression pour meilleure réduction
-        unsafe: true, // Optimisations non sécurisées mais plus agressives
-        unsafe_comps: true,
-        unsafe_math: true,
-        unsafe_methods: true,
-      },
-      mangle: {
-        safari10: true,
-      },
-      format: {
-        comments: false, // Supprimer tous les commentaires
-      },
-    },
+    // TEMPORAIRE: Désactivé pour debug - réactiver après correction
+    minify: 'esbuild', // Plus rapide et moins agressif que terser
+    // terserOptions: {
+    //   compress: {
+    //     drop_console: false, // TEMPORAIRE: Garder console pour debug
+    //     drop_debugger: false,
+    //     pure_funcs: [], // TEMPORAIRE: Ne pas supprimer les fonctions
+    //     passes: 1, // Réduire les passes pour debug
+    //     unsafe: false, // Désactiver les optimisations non sécurisées
+    //   },
+    //   mangle: {
+    //     safari10: true,
+    //   },
+    //   format: {
+    //     comments: false,
+    //   },
+    // },
     // OPTIMISATION ULTRA: Code splitting intelligent pour réduire la taille initiale
     rollupOptions: {
       output: {
@@ -75,7 +73,7 @@ export default defineConfig({
       transformMixedEsModules: true,
     },
     // Source maps seulement en développement
-    sourcemap: false, // Désactiver en production pour réduire la taille
+    sourcemap: true, // TEMPORAIRE: Activer pour debug - désactiver après correction
     // Optimisation CSS
     cssCodeSplit: true,
     cssMinify: true,
