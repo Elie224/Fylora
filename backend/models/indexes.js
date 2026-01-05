@@ -44,7 +44,35 @@ async function createIndexes() {
 
     // Index pour les partages
     if (Share) {
-      await Share.collection.createIndex({ token: 1 }, { unique: true });
+      try {
+        // Supprimer l'ancien index sur 'token' s'il existe (erreur de nom)
+        try {
+          await Share.collection.dropIndex('token_1');
+        } catch (dropErr) {
+          // Ignorer si l'index n'existe pas
+        }
+        
+        // Créer l'index sur public_token avec sparse pour ignorer les valeurs null
+        // (les partages internes n'ont pas de public_token)
+        await Share.collection.createIndex({ public_token: 1 }, { unique: true, sparse: true });
+      } catch (tokenIndexErr) {
+        // Si l'index existe déjà ou s'il y a des doublons, essayer de le recréer
+        if (tokenIndexErr.code === 11000 || tokenIndexErr.codeName === 'DuplicateKey') {
+          console.warn('⚠️  Duplicate tokens found, cleaning up...');
+          // Supprimer l'index problématique et le recréer
+          try {
+            await Share.collection.dropIndex('token_1');
+          } catch (e) {}
+          try {
+            await Share.collection.dropIndex('public_token_1');
+          } catch (e) {}
+          // Recréer avec sparse pour ignorer les null
+          await Share.collection.createIndex({ public_token: 1 }, { unique: true, sparse: true });
+        } else {
+          throw tokenIndexErr;
+        }
+      }
+      
       await Share.collection.createIndex({ file_id: 1 });
       await Share.collection.createIndex({ folder_id: 1 });
       await Share.collection.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
