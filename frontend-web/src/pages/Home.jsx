@@ -136,7 +136,7 @@ export default function Home() {
         <div style={{
           fontSize: '32px',
           fontWeight: '900',
-          color: theme === 'dark' ? '#64b5f6' : primaryColor,
+          color: '#64b5f6',
           letterSpacing: '-1px',
           display: 'flex',
           alignItems: 'center',
@@ -290,7 +290,7 @@ export default function Home() {
               height: 'clamp(100px, 20vw, 140px)',
               margin: '0 auto clamp(24px, 5vw, 40px)',
               borderRadius: '50%',
-              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e3f2fd',
+              backgroundColor: '#2d2d2d',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -326,7 +326,7 @@ export default function Home() {
             {/* Description */}
             <p style={{
               fontSize: 'clamp(17px, 2.2vw, 19px)',
-              color: theme === 'dark' ? '#ffffff' : textColor,
+              color: '#ffffff',
               lineHeight: '1.7',
               marginBottom: '30px',
               maxWidth: '580px',
@@ -341,9 +341,7 @@ export default function Home() {
               <div style={{
                 marginBottom: '40px',
                 padding: '20px 28px',
-                background: theme === 'dark' 
-                  ? `linear-gradient(135deg, ${primaryColor}15 0%, ${primaryColor}08 100%)`
-                  : `linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%)`,
+                background: `linear-gradient(135deg, ${primaryColor}15 0%, ${primaryColor}08 100%)`,
                 borderRadius: '16px',
                 border: `2px solid ${primaryColor}30`,
                 maxWidth: '550px',
@@ -363,7 +361,7 @@ export default function Home() {
                 }} />
                 <p style={{
                   fontSize: 'clamp(17px, 2.2vw, 20px)',
-                  color: theme === 'dark' ? '#64b5f6' : primaryColor, // Couleur visible au lieu de transparent
+                  color: '#64b5f6', // Couleur visible au lieu de transparent
                   fontWeight: '700',
                   margin: 0,
                   fontStyle: 'italic',
@@ -385,9 +383,7 @@ export default function Home() {
                 backgroundColor: cardBg,
                 borderRadius: '20px',
                 border: `2px solid ${borderColor}`,
-                boxShadow: theme === 'dark' 
-                  ? '0 8px 24px rgba(0,0,0,0.4)' 
-                  : '0 8px 24px rgba(0,0,0,0.08)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                 position: 'relative',
                 overflow: 'hidden'
               }}>
@@ -412,7 +408,7 @@ export default function Home() {
                   <h3 style={{
                     fontSize: '20px',
                     fontWeight: '800',
-                    color: theme === 'dark' ? '#64b5f6' : primaryColor, // Couleur visible au lieu de transparent
+                    color: '#64b5f6', // Couleur visible au lieu de transparent
                     margin: 0,
                     textAlign: 'center'
                   }}>
@@ -423,7 +419,7 @@ export default function Home() {
                 
                 <p style={{
                   fontSize: '15px',
-                  color: theme === 'dark' ? '#e0e0e0' : textSecondary,
+                  color: '#e0e0e0',
                   marginBottom: '28px',
                   textAlign: 'center',
                   fontWeight: '400'
@@ -444,7 +440,7 @@ export default function Home() {
                         alignItems: 'center',
                         gap: '12px',
                         padding: '14px 16px',
-                        backgroundColor: theme === 'dark' ? '#252525' : secondaryBg,
+                        backgroundColor: '#252525',
                         borderRadius: '12px',
                         border: `1.5px solid ${borderColor}`,
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
