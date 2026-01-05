@@ -108,6 +108,30 @@ router.get('/stripe/verify/:sessionId', async (req, res, next) => {
 });
 
 /**
+ * Vérifier le statut d'un paiement PayPal
+ * GET /api/billing/paypal/verify/:orderId
+ */
+router.get('/paypal/verify/:orderId', async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!billingService.isPayPalConfigured()) {
+      return res.status(503).json({
+        error: { message: 'PayPal is not configured' }
+      });
+    }
+
+    const status = await billingService.verifyPayPalPayment(orderId);
+
+    res.status(200).json({
+      data: status
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * Webhook Stripe (pas d'authentification requise)
  * POST /api/billing/stripe/webhook
  */
@@ -144,6 +168,30 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
 
     res.status(200).json({ received: true });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Webhook PayPal (pas d'authentification requise)
+ * POST /api/billing/paypal/webhook
+ */
+router.post('/paypal/webhook', express.json(), async (req, res, next) => {
+  try {
+    if (!billingService.isPayPalConfigured()) {
+      return res.status(503).json({
+        error: { message: 'PayPal is not configured' }
+      });
+    }
+
+    // PayPal envoie les webhooks en JSON
+    const event = req.body;
+
+    await billingService.handlePayPalWebhook(event);
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    logger.logError(err, { context: 'paypal_webhook' });
     next(err);
   }
 });
