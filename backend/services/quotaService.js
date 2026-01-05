@@ -12,7 +12,7 @@ const redisCache = require('../utils/redisCache');
 const logger = require('../utils/logger');
 
 // Constantes
-const DEFAULT_QUOTA_LIMIT = 1099511627776; // 1 To en bytes
+const DEFAULT_QUOTA_LIMIT = 100 * 1024 * 1024 * 1024; // 100 Go en bytes (plan FREE)
 const QUOTA_CACHE_TTL = 300; // 5 minutes
 const SYNC_INTERVAL = 3600000; // 1 heure
 

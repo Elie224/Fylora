@@ -508,6 +508,8 @@ app.use('/api/teams', require('./routes/teams'));
 app.use('/api/backups', require('./routes/scheduledBackups'));
 app.use('/api/plugins', require('./routes/plugins'));
 app.use('/api/offline-sync', require('./routes/offlineSync'));
+// Routes de gestion des plans
+app.use('/api/plans', require('./routes/plans'));
 
 // 404 handler (doit être avant errorHandler)
 app.use((req, res) => {

@@ -35,10 +35,17 @@ const UserSchema = new Schema({
   display_name: String, // Nom d'affichage (peut être différent de l'email)
   avatar_url: String, // URL de l'avatar de l'utilisateur
   
+  // Plan de l'utilisateur
+  plan: {
+    type: String,
+    default: 'free', // 'free', 'plus', 'pro', 'team'
+    enum: ['free', 'plus', 'pro', 'team']
+  },
+  
   // Quota de stockage (en octets)
   quota_limit: { 
     type: Number, 
-    default: 1099511627776, // 1 To par défaut (1 099 511 627 776 octets)
+    default: 100 * 1024 * 1024 * 1024, // 100 Go par défaut (plan FREE)
   },
   quota_used: { 
     type: Number, 
