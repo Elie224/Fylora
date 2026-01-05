@@ -86,15 +86,16 @@ const FileModel = {
         sortObj[sortBy] = sortOrder;
       }
       
-      // Construire la requête optimisée - MongoDB utilisera automatiquement les index disponibles
-      // Limiter les champs récupérés pour améliorer les performances
-      // Utiliser maxTimeMS pour éviter les requêtes trop longues
+      // OPTIMISATION: Construire la requête optimisée avec projection minimale
+      // MongoDB utilisera automatiquement les index composés disponibles
+      // Projection minimale pour réduire la taille des données transférées
       const files = await File.find(query)
         .select('name size mime_type folder_id owner_id is_deleted created_at updated_at _id')
         .sort(sortObj)
         .skip(skip)
-        .limit(limit)
-        .maxTimeMS(3000) // Timeout de 3 secondes max
+        .limit(Math.min(limit, 100)) // Limiter à 100 max pour performance
+        .maxTimeMS(2000) // Timeout réduit à 2 secondes pour réponse rapide
+        .hint({ owner_id: 1, folder_id: 1, is_deleted: 1 }) // Forcer l'utilisation de l'index composé
         .lean();
       return files.map(f => this.toDTO(f));
     } catch (err) {

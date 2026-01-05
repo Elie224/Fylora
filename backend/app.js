@@ -445,6 +445,19 @@ app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/files', require('./routes/fileVersions'));
+// Routes de stockage Object (S3) - Architecture de niveau industrie
+app.use('/api/storage', require('./routes/storage'));
+// Routes fichiers V2 (avec S3)
+const filesV2Router = express.Router();
+const filesV2Controller = require('./controllers/filesControllerV2');
+filesV2Router.post('/upload-url', filesV2Controller.generateUploadUrl);
+filesV2Router.post('/finalize', filesV2Controller.finalizeUpload);
+filesV2Router.get('/:id/download-url', filesV2Controller.generateDownloadUrl);
+filesV2Router.get('/:id/preview-url', filesV2Controller.generatePreviewUrl);
+filesV2Router.post('/multipart/initiate', filesV2Controller.initiateMultipartUpload);
+filesV2Router.post('/multipart/chunk-url', filesV2Controller.generateChunkUploadUrl);
+filesV2Router.post('/multipart/complete', filesV2Controller.completeMultipartUpload);
+app.use('/api/files/v2', require('./middlewares/authMiddleware').authMiddleware, filesV2Router);
 app.use('/api/folders', validateName, require('./routes/folders'));
 app.use('/api/share', shareLimiter, require('./routes/share'));
 app.use('/api/search', require('./routes/search'));
