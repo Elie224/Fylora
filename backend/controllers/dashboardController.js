@@ -176,7 +176,7 @@ async function getDashboard(req, res, next) {
         logger.logError(err, { context: 'background quota calculation' });
       });
     }
-    const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut si non défini
+    const quotaLimit = user.quota_limit || 100 * 1024 * 1024 * 1024; // 100 Go par défaut (plan FREE)
     // Calculer le pourcentage brut (avec décimales)
     const rawPercentage = quotaLimit > 0 && quotaUsed > 0 
       ? (quotaUsed / quotaLimit) * 100 

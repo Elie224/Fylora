@@ -42,7 +42,7 @@ exports.createTeam = async (req, res, next) => {
       }],
       settings: {
         max_members: max_members || 10,
-        quota_limit: quota_limit || 1099511627776,
+        quota_limit: quota_limit || 100 * 1024 * 1024 * 1024, // 100 Go par défaut
         quota_used: 0,
       },
     });

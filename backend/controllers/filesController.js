@@ -443,7 +443,7 @@ async function uploadFile(req, res, next) {
       return res.status(404).json({ error: { message: 'User not found' } });
     }
     const currentUsed = user.quota_used || 0;
-    const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
+    const quotaLimit = user.quota_limit || 100 * 1024 * 1024 * 1024; // 100 Go par défaut (plan FREE)
 
     // Vérification rapide du quota (avec la taille après compression)
     if (currentUsed + fileSize > quotaLimit) {
@@ -1201,7 +1201,7 @@ async function updateFileContent(req, res, next) {
     }
 
     const currentUsed = user.quota_used || 0;
-    const quotaLimit = user.quota_limit || 1099511627776; // 1 TO par défaut
+    const quotaLimit = user.quota_limit || 100 * 1024 * 1024 * 1024; // 100 Go par défaut (plan FREE)
 
     if (sizeDiff > 0 && currentUsed + sizeDiff > quotaLimit) {
       await fs.unlink(req.file.path).catch(() => {});

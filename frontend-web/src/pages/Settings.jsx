@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const { user, logout, setUser } = useAuthStore();
   const { t, setLanguage: setLang, language, supportedLanguages } = useLanguage();
   const { theme, toggleTheme } = useTheme();
@@ -330,17 +331,46 @@ export default function Settings() {
                   overflow: 'hidden',
                   position: 'relative'
                 }}>
-                  <div style={{
-                    width: `${quotaUsed > 0 ? Math.max(quotaPercentageRaw, 0.1) : 0}%`,
-                    height: '100%',
-                    backgroundColor: quotaColor,
-                    transition: 'width 0.3s ease',
-                    minWidth: quotaUsed > 0 ? '3px' : '0'
-                  }} />
-                </div>
+                <div style={{
+                  width: `${quotaUsed > 0 ? Math.max(quotaPercentageRaw, 0.1) : 0}%`,
+                  height: '100%',
+                  backgroundColor: quotaColor,
+                  transition: 'width 0.3s ease',
+                  minWidth: quotaUsed > 0 ? '3px' : '0'
+                }} />
               </div>
             </div>
+            {/* Lien vers Pricing pour upgrade */}
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => navigate('/pricing')}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#1976D2';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#2196F3';
+                }}
+              >
+                <span>💳</span>
+                {t('upgrade') || 'Mettre à niveau'}
+              </button>
+            </div>
           </div>
+        </div>
         </div>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>

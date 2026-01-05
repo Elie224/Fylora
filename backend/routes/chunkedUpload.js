@@ -53,7 +53,7 @@ router.post('/finalize', async (req, res, next) => {
     // Vérifier le quota
     const user = await UserModel.findById(userId);
     const currentUsed = await calculateRealQuotaUsed(userId);
-    const quotaLimit = user.quota_limit || 1099511627776;
+    const quotaLimit = user.quota_limit || 100 * 1024 * 1024 * 1024; // 100 Go par défaut (plan FREE)
 
     if (currentUsed + fileData.size > quotaLimit) {
       await fs.unlink(fileData.path).catch(() => {});

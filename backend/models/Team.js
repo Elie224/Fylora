@@ -56,7 +56,7 @@ const teamSchema = new mongoose.Schema({
     },
     quota_limit: {
       type: Number,
-      default: 1099511627776, // 1 To par défaut
+      default: 100 * 1024 * 1024 * 1024, // 100 Go par défaut
     },
     quota_used: {
       type: Number,

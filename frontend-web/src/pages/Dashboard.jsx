@@ -302,6 +302,36 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+              {/* Lien vers Pricing pour upgrade */}
+              <button
+                onClick={() => navigate('/pricing')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#1976D2';
+                  e.target.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#2196F3';
+                  e.target.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.3)';
+                }}
+              >
+                <span style={{ fontSize: '18px' }}>💳</span>
+                {t('upgrade') || 'Mettre à niveau'}
+              </button>
             </div>
             
             {/* Graphique d'évolution amélioré (7 derniers jours) */}
