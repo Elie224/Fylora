@@ -39,36 +39,40 @@ async function ensureUploadDir() {
 }
 ensureUploadDir();
 
-// Attendre que MongoDB soit connecté avant de démarrer le serveur
+// Initialiser les services en arrière-plan (ne bloque pas le démarrage du serveur)
 async function startServer() {
   try {
-    // Attendre la connexion MongoDB (max 30 secondes)
-    const maxWait = 30000;
+    // Attendre la connexion MongoDB (max 10 secondes pour éviter les timeouts)
+    const maxWait = 10000;
     const startTime = Date.now();
     
     // Attendre que la promesse de connexion soit résolue
     try {
-      await db.connectionPromise;
-      console.log('✅ MongoDB ready, starting server...');
+      // Utiliser Promise.race pour éviter d'attendre trop longtemps
+      await Promise.race([
+        db.connectionPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('MongoDB connection timeout')), maxWait))
+      ]);
+      console.log('✅ MongoDB ready');
     } catch (connErr) {
-      // Si la connexion échoue, attendre un peu et vérifier l'état
-      while (db.connection.readyState !== 1 && (Date.now() - startTime) < maxWait) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      if (db.connection.readyState !== 1) {
-        console.error('❌ MongoDB connection timeout. Server will start but database operations may fail.');
-        console.error('   Please ensure MongoDB is running and accessible.');
+      // Si la connexion échoue, vérifier l'état rapidement
+      if (db.connection.readyState === 1) {
+        console.log('✅ MongoDB already connected');
       } else {
-        console.log('✅ MongoDB ready, creating indexes...');
-        // Créer les index pour optimiser les performances
-        try {
-          const { createIndexes } = require('./models/indexes');
-          await createIndexes();
-        } catch (indexError) {
-          console.warn('⚠️  Could not create indexes:', indexError.message);
-        }
-        console.log('✅ MongoDB ready, starting server...');
+        console.warn('⚠️  MongoDB connection pending, continuing startup...');
+        // Ne pas bloquer - la connexion se fera en arrière-plan
+      }
+    }
+
+    // Créer les index en arrière-plan (ne bloque pas)
+    if (db.connection.readyState === 1) {
+      try {
+        const { createIndexes } = require('./models/indexes');
+        createIndexes().catch(err => {
+          console.warn('⚠️  Could not create indexes:', err.message);
+        });
+      } catch (indexError) {
+        console.warn('⚠️  Could not create indexes:', indexError.message);
       }
     }
 
@@ -81,15 +85,20 @@ async function startServer() {
       console.warn('⚠️  Could not start scheduler service:', schedulerError.message);
     }
 
-    // Initialiser les templates de notes par défaut
-    try {
-      const { initTemplates } = require('./utils/initTemplates');
-      await initTemplates();
-    } catch (templateError) {
-      console.warn('⚠️  Could not initialize note templates:', templateError.message);
+    // Initialiser les templates de notes par défaut en arrière-plan
+    if (db.connection.readyState === 1) {
+      try {
+        const { initTemplates } = require('./utils/initTemplates');
+        initTemplates().catch(err => {
+          console.warn('⚠️  Could not initialize note templates:', err.message);
+        });
+      } catch (templateError) {
+        console.warn('⚠️  Could not initialize note templates:', templateError.message);
+      }
     }
   } catch (err) {
-    console.error('❌ Error waiting for MongoDB:', err.message);
+    console.error('❌ Error in background initialization:', err.message);
+    // Ne pas faire planter l'application
   }
 }
 
@@ -572,29 +581,31 @@ process.on('unhandledRejection', (reason, promise) => {
   gracefulShutdown('unhandledRejection');
 });
 
-// Démarrer le serveur après vérification MongoDB
-startServer().then(() => {
-  server = app.listen(PORT, HOST, () => {
-    logger.logInfo(`Fylora API listening on http://${HOST}:${PORT}`, {
-      environment: config.server.nodeEnv,
-      port: PORT,
-    });
-    // Afficher le port pour que Render le détecte
-    console.log(`Port ${PORT} is now listening`);
+// Démarrer le serveur IMMÉDIATEMENT (sans attendre MongoDB)
+// Les initialisations se feront en arrière-plan
+server = app.listen(PORT, HOST, () => {
+  logger.logInfo(`Fylora API listening on http://${HOST}:${PORT}`, {
+    environment: config.server.nodeEnv,
+    port: PORT,
   });
-  
-  // Gestion des erreurs du serveur
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      logger.logError(err, { context: 'port already in use', port: PORT });
-      process.exit(1);
-    } else {
-      logger.logError(err, { context: 'server error' });
-    }
-  });
-}).catch((err) => {
-  logger.logError(err, { context: 'server startup' });
-  process.exit(1);
+  // Afficher le port pour que Render le détecte
+  console.log(`Port ${PORT} is now listening`);
+});
+
+// Gestion des erreurs du serveur
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.logError(err, { context: 'port already in use', port: PORT });
+    process.exit(1);
+  } else {
+    logger.logError(err, { context: 'server error' });
+  }
+});
+
+// Initialiser les services en arrière-plan (ne bloque pas le démarrage)
+startServer().catch((err) => {
+  logger.logError(err, { context: 'background initialization' });
+  // Ne pas faire planter l'application si l'initialisation échoue
 });
 
 module.exports = app;
