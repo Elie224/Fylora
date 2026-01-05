@@ -56,3 +56,9 @@ mobile-app/ios/Pods/
 mobile-app/ios/.symlinks/
 mobile-app/ios/Flutter/Flutter.framework
 mobile-app/ios/Flutter/Flutter.podspec
+
+# Fichiers avec secrets (ne jamais commiter)
+VARIABLES_RENDER_STRIPE_LOCAL.txt
+*_LOCAL.txt
+*_SECRETS.txt
+*_KEYS.txt
