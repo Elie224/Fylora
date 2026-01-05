@@ -14,7 +14,14 @@ export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     // Récupérer le thème depuis localStorage ou utiliser 'light' par défaut
     const savedTheme = localStorage.getItem('theme');
-    return savedTheme || 'light';
+    const initialTheme = savedTheme || 'light';
+    
+    // Appliquer immédiatement le thème au document (avant le premier rendu)
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', initialTheme);
+    }
+    
+    return initialTheme;
   });
 
   useEffect(() => {
