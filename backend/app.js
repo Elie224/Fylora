@@ -151,16 +151,26 @@ app.use(helmet({
         "'self'", 
         "https://accounts.google.com", 
         "https://apis.google.com",
-        // Autoriser les scripts inline générés par Vite (HMR, etc.)
-        process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : "'unsafe-eval'"
-      ].filter(Boolean), // Retirer les valeurs undefined
+        // Stripe Checkout
+        "https://js.stripe.com",
+        // PayPal SDK
+        "https://www.paypal.com",
+        "https://www.paypalobjects.com",
+        // Autoriser les scripts inline générés par Vite (HMR, etc.) uniquement en développement
+        process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : null
+      ].filter(Boolean), // Retirer les valeurs null/undefined
       imgSrc: ["'self'", "data:", "https:", "https://accounts.google.com", "https://lh3.googleusercontent.com"],
       connectSrc: [
         "'self'",
         "https://accounts.google.com",
         "https://www.googleapis.com",
         "https://api.github.com",
-        "https://github.com"
+        "https://github.com",
+        // Stripe API
+        "https://api.stripe.com",
+        // PayPal API
+        "https://api.sandbox.paypal.com",
+        "https://api.paypal.com"
       ],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
@@ -168,7 +178,13 @@ app.use(helmet({
       frameSrc: [
         "'self'",
         "https://accounts.google.com",
-        "https://github.com"
+        "https://github.com",
+        // Stripe Checkout
+        "https://js.stripe.com",
+        "https://hooks.stripe.com",
+        // PayPal
+        "https://www.paypal.com",
+        "https://www.sandbox.paypal.com"
       ],
       frameAncestors: ["'self'"],
     },
