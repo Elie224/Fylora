@@ -32,22 +32,20 @@ export default function Home() {
   const isLastSlide = currentSlide === totalSlides - 1;
   const currentSlideData = slidesData[currentSlide];
 
-  // Couleurs améliorées pour le thème clair
-  const bgColor = theme === 'dark' ? '#0a0a0a' : '#fafbfc';
-  const textColor = theme === 'dark' ? '#ffffff' : '#1a202c';
-  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
-  const cardBg = theme === 'dark' ? '#1a1a1a' : '#ffffff';
-  const borderColor = theme === 'dark' ? '#2d2d2d' : '#e2e8f0';
-  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
-  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f0f4f8';
-  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
-  const shadowHover = theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.12)';
-  const shadowCard = theme === 'dark' 
-    ? '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)' 
-    : '0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)';
+  // Thème sombre uniquement
+  const bgColor = '#0a0a0a';
+  const textColor = '#ffffff';
+  const textSecondary = '#b0b0b0';
+  const cardBg = '#1a1a1a';
+  const borderColor = '#2d2d2d';
+  const secondaryBg = '#2d2d2d';
+  const hoverBg = '#2d2d2d';
+  const shadowColor = 'rgba(0, 0, 0, 0.5)';
+  const shadowHover = 'rgba(0, 0, 0, 0.6)';
+  const shadowCard = '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)';
   const primaryColor = '#2196F3';
-  const gradientStart = theme === 'dark' ? '#2196F3' : '#1976D2';
-  const gradientEnd = theme === 'dark' ? '#64b5f6' : '#42a5f5';
+  const gradientStart = '#2196F3';
+  const gradientEnd = '#64b5f6';
 
   const handleNext = () => {
     if (isLastSlide) {
@@ -126,12 +124,10 @@ export default function Home() {
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: '16px',
-        backgroundColor: theme === 'dark' ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.98)',
+        backgroundColor: 'rgba(26, 26, 26, 0.95)',
         backdropFilter: 'blur(24px) saturate(180%)',
-        borderBottom: theme === 'dark' ? `1px solid ${borderColor}` : `1px solid rgba(226, 232, 240, 0.8)`,
-        boxShadow: theme === 'dark' 
-          ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' 
-          : '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
+        borderBottom: `1px solid ${borderColor}`,
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
         position: 'sticky',
         top: 0,
         zIndex: 1000,
@@ -163,8 +159,8 @@ export default function Home() {
             style={{
               padding: '10px 16px',
               borderRadius: '10px',
-              border: theme === 'dark' ? `1.5px solid ${borderColor}` : `1.5px solid #e2e8f0`,
-              backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+              border: `1.5px solid ${borderColor}`,
+              backgroundColor: '#1e1e1e',
               color: textColor,
               fontSize: '14px',
               fontWeight: '600',
@@ -172,18 +168,16 @@ export default function Home() {
               outline: 'none',
               transition: 'all 0.2s ease',
               minWidth: '130px',
-              boxShadow: theme === 'dark' ? 'none' : '0 1px 3px rgba(0,0,0,0.08)'
+              boxShadow: 'none'
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = primaryColor;
-              e.target.style.boxShadow = theme === 'dark' 
-                ? `0 0 0 3px ${primaryColor}20` 
-                : `0 2px 8px rgba(33, 150, 243, 0.15)`;
+              e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
               e.target.style.transform = 'translateY(-1px)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = theme === 'dark' ? borderColor : '#e2e8f0';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 1px 3px rgba(0,0,0,0.08)';
+              e.target.style.borderColor = borderColor;
+              e.target.style.boxShadow = 'none';
               e.target.style.transform = 'translateY(0)';
             }}
           >
@@ -200,27 +194,27 @@ export default function Home() {
             onClick={handleSkip}
             style={{
               padding: '8px 20px',
-              backgroundColor: theme === 'dark' ? 'transparent' : primaryColor,
-              color: theme === 'dark' ? primaryColor : '#ffffff',
+              backgroundColor: 'transparent',
+              color: primaryColor,
               border: `1.5px solid ${primaryColor}`,
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
               transition: 'all 0.2s',
-              boxShadow: theme === 'dark' ? 'none' : '0 2px 8px rgba(33, 150, 243, 0.25)'
+              boxShadow: 'none'
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = theme === 'dark' ? `${primaryColor}15` : '#1976D2';
-              e.target.style.borderColor = theme === 'dark' ? primaryColor : '#1976D2';
+              e.target.style.backgroundColor = `${primaryColor}15`;
+              e.target.style.borderColor = primaryColor;
               e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 4px 12px rgba(33, 150, 243, 0.35)';
+              e.target.style.boxShadow = 'none';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = theme === 'dark' ? 'transparent' : primaryColor;
+              e.target.style.backgroundColor = 'transparent';
               e.target.style.borderColor = primaryColor;
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 2px 8px rgba(33, 150, 243, 0.25)';
+              e.target.style.boxShadow = 'none';
             }}
           >
             {t('nav.skip')}
@@ -230,27 +224,27 @@ export default function Home() {
             onClick={() => navigate('/login')}
             style={{
               padding: '8px 20px',
-              backgroundColor: theme === 'dark' ? 'transparent' : primaryColor,
-              color: theme === 'dark' ? primaryColor : '#ffffff',
+              backgroundColor: 'transparent',
+              color: primaryColor,
               border: `1.5px solid ${primaryColor}`,
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
               transition: 'all 0.2s',
-              boxShadow: theme === 'dark' ? 'none' : '0 2px 8px rgba(33, 150, 243, 0.25)'
+              boxShadow: 'none'
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = theme === 'dark' ? `${primaryColor}15` : '#1976D2';
-              e.target.style.borderColor = theme === 'dark' ? primaryColor : '#1976D2';
+              e.target.style.backgroundColor = `${primaryColor}15`;
+              e.target.style.borderColor = primaryColor;
               e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 4px 12px rgba(33, 150, 243, 0.35)';
+              e.target.style.boxShadow = 'none';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = theme === 'dark' ? 'transparent' : primaryColor;
+              e.target.style.backgroundColor = 'transparent';
               e.target.style.borderColor = primaryColor;
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = theme === 'dark' ? 'none' : '0 2px 8px rgba(33, 150, 243, 0.25)';
+              e.target.style.boxShadow = 'none';
             }}
           >
             {t('nav.login')}
