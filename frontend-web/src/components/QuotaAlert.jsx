@@ -25,17 +25,17 @@ export default function QuotaAlert({ quota }) {
   
   if (percentage >= 95) {
     alertLevel = 'error';
-    const msg = t('quotaAlertCritical') || `Stockage critique ! Vous avez utilisé {percentage}% de votre espace. Mettez à niveau maintenant pour éviter d'être bloqué.`;
+    const msg = t('quotaAlertCritical', { percentage: percentage.toFixed(1) }) || `Stockage critique ! Vous avez utilisé ${percentage.toFixed(1)}% de votre espace. Mettez à niveau maintenant pour éviter d'être bloqué.`;
     message = msg.replace('{percentage}', percentage.toFixed(1));
     icon = '🚨';
   } else if (percentage >= 90) {
     alertLevel = 'warning';
-    const msg = t('quotaAlertHigh') || `Attention ! Votre stockage atteint {percentage}%. Pensez à mettre à niveau votre plan.`;
+    const msg = t('quotaAlertHigh', { percentage: percentage.toFixed(1) }) || `Attention ! Votre stockage atteint ${percentage.toFixed(1)}%. Pensez à mettre à niveau votre plan.`;
     message = msg.replace('{percentage}', percentage.toFixed(1));
     icon = '⚠️';
   } else if (percentage >= 80) {
     alertLevel = 'info';
-    const msg = t('quotaAlertMedium') || `Votre stockage atteint {percentage}%. Vous pouvez mettre à niveau votre plan pour plus d'espace.`;
+    const msg = t('quotaAlertMedium', { percentage: percentage.toFixed(1) }) || `Votre stockage atteint ${percentage.toFixed(1)}%. Vous pouvez mettre à niveau votre plan pour plus d'espace.`;
     message = msg.replace('{percentage}', percentage.toFixed(1));
     icon = 'ℹ️';
   }
