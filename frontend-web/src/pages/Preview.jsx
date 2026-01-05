@@ -274,23 +274,57 @@ export default function Preview() {
         <div style={{ fontSize: '48px' }}>⚠️</div>
         <h2 style={{ color: textColor, margin: 0 }}>{t('error')}</h2>
         <p style={{ color: textSecondary, maxWidth: '600px' }}>{error}</p>
-        <a 
-          href={`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/files/${id}/download`} 
-          download
+        <button
+          onClick={async () => {
+            try {
+              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+              const token = localStorage.getItem('access_token');
+              
+              if (!token) {
+                alert(t('mustBeConnected') || 'Vous devez être connecté');
+                return;
+              }
+              
+              const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              
+              if (!response.ok) {
+                const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur de téléchargement' } }));
+                throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
+              }
+              
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = file?.name || 'download';
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            } catch (err) {
+              console.error('Download failed:', err);
+              alert(err.message || t('downloadError') || 'Erreur de téléchargement');
+            }
+          }}
           style={{
             padding: '12px 24px',
             backgroundColor: '#2196F3',
             color: 'white',
-            textDecoration: 'none',
+            border: 'none',
             borderRadius: 8,
             fontWeight: '500',
+            cursor: 'pointer',
             transition: 'background-color 0.2s'
           }}
           onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
           onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
         >
           ⬇️ {t('downloadFile')}
-        </a>
+        </button>
       </div>
     );
   }
@@ -422,20 +456,54 @@ export default function Preview() {
         {previewType === 'download' && (
           <div style={{ padding: 48, textAlign: 'center' }}>
             <p>{t('cannotPreviewFileType')}</p>
-            <a
-              href={downloadUrl}
-              download
+            <button
+              onClick={async () => {
+                try {
+                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                  const token = localStorage.getItem('access_token');
+                  
+                  if (!token) {
+                    alert(t('mustBeConnected') || 'Vous devez être connecté');
+                    return;
+                  }
+                  
+                  const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                  
+                  if (!response.ok) {
+                    const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur de téléchargement' } }));
+                    throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
+                  }
+                  
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = file?.name || 'download';
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (err) {
+                  console.error('Download failed:', err);
+                  alert(err.message || t('downloadError') || 'Erreur de téléchargement');
+                }
+              }}
               style={{
                 padding: '12px 24px',
                 backgroundColor: '#2196F3',
                 color: 'white',
-                textDecoration: 'none',
+                border: 'none',
                 borderRadius: 4,
+                cursor: 'pointer',
                 display: 'inline-block',
               }}
             >
               {t('downloadFile')}
-            </a>
+            </button>
           </div>
         )}
       </div>
