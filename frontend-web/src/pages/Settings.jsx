@@ -10,7 +10,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { user, logout, setUser } = useAuthStore();
   const { t, setLanguage: setLang, language, supportedLanguages } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
