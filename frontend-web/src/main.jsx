@@ -283,15 +283,25 @@ console.log('🚀 Starting Fylora application...');
 console.log('React version:', React.version);
 console.log('Environment:', import.meta.env.MODE);
 
+// Fonction helper pour créer des messages d'erreur sans scripts inline
+function createErrorMessage(title, message) {
+  const div = document.createElement('div');
+  div.style.cssText = 'padding: 20px; text-align: center; font-family: Arial, sans-serif;';
+  div.innerHTML = `<h1>${title}</h1><p>${message}</p>`;
+  return div;
+}
+
 // Vérifier que React est chargé avant de rendre
 if (!React || !ReactDOM) {
   console.error('❌ React or ReactDOM is not loaded');
-  document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Erreur de chargement</h1><p>React n\'a pas pu être chargé. Vérifiez la console pour plus de détails.</p></div>';
+  const errorDiv = createErrorMessage('Erreur de chargement', 'React n\'a pas pu être chargé. Vérifiez la console pour plus de détails.');
+  document.body.appendChild(errorDiv);
 } else {
   const rootElement = document.getElementById('root');
   if (!rootElement) {
     console.error('❌ Root element not found');
-    document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Erreur de chargement</h1><p>L\'élément root n\'a pas été trouvé.</p></div>';
+    const errorDiv = createErrorMessage('Erreur de chargement', 'L\'élément root n\'a pas été trouvé.');
+    document.body.appendChild(errorDiv);
   } else {
     console.log('✅ Root element found, rendering app...');
     try {
@@ -305,14 +315,26 @@ if (!React || !ReactDOM) {
     } catch (error) {
       console.error('❌ Error rendering app:', error);
       console.error('Error stack:', error.stack);
-      rootElement.innerHTML = `
-        <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
-          <h1 style="color: #d32f2f;">Erreur de rendu</h1>
-          <p>Une erreur s'est produite lors du chargement de l'application.</p>
-          <pre style="text-align: left; background: #f5f5f5; padding: 15px; border-radius: 4px; overflow: auto; max-width: 800px; margin: 20px auto;">${error.toString()}\n\n${error.stack || ''}</pre>
-          <button onclick="window.location.reload()" style="margin-top: 20px; padding: 12px 24px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">Recharger la page</button>
-        </div>
+      
+      // Créer l'élément d'erreur sans utiliser innerHTML avec onclick
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'padding: 20px; text-align: center; font-family: Arial, sans-serif;';
+      errorDiv.innerHTML = `
+        <h1 style="color: #d32f2f;">Erreur de rendu</h1>
+        <p>Une erreur s'est produite lors du chargement de l'application.</p>
+        <pre style="text-align: left; background: #f5f5f5; padding: 15px; border-radius: 4px; overflow: auto; max-width: 800px; margin: 20px auto;">${error.toString()}\n\n${error.stack || ''}</pre>
       `;
+      
+      // Créer le bouton avec event listener au lieu d'onclick inline
+      const reloadButton = document.createElement('button');
+      reloadButton.textContent = 'Recharger la page';
+      reloadButton.style.cssText = 'margin-top: 20px; padding: 12px 24px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;';
+      reloadButton.addEventListener('click', () => {
+        window.location.reload();
+      });
+      
+      errorDiv.appendChild(reloadButton);
+      rootElement.appendChild(errorDiv);
     }
   }
 }

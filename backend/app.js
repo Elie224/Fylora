@@ -146,7 +146,14 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
-      scriptSrc: ["'self'", "https://accounts.google.com", "https://apis.google.com"],
+      // Autoriser les scripts inline uniquement pour Vite HMR en développement
+      scriptSrc: [
+        "'self'", 
+        "https://accounts.google.com", 
+        "https://apis.google.com",
+        // Autoriser les scripts inline générés par Vite (HMR, etc.)
+        process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : "'unsafe-eval'"
+      ].filter(Boolean), // Retirer les valeurs undefined
       imgSrc: ["'self'", "data:", "https:", "https://accounts.google.com", "https://lh3.googleusercontent.com"],
       connectSrc: [
         "'self'",
