@@ -146,10 +146,12 @@ export default function Pricing() {
     }
   };
 
-  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
-  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
-  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
-  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  // Thème sombre uniquement
+  const bgColor = '#121212';
+  const cardBg = '#1e1e1e';
+  const textColor = '#e0e0e0';
+  const textSecondary = '#b0b0b0';
+  const borderColor = '#333333';
   const primaryColor = '#2196F3';
   const successColor = '#4CAF50';
 
@@ -180,7 +182,7 @@ export default function Pricing() {
           </h1>
           <p style={{
             fontSize: '20px',
-            color: theme === 'dark' ? '#b0b0b0' : '#4a5568',
+            color: textSecondary,
             marginBottom: '32px'
           }}>
             {t('pricingDescription') || 'Choose the perfect plan for your needs'}
@@ -189,7 +191,7 @@ export default function Pricing() {
           {/* Billing Period Toggle */}
           <div style={{
             display: 'inline-flex',
-            backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f0f4f8',
+            backgroundColor: '#2d2d2d',
             borderRadius: '8px',
             padding: '4px',
             gap: '4px'
@@ -262,23 +264,17 @@ export default function Pricing() {
                   padding: '32px',
                   border: `2px solid ${isPopular ? primaryColor : borderColor}`,
                   position: 'relative',
-                  boxShadow: theme === 'dark' 
-                    ? '0 4px 6px rgba(0, 0, 0, 0.3)' 
-                    : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   transform: isPopular ? 'scale(1.05)' : 'scale(1)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'scale(1.02)';
-                  e.currentTarget.style.boxShadow = theme === 'dark'
-                    ? '0 8px 16px rgba(0, 0, 0, 0.4)'
-                    : '0 4px 16px rgba(0, 0, 0, 0.15)';
+                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = isPopular ? 'scale(1.05)' : 'scale(1)';
-                  e.currentTarget.style.boxShadow = theme === 'dark'
-                    ? '0 4px 6px rgba(0, 0, 0, 0.3)'
-                    : '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
                 }}
               >
                 {/* Popular Badge */}
@@ -321,7 +317,7 @@ export default function Pricing() {
                     {!isFree && (
                       <span style={{
                         fontSize: '20px',
-                        color: theme === 'dark' ? '#b0b0b0' : '#4a5568'
+                        color: textSecondary
                       }}>
                         /{billingPeriod === 'monthly' ? 'mo' : 'yr'}
                       </span>
@@ -362,7 +358,7 @@ export default function Pricing() {
                       return (
                         <li key={key} style={{
                           padding: '8px 0',
-                          color: theme === 'dark' ? '#b0b0b0' : '#4a5568',
+                          color: textSecondary,
                           fontSize: '14px',
                           display: 'flex',
                           alignItems: 'center',
@@ -397,14 +393,12 @@ export default function Pricing() {
                     borderRadius: '8px',
                     border: 'none',
                     backgroundColor: isCurrentPlan
-                      ? (theme === 'dark' ? '#2d2d2d' : '#e0e0e0')
+                      ? '#2d2d2d'
                       : isPopular
                       ? primaryColor
-                      : theme === 'dark'
-                      ? '#2d2d2d'
-                      : '#f0f4f8',
+                      : '#2d2d2d',
                     color: isCurrentPlan
-                      ? (theme === 'dark' ? '#666' : '#999')
+                      ? '#666'
                       : isPopular
                       ? 'white'
                       : textColor,
@@ -489,16 +483,14 @@ export default function Pricing() {
                 key={index}
                 style={{
                   padding: '20px',
-                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f7fafc',
+                  backgroundColor: '#2d2d2d',
                   borderRadius: '12px',
                   border: `1px solid ${borderColor}`,
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = primaryColor;
-                  e.currentTarget.style.boxShadow = theme === 'dark'
-                    ? '0 4px 12px rgba(33, 150, 243, 0.2)'
-                    : '0 4px 12px rgba(33, 150, 243, 0.1)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(33, 150, 243, 0.2)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = borderColor;
