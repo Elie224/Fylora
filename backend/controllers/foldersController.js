@@ -127,6 +127,33 @@ async function deleteFolder(req, res, next) {
     const { invalidateUserCache } = require('../utils/cache');
     invalidateUserCache(userId);
     
+    // Invalider le cache de la liste des fichiers pour cet utilisateur
+    // Récupérer le cache depuis filesController
+    try {
+      const filesController = require('./filesController');
+      const filesListCache = filesController.filesListCache;
+      const rootFolderCache = filesController.rootFolderCache;
+      
+      if (filesListCache) {
+        // Supprimer toutes les clés de cache qui commencent par "files_"
+        const cacheKeysToDelete = [];
+        for (const [key] of filesListCache.entries()) {
+          if (key.startsWith(`files_${userId}_`)) {
+            cacheKeysToDelete.push(key);
+          }
+        }
+        cacheKeysToDelete.forEach(key => filesListCache.delete(key));
+      }
+      
+      // Invalider le cache du root folder
+      if (rootFolderCache) {
+        rootFolderCache.delete(`root_${userId}`);
+      }
+    } catch (cacheErr) {
+      // Ignorer les erreurs de cache (non critique)
+      console.warn('Could not invalidate file cache:', cacheErr.message);
+    }
+    
     res.status(200).json({ message: 'Folder deleted' });
   } catch (err) {
     next(err);

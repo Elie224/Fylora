@@ -439,14 +439,18 @@ async function uploadFile(req, res, next) {
         await fs.unlink(req.file.path).catch(() => {});
         return res.status(400).json({ error: { message: 'Uploaded file is empty' } });
       }
-      // Vérifier que la taille correspond
-      if (stats.size !== req.file.size) {
+      // Vérifier que la taille correspond (après compression pour les images)
+      // Pour les images compressées, fileSize a déjà été mis à jour avec la taille compressée
+      if (stats.size !== fileSize) {
         logger.logWarn('File size mismatch', { 
-          expected: req.file.size, 
+          expected: fileSize, 
           actual: stats.size, 
           filePath: req.file.path, 
-          userId 
+          userId,
+          isImage: isImage
         });
+        // Utiliser la taille réelle du fichier sur disque
+        fileSize = stats.size;
       }
     } catch (accessErr) {
       logger.logError('Uploaded file not accessible', { 
@@ -1103,6 +1107,19 @@ async function deleteFile(req, res, next) {
     const { invalidateUserCache } = require('../utils/cache');
     invalidateUserCache(userId);
     
+    // Invalider le cache de la liste des fichiers pour cet utilisateur
+    // Supprimer toutes les clés de cache qui commencent par "files_"
+    const cacheKeysToDelete = [];
+    for (const [key] of filesListCache.entries()) {
+      if (key.startsWith(`files_${userId}_`)) {
+        cacheKeysToDelete.push(key);
+      }
+    }
+    cacheKeysToDelete.forEach(key => filesListCache.delete(key));
+    
+    // Invalider le cache smartCache pour ce fichier
+    smartCache.invalidateFile(id, userId).catch(() => {});
+    
     res.status(200).json({ message: 'File deleted' });
   } catch (err) {
     console.error('Error deleting file:', err);
@@ -1248,5 +1265,8 @@ module.exports = {
   restoreFile,
   permanentDeleteFile,
   listTrash,
+  // Exporter les caches pour invalidation depuis d'autres contrôleurs
+  filesListCache,
+  rootFolderCache,
 };
 

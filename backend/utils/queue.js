@@ -157,11 +157,29 @@ class QueueManager {
     if (this.useRedis && this.Bull) {
       // Utiliser REDIS_URL si disponible, sinon utiliser les variables individuelles
       const redisConfig = process.env.REDIS_URL 
-        ? { url: process.env.REDIS_URL }
+        ? { 
+            url: process.env.REDIS_URL,
+            maxRetriesPerRequest: 3, // Réduire les tentatives pour éviter les erreurs
+            retryStrategy: (times) => {
+              if (times > 3) {
+                return null; // Arrêter après 3 tentatives
+              }
+              return Math.min(times * 50, 500);
+            },
+            connectTimeout: 5000,
+          }
         : {
             host: process.env.REDIS_HOST || 'localhost',
             port: process.env.REDIS_PORT || 6379,
             password: process.env.REDIS_PASSWORD,
+            maxRetriesPerRequest: 3,
+            retryStrategy: (times) => {
+              if (times > 3) {
+                return null;
+              }
+              return Math.min(times * 50, 500);
+            },
+            connectTimeout: 5000,
           };
       
       queue = new this.Bull(name, {

@@ -90,7 +90,12 @@ export default function Files() {
       // Si pas de folderId dans l'URL, réinitialiser le dossier courant
       setCurrentFolder(null);
     }
-  }, [searchParams, currentFolder?.id]);
+  }, [searchParams, currentFolder?.id, t]);
+  
+  // Recharger les fichiers quand le dossier courant change
+  useEffect(() => {
+    loadFiles(true);
+  }, [currentFolder?.id, loadFiles]);
 
   const loadTags = useCallback(async () => {
     try {
@@ -431,15 +436,22 @@ export default function Files() {
       console.log('✅ Deletion successful!');
       
       // Mise à jour optimiste : supprimer l'élément de la liste immédiatement
-      setItems(prevItems => prevItems.filter(item => {
-        const itemIdToCheck = item.id || item._id;
-        return itemIdToCheck !== itemId;
-      }));
+      setItems(prevItems => {
+        const filtered = prevItems.filter(item => {
+          const itemIdToCheck = item.id || item._id;
+          return itemIdToCheck !== itemId;
+        });
+        return filtered;
+      });
       
       // Recharger la liste après suppression (forcer le rechargement sans cache)
-      await loadFiles(true);
+      // Utiliser setTimeout pour s'assurer que l'état est mis à jour
+      setTimeout(async () => {
+        await loadFiles(true);
+      }, 100);
       
-      alert(`✅ "${itemName}" ${t('deletedSuccessfully')}`);
+      // Ne pas afficher d'alert pour une meilleure UX - la suppression est visible immédiatement
+      // alert(`✅ "${itemName}" ${t('deletedSuccessfully')}`);
     } catch (err) {
       console.error('❌ Deletion error:', err);
       console.error('Error details:', {
@@ -579,18 +591,38 @@ export default function Files() {
   };
 
   const openFolder = (folder) => {
+    if (!folder || !folder.id) {
+      console.error('Invalid folder:', folder);
+      return;
+    }
+    
+    // Mettre à jour l'URL pour permettre le partage et le rafraîchissement
+    navigate(`/files?folder=${folder.id}`, { replace: false });
+    
+    // Mettre à jour l'état local
     if (currentFolder) {
       setFolderHistory([...folderHistory, currentFolder]);
     }
     setCurrentFolder(folder);
+    
+    // Recharger les fichiers du nouveau dossier
+    // Le useEffect se chargera de recharger via searchParams
   };
 
   const goBack = () => {
     if (folderHistory.length > 0) {
       const previousFolder = folderHistory[folderHistory.length - 1];
       setFolderHistory(folderHistory.slice(0, -1));
+      // Mettre à jour l'URL
+      if (previousFolder?.id) {
+        navigate(`/files?folder=${previousFolder.id}`, { replace: false });
+      } else {
+        navigate('/files', { replace: false });
+      }
       setCurrentFolder(previousFolder);
     } else {
+      // Retour à la racine
+      navigate('/files', { replace: false });
       setCurrentFolder(null);
       setFolderHistory([]);
     }
