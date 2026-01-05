@@ -1,3 +1,4 @@
+// CRITIQUE: React doit être importé en premier pour que Zustand fonctionne
 import React, { useEffect, lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';

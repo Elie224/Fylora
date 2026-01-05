@@ -39,7 +39,14 @@ export default defineConfig({
         manualChunks: (id) => {
           // Séparer les vendors par taille et fréquence d'utilisation
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+            // CRITIQUE: React et Zustand doivent être dans le même chunk pour éviter les erreurs de chargement
+            if (
+              id.includes('react') || 
+              id.includes('react-dom') || 
+              id.includes('react/jsx-runtime') ||
+              id.includes('zustand') ||
+              id.includes('use-sync-external-store')
+            ) {
               return 'vendor-react';
             }
             if (id.includes('react-router')) {
@@ -82,11 +89,23 @@ export default defineConfig({
   },
   // Optimisations de développement
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'react/jsx-runtime'],
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom', 
+      'react/jsx-runtime',
+      'zustand',
+      'use-sync-external-store/shim/index.js'
+    ],
     force: true, // Forcer la pré-optimisation
   },
   // S'assurer que les dépendances sont correctement résolues
   resolve: {
     dedupe: ['react', 'react-dom'],
+    alias: {
+      // S'assurer que React est toujours résolu correctement
+      'react': 'react',
+      'react-dom': 'react-dom',
+    },
   },
 });
