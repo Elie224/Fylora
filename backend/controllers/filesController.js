@@ -744,14 +744,35 @@ async function downloadFile(req, res, next) {
     }
     
     if (!hasAccess) {
+      logger.logWarn('Download access denied', {
+        fileId: id,
+        userId: userId,
+        fileOwnerId: file.owner_id?.toString ? file.owner_id.toString() : file.owner_id,
+        hasToken: !!token
+      });
       return res.status(403).json({ error: { message: 'Access denied' } });
     }
 
     // Vérifier que le fichier existe physiquement
+    // Si le fichier n'existe pas, retourner 404 mais permettre le téléchargement si c'est un fichier orphelin
+    let fileExists = false;
     try {
       await fs.access(file.file_path);
-    } catch {
-      return res.status(404).json({ error: { message: 'File not found on disk' } });
+      fileExists = true;
+    } catch (accessErr) {
+      // Fichier orphelin - log mais permettre quand même le téléchargement si l'utilisateur a accès
+      logger.logWarn('File not found on disk (orphan file)', {
+        fileId: id,
+        fileName: file.name,
+        filePath: file.file_path,
+        userId: userId,
+        error: accessErr.message
+      });
+      // Ne pas bloquer - le fichier pourrait être restauré ou ré-uploadé
+      // Retourner 404 seulement si c'est vraiment un problème
+      if (!file.file_path) {
+        return res.status(404).json({ error: { message: 'File path not found' } });
+      }
     }
 
     res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
