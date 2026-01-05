@@ -418,7 +418,19 @@ const translations = {
     cannotLoadImage: 'Impossible de charger l\'image',
     cannotLoadPDF: 'Impossible de charger le PDF',
     accessDenied: 'Accès refusé. Vous n\'avez pas les permissions nécessaires.',
-    folderNotFound: 'Dossier non trouvé.'
+    folderNotFound: 'Dossier non trouvé.',
+    
+    // Pricing page
+    pricing: 'Tarification',
+    pricingDescription: 'Choisissez le plan parfait pour vos besoins',
+    monthly: 'Mensuel',
+    yearly: 'Annuel',
+    storage: 'stockage',
+    currentPlan: 'Plan actuel',
+    upgrade: 'Mettre à niveau',
+    mostPopular: 'LE PLUS POPULAIRE',
+    faq: 'Questions fréquemment posées',
+    getStarted: 'Commencer'
   },
   en: {
     // Navigation
@@ -847,7 +859,19 @@ const translations = {
     cannotLoadImage: 'Cannot load image',
     cannotLoadPDF: 'Cannot load PDF',
     accessDenied: 'Access denied. You do not have the necessary permissions.',
-    folderNotFound: 'Folder not found.'
+    folderNotFound: 'Folder not found.',
+    
+    // Pricing page
+    pricing: 'Pricing',
+    pricingDescription: 'Choose the perfect plan for your needs',
+    monthly: 'Monthly',
+    yearly: 'Yearly',
+    storage: 'storage',
+    currentPlan: 'Current Plan',
+    upgrade: 'Upgrade',
+    mostPopular: 'MOST POPULAR',
+    faq: 'Frequently Asked Questions',
+    getStarted: 'Get Started'
   }
 };
 
