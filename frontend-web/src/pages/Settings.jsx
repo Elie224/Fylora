@@ -620,12 +620,109 @@ export default function Settings() {
         </div>
       </section>
 
+      {/* Suppression définitive du compte */}
+      <section style={{ 
+        marginBottom: 32, 
+        padding: 24, 
+        backgroundColor: cardBg, 
+        borderRadius: 12, 
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+        border: `2px solid #d32f2f`
+      }}>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: '#f44336' }}>🗑️ {t('deleteAccount') || 'Supprimer mon compte'}</h2>
+        <p style={{ 
+          marginBottom: 20, 
+          color: textSecondary, 
+          lineHeight: '1.6',
+          fontSize: '14px'
+        }}>
+          {t('deleteAccountWarning') || 'Cette action est irréversible. Toutes vos données (fichiers, dossiers, partages, etc.) seront définitivement supprimées.'}
+        </p>
+        <button
+          onClick={async () => {
+            const confirmText = t('deleteAccountConfirm') || 'SUPPRIMER';
+            const userInput = prompt(
+              t('deleteAccountPrompt') || 
+              `⚠️ ATTENTION : Cette action est définitive et irréversible.\n\nTapez "${confirmText}" pour confirmer la suppression de votre compte :`
+            );
+            
+            if (userInput === confirmText) {
+              const finalConfirm = window.confirm(
+                t('deleteAccountFinalConfirm') || 
+                'Êtes-vous ABSOLUMENT certain(e) de vouloir supprimer définitivement votre compte ? Cette action ne peut pas être annulée.'
+              );
+              
+              if (finalConfirm) {
+                try {
+                  setSaving(true);
+                  const token = localStorage.getItem('access_token');
+                  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                  const response = await fetch(`${API_URL}/api/auth/account`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+
+                  if (response.ok) {
+                    alert(t('deleteAccountSuccess') || 'Votre compte a été supprimé avec succès.');
+                    // Déconnexion et redirection
+                    logout();
+                    navigate('/');
+                    window.location.reload();
+                  } else {
+                    const error = await response.json();
+                    alert(error.error?.message || t('deleteAccountError') || 'Erreur lors de la suppression du compte.');
+                  }
+                } catch (error) {
+                  console.error('Error deleting account:', error);
+                  alert(t('deleteAccountError') || 'Erreur lors de la suppression du compte.');
+                } finally {
+                  setSaving(false);
+                }
+              }
+            } else if (userInput !== null) {
+              alert(t('deleteAccountCancelled') || 'Suppression annulée. Le texte saisi ne correspond pas.');
+            }
+          }}
+          disabled={saving}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#d32f2f',
+            color: 'white',
+            border: 'none',
+            borderRadius: 8,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            fontSize: '1em',
+            fontWeight: 'bold',
+            opacity: saving ? 0.6 : 1,
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 8px rgba(211, 47, 47, 0.3)'
+          }}
+          onMouseEnter={(e) => {
+            if (!saving) {
+              e.target.style.backgroundColor = '#b71c1c';
+              e.target.style.boxShadow = '0 4px 12px rgba(211, 47, 47, 0.4)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!saving) {
+              e.target.style.backgroundColor = '#d32f2f';
+              e.target.style.boxShadow = '0 2px 8px rgba(211, 47, 47, 0.3)';
+            }
+          }}
+        >
+          {saving ? (t('deleting') || 'Suppression...') : (t('deleteAccountButton') || 'Supprimer définitivement mon compte')}
+        </button>
+      </section>
+
       {/* Déconnexion */}
       <section style={{ 
         padding: 24, 
-        backgroundColor: theme === 'dark' ? '#2d1f0f' : '#fff3e0', 
+        backgroundColor: cardBg, 
         borderRadius: 12, 
-        boxShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
         border: `1px solid ${borderColor}`
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🚪 {t('logout')}</h2>
@@ -633,7 +730,7 @@ export default function Settings() {
           {t('youCanLogoutAnytime')}
         </p>
         <button
-          onClick={logout}
+          onClick={handleLogout}
           style={{
             padding: '12px 24px',
             backgroundColor: '#f44336',
