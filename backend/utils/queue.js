@@ -110,6 +110,7 @@ class QueueManager {
     this.queues = new Map();
     this.useRedis = false;
     this.Bull = null;
+    this.redisErrorLogged = false; // Flag pour éviter le spam de logs
     // Initialisation synchrone immédiate
     this._initSync();
     // Initialisation asynchrone en arrière-plan
@@ -202,21 +203,29 @@ class QueueManager {
           // Les erreurs Redis ne doivent pas faire planter l'application
           if (error.message && (error.message.includes('ECONNREFUSED') || 
                                 error.message.includes('Connection') ||
+                                error.message.includes('Connection is closed') ||
                                 error.message.includes('127.0.0.1'))) {
             // Basculer vers memory queue si Redis n'est pas disponible
-            console.warn(`Redis unavailable for queue ${name}, using memory queue instead`);
+            // Ne logger qu'une seule fois pour éviter le spam
+            if (!this.redisErrorLogged) {
+              console.warn(`Redis unavailable for queue ${name}, using memory queue instead`);
+              this.redisErrorLogged = true;
+            }
             this.useRedis = false;
             // Remplacer la queue par une memory queue
             try {
               const memoryQueue = new MemoryQueue(name);
               this.queues.set(name, memoryQueue);
             } catch (err) {
-              console.error(`Failed to create memory queue for ${name}:`, err.message);
+              // Ignorer silencieusement
             }
             return;
           }
           // Logger les autres erreurs mais ne pas faire planter
-          console.warn(`Redis queue error for ${name}:`, error.message);
+          if (!this.redisErrorLogged) {
+            console.warn(`Redis queue error for ${name}:`, error.message);
+            this.redisErrorLogged = true;
+          }
         });
         
         // Gérer les erreurs de connexion au démarrage

@@ -657,9 +657,19 @@ async function downloadFile(req, res, next) {
     const { id } = req.params;
     const { token, password } = req.query;
 
-    const file = await FileModel.findById(id);
+    // Utiliser mongoose directement pour avoir accès à tous les champs, y compris is_deleted
+    const mongoose = require('mongoose');
+    const File = mongoose.models.File || mongoose.model('File');
+    const file = await File.findById(id).lean();
+    
     if (!file) {
       return res.status(404).json({ error: { message: 'File not found' } });
+    }
+
+    // Vérifier que le fichier n'est pas supprimé
+    if (file.is_deleted) {
+      logger.logInfo('Attempt to download deleted file', { fileId: id, userId });
+      return res.status(404).json({ error: { message: 'File has been deleted' } });
     }
 
     // Vérifier la propriété ou le partage public
