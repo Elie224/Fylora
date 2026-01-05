@@ -37,7 +37,18 @@
 4. **Cliquez sur "Ajouter le produit"**
    - ✅ Le produit est créé
    - 📋 **IMPORTANT:** Copiez le **Price ID** (commence par `price_...`)
-   - Notez-le quelque part: `STRIPE_PRICE_PLUS_MONTHLY = price_xxxxxxxxxxxxx`
+   
+   **OÙ TROUVER LE PRICE ID:**
+   - Après création, vous serez sur la page du produit
+   - Cherchez la section **"Tarifs"** ou **"Pricing"**
+   - Le Price ID est affiché là (commence par `price_...`)
+   - Cliquez dessus ou utilisez l'icône de copie
+   - Notez-le: `STRIPE_PRICE_PLUS_MONTHLY = price_xxxxxxxxxxxxx`
+   
+   **Si vous ne le voyez pas:**
+   - Allez dans "Catalogue de produits" (menu de gauche)
+   - Cliquez sur votre produit
+   - Le Price ID est dans la section "Tarifs"
 
 ---
 
