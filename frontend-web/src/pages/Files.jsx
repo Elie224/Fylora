@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fileService, folderService, shareService, userService } from '../services/api';
 import { tagsService } from '../services/tagsService';
@@ -200,12 +200,18 @@ export default function Files() {
 
   // Charger les fichiers et tags au montage
   useEffect(() => {
+    loadFiles();
     loadTags();
-  }, [loadTags]);
+  }, [loadFiles, loadTags]);
   
-  // Recharger les fichiers quand le dossier change
+  // Recharger les fichiers quand le dossier change (séparé pour éviter les conflits)
+  const prevFolderIdRef = useRef(currentFolder?.id);
   useEffect(() => {
-    loadFiles(true);
+    // Ne recharger que si le dossier a vraiment changé
+    if (prevFolderIdRef.current !== currentFolder?.id) {
+      prevFolderIdRef.current = currentFolder?.id;
+      loadFiles(true);
+    }
   }, [currentFolder?.id, loadFiles]);
 
   const handleFileSelect = (e) => {
