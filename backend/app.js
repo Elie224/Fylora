@@ -146,7 +146,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
-      // Autoriser les scripts inline uniquement pour Vite HMR en développement
+      // Autoriser les scripts inline pour les extensions de navigateur (Google Translate, etc.)
+      // et pour Vite HMR en développement
       scriptSrc: [
         "'self'", 
         "https://accounts.google.com", 
@@ -156,9 +157,10 @@ app.use(helmet({
         // PayPal SDK
         "https://www.paypal.com",
         "https://www.paypalobjects.com",
-        // Autoriser les scripts inline générés par Vite (HMR, etc.) uniquement en développement
-        process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : null
-      ].filter(Boolean), // Retirer les valeurs null/undefined
+        // Autoriser les scripts inline pour les extensions de navigateur
+        // Note: En production, cela permet aussi aux extensions comme Google Translate de fonctionner
+        "'unsafe-inline'"
+      ],
       imgSrc: ["'self'", "data:", "https:", "https://accounts.google.com", "https://lh3.googleusercontent.com"],
       connectSrc: [
         "'self'",
