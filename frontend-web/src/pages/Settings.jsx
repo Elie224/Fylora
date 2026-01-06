@@ -5,6 +5,8 @@ import { userService, dashboardService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import QuotaAlert from '../components/QuotaAlert';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Toast';
 
 export default function Settings() {
   const navigate = useNavigate();

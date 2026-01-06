@@ -1,91 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 /**
  * Composant Toast pour afficher des notifications
+ * Remplace les alert() et prompt() natifs
  */
-export const Toast = ({ message, type = 'info', duration = 3000, onClose }) => {
-  const { theme } = useTheme();
-  const [isVisible, setIsVisible] = useState(true);
+const Toast = ({ message, type = 'info', duration = 3000, onClose }) => {
+  const { t } = useLanguage();
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(() => onClose?.(), 300); // Attendre l'animation de sortie
-    }, duration);
-
-    return () => clearTimeout(timer);
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => onClose?.(), 300); // Attendre l'animation
+      }, duration);
+      return () => clearTimeout(timer);
+    }
   }, [duration, onClose]);
 
-  const bgColor = {
-    success: theme === 'dark' ? '#2d5016' : '#d4edda',
-    error: theme === 'dark' ? '#5a1a1a' : '#f8d7da',
-    warning: theme === 'dark' ? '#5a4a1a' : '#fff3cd',
-    info: theme === 'dark' ? '#1a3a5a' : '#d1ecf1',
-  }[type] || (theme === 'dark' ? '#2d2d2d' : '#ffffff');
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(() => onClose?.(), 300);
+  };
 
-  const textColor = {
-    success: theme === 'dark' ? '#81c784' : '#155724',
-    error: theme === 'dark' ? '#e57373' : '#721c24',
-    warning: theme === 'dark' ? '#ffb74d' : '#856404',
-    info: theme === 'dark' ? '#64b5f6' : '#0c5460',
-  }[type] || (theme === 'dark' ? '#e0e0e0' : '#1a202c');
+  const typeStyles = {
+    success: 'bg-green-500 text-white',
+    error: 'bg-red-500 text-white',
+    warning: 'bg-yellow-500 text-black',
+    info: 'bg-blue-500 text-white',
+  };
 
-  const icon = {
-    success: '✅',
-    error: '❌',
-    warning: '⚠️',
-    info: 'ℹ️',
-  }[type] || 'ℹ️';
+  if (!visible) return null;
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        backgroundColor: bgColor,
-        color: textColor,
-        padding: '14px 20px',
-        borderRadius: '8px',
-        boxShadow: theme === 'dark'
-          ? '0 4px 12px rgba(0, 0, 0, 0.4)'
-          : '0 4px 12px rgba(0, 0, 0, 0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        minWidth: '300px',
-        maxWidth: '500px',
-        zIndex: 10000,
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateX(0)' : 'translateX(400px)',
-        transition: 'all 0.3s ease-in-out',
-        border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-      }}
+      className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-4 min-w-[300px] max-w-[500px] transition-all duration-300 ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+      } ${typeStyles[type] || typeStyles.info}`}
     >
-      <span style={{ fontSize: '20px' }}>{icon}</span>
-      <span style={{ flex: 1, fontSize: '14px', fontWeight: '500' }}>{message}</span>
+      <div className="flex-1">{message}</div>
       <button
-        onClick={() => {
-          setIsVisible(false);
-          setTimeout(() => onClose?.(), 300);
-        }}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: textColor,
-          cursor: 'pointer',
-          fontSize: '18px',
-          padding: '0',
-          width: '24px',
-          height: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: 0.7,
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
-        onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.7; }}
+        onClick={handleClose}
+        className="text-current opacity-70 hover:opacity-100 transition-opacity"
+        aria-label={t('close')}
       >
         ×
       </button>
@@ -100,34 +58,87 @@ export const useToast = () => {
   const [toasts, setToasts] = useState([]);
 
   const showToast = (message, type = 'info', duration = 3000) => {
-    const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, message, type, duration }]);
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
     return id;
   };
 
   const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  const ToastContainer = () => {
-    if (toasts.length === 0) return null;
-    
-    return (
-      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000, display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'none' }}>
-        {toasts.map((toast, index) => (
-          <div key={toast.id} style={{ pointerEvents: 'auto', marginTop: index > 0 ? '12px' : '0' }}>
-            <Toast
-              message={toast.message}
-              type={toast.type}
-              duration={toast.duration}
-              onClose={() => removeToast(toast.id)}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const ToastContainer = () => (
+    <div className="fixed top-4 right-4 z-50 space-y-2">
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
+    </div>
+  );
 
   return { showToast, ToastContainer };
 };
 
+/**
+ * Fonction utilitaire pour afficher des confirmations
+ */
+export const useConfirm = () => {
+  const { t } = useLanguage();
+  const [confirmState, setConfirmState] = useState(null);
+
+  const confirm = (message, title = t('confirm')) => {
+    return new Promise((resolve) => {
+      setConfirmState({
+        message,
+        title,
+        resolve,
+      });
+    });
+  };
+
+  const ConfirmDialog = () => {
+    if (!confirmState) return null;
+
+    const handleConfirm = () => {
+      confirmState.resolve(true);
+      setConfirmState(null);
+    };
+
+    const handleCancel = () => {
+      confirmState.resolve(false);
+      setConfirmState(null);
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+          <h3 className="text-lg font-semibold mb-4">{confirmState.title}</h3>
+          <p className="mb-6">{confirmState.message}</p>
+          <div className="flex gap-4 justify-end">
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              onClick={handleConfirm}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              {t('confirm')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return { confirm, ConfirmDialog };
+};
+
+export default Toast;

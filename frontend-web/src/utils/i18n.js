@@ -496,6 +496,18 @@ const translations = {
     // Plan upgrade
     planUpgraded: 'Plan mis à niveau avec succès !',
     
+    // Toast & Notifications
+    close: 'Fermer',
+    confirm: 'Confirmer',
+    confirmAction: 'Confirmer l\'action',
+    cancel: 'Annuler',
+    success: 'Succès',
+    error: 'Erreur',
+    warning: 'Attention',
+    info: 'Information',
+    loading: 'Chargement...',
+    pleaseWait: 'Veuillez patienter...',
+    
     // Security Center
     securityCenter: 'Centre de sécurité',
     securityStatistics: 'Statistiques de sécurité',

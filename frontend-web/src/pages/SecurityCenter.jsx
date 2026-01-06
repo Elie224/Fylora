@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Toast';
 
 const SecurityCenter = () => {
   const { t } = useLanguage();
+  const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [loginHistory, setLoginHistory] = useState([]);
   const [activeSessions, setActiveSessions] = useState([]);
   const [securityStats, setSecurityStats] = useState(null);
@@ -35,32 +39,34 @@ const SecurityCenter = () => {
   };
 
   const handleRevokeSession = async (sessionId) => {
-    if (!confirm(t('confirmRevokeSession'))) {
+    const confirmed = await confirm(t('confirmRevokeSession'));
+    if (!confirmed) {
       return;
     }
 
     try {
       await api.delete(`/security/sessions/${sessionId}`);
       await loadData();
-      alert(t('sessionRevoked'));
+      showToast(t('sessionRevoked'), 'success');
     } catch (err) {
       console.error('Failed to revoke session:', err);
-      alert(err.response?.data?.error?.message || t('errorRevokingSession'));
+      showToast(err.response?.data?.error?.message || t('errorRevokingSession'), 'error');
     }
   };
 
   const handleRevokeAllOtherSessions = async () => {
-    if (!confirm(t('confirmRevokeAllSessions'))) {
+    const confirmed = await confirm(t('confirmRevokeAllSessions'));
+    if (!confirmed) {
       return;
     }
 
     try {
       await api.delete('/security/sessions');
       await loadData();
-      alert(t('allOtherSessionsRevoked'));
+      showToast(t('allOtherSessionsRevoked'), 'success');
     } catch (err) {
       console.error('Failed to revoke sessions:', err);
-      alert(err.response?.data?.error?.message || t('errorRevokingSessions'));
+      showToast(err.response?.data?.error?.message || t('errorRevokingSessions'), 'error');
     }
   };
 

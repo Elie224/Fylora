@@ -10,6 +10,8 @@ import { VirtualList } from '../components/VirtualList';
 import { prefetchManager } from '../utils/prefetch';
 import { registerShortcut, CommonShortcuts } from '../utils/keyboardShortcuts';
 import AdvancedFilters from '../components/AdvancedFilters';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Toast';
 
 export default function Files() {
   const navigate = useNavigate();
@@ -469,7 +471,7 @@ export default function Files() {
     const itemId = item.id || item._id;
     if (!itemId) {
       console.error('❌ Item has no id:', item);
-      alert(t('errorNoItemId'));
+      showToast(t('errorNoItemId'), 'error');
       return;
     }
     

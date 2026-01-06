@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useToast } from './components/Toast';
 import './styles.css';
 
 // Lazy loading des pages pour améliorer les performances
@@ -119,7 +120,8 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <LanguageProvider>
-          <BrowserRouter future={routerFutureConfig}>
+          <ToastProvider>
+            <BrowserRouter future={routerFutureConfig}>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
         {/* Page d'accueil - toujours accessible, redirige vers dashboard si connecté */}
