@@ -363,17 +363,35 @@ export default function Files() {
   const renameItem = async () => {
     if (!editName.trim() || !editingItem) return;
     try {
+      // Mise à jour optimiste : mettre à jour le nom immédiatement
+      const newName = editName.trim();
+      setItems(prevItems => 
+        prevItems.map(item => {
+          const itemId = item.id || item._id;
+          const editingId = editingItem.id || editingItem._id;
+          if (itemId === editingId) {
+            return { ...item, name: newName };
+          }
+          return item;
+        })
+      );
+      
       if (editingItem.type === 'folder') {
-        await folderService.rename(editingItem.id, editName.trim());
+        await folderService.rename(editingItem.id, newName);
       } else {
-        await fileService.rename(editingItem.id, editName.trim());
+        await fileService.rename(editingItem.id, newName);
       }
+      
       setEditingItem(null);
       setEditName('');
-      loadFiles();
+      
+      // Recharger immédiatement pour avoir les données complètes
+      await loadFiles(true);
     } catch (err) {
       console.error('Failed to rename:', err);
       alert(t('renameError'));
+      // Recharger en cas d'erreur pour récupérer l'état correct
+      await loadFiles(true);
     }
   };
 
@@ -459,11 +477,8 @@ export default function Files() {
         return filtered;
       });
       
-      // Recharger la liste après suppression (forcer le rechargement sans cache)
-      // Utiliser setTimeout pour s'assurer que l'état est mis à jour
-      setTimeout(async () => {
-        await loadFiles(true);
-      }, 100);
+      // Recharger la liste après suppression (forcer le rechargement sans cache) - IMMÉDIATEMENT
+      await loadFiles(true);
       
       // Ne pas afficher d'alert pour une meilleure UX - la suppression est visible immédiatement
       // alert(`✅ "${itemName}" ${t('deletedSuccessfully')}`);
@@ -620,10 +635,8 @@ export default function Files() {
     // Mettre à jour l'URL pour permettre le partage et le rafraîchissement
     navigate(`/files?folder=${folder.id}`, { replace: false });
     
-    // Recharger les fichiers immédiatement
-    setTimeout(() => {
-      loadFiles(true);
-    }, 0);
+    // Recharger les fichiers immédiatement - SANS setTimeout
+    loadFiles(true);
   };
 
   const goBack = () => {
@@ -682,20 +695,30 @@ export default function Files() {
     if (!itemToMove || selectedDestinationFolder === undefined) return;
     
     try {
+      // Mise à jour optimiste : supprimer l'élément de la liste immédiatement
+      const itemId = itemToMove.id || itemToMove._id;
+      setItems(prevItems => prevItems.filter(item => {
+        const itemIdToCheck = item.id || item._id;
+        return itemIdToCheck !== itemId;
+      }));
+      
       if (itemToMove.type === 'file') {
         await fileService.move(itemToMove.id, selectedDestinationFolder);
       } else {
         await folderService.move(itemToMove.id, selectedDestinationFolder);
       }
       
-      alert(`${t('move')} ${t('success')}`);
       setItemToMove(null);
       setSelectedDestinationFolder(null);
-      loadFiles();
+      
+      // Recharger immédiatement pour avoir l'état correct
+      await loadFiles(true);
     } catch (err) {
       console.error('Failed to move:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || t('moveError');
       alert(errorMsg);
+      // Recharger en cas d'erreur pour récupérer l'état correct
+      await loadFiles(true);
     }
   };
 

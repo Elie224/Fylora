@@ -67,13 +67,13 @@ export default function Trash() {
       
       await fileService.restore(fileId);
       
-      // Recharger la liste (forcer le rechargement) sans attendre
-      loadTrash(true).catch(() => {});
+      // Recharger la liste immédiatement (forcer le rechargement)
+      await loadTrash(true);
       
       // Naviguer automatiquement vers Files pour voir le fichier restauré
       setTimeout(() => {
         window.location.href = '/files';
-      }, 500);
+      }, 300);
     } catch (err) {
       console.error('Failed to restore file:', err);
       alert(t('restoreError'));
@@ -89,13 +89,13 @@ export default function Trash() {
       
       await folderService.restore(folderId);
       
-      // Recharger la liste (forcer le rechargement) sans attendre
-      loadTrash(true).catch(() => {});
+      // Recharger la liste immédiatement (forcer le rechargement)
+      await loadTrash(true);
       
       // Naviguer automatiquement vers Files pour voir le dossier restauré
       setTimeout(() => {
         window.location.href = '/files';
-      }, 500);
+      }, 300);
     } catch (err) {
       console.error('Failed to restore folder:', err);
       alert(t('restoreError'));

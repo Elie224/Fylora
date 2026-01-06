@@ -1368,9 +1368,19 @@ async function restoreFile(req, res, next) {
     // Mettre à jour le quota utilisé (ajouter la taille du fichier)
     await updateQuotaAfterOperation(userId, fileSize);
     
-    // Invalider le cache du dashboard pour cet utilisateur
+    // Invalider TOUS les caches pour cet utilisateur (liste fichiers, dashboard, etc.)
     const { invalidateUserCache } = require('../utils/cache');
     invalidateUserCache(userId);
+    
+    // Invalider aussi le cache Redis si disponible
+    const redisCache = require('../utils/redisCache');
+    const cacheKey = `files:list:${userId}:${file.folder_id || 'root'}`;
+    await redisCache.delete(cacheKey).catch(() => {});
+    
+    // Invalider le cache de la liste des fichiers
+    if (filesListCache) {
+      filesListCache.delete(cacheKey);
+    }
     
     res.status(200).json({ message: 'File restored' });
   } catch (err) {
