@@ -1,0 +1,47 @@
+# 📋 Valeurs Exactes pour Render - Cloudinary
+
+## Copiez-collez ces 3 variables dans Render Dashboard
+
+### Variable 1 :
+**Key (Nom)** : CLOUDINARY_CLOUD_NAME
+**Value (Valeur)** : dzuhijqtm
+
+### Variable 2 :
+**Key (Nom)** : CLOUDINARY_API_KEY
+**Value (Valeur)** : 361656381538443
+
+### Variable 3 :
+**Key (Nom)** : CLOUDINARY_API_SECRET
+**Value (Valeur)** : kcg1ER6F4oN18koAphZztquudZU
+
+---
+
+## 📝 Instructions Étape par Étape
+
+1. **Allez sur Render Dashboard** : https://dashboard.render.com/
+2. **Sélectionnez votre service Backend** (fylora-backend)
+3. **Cliquez sur "Environment"** dans le menu de gauche
+4. **Pour chaque variable** :
+   - Cliquez sur "Add Environment Variable"
+   - **Collez le Key** dans le champ "Key"
+   - **Collez le Value** dans le champ "Value"
+   - Cliquez sur "Save Changes"
+   - Répétez pour les 2 autres variables
+
+---
+
+## ✅ Vérification
+
+Après avoir ajouté les 3 variables, vous devriez voir dans les logs :
+
+```
+✅ Cloudinary storage service initialized
+```
+
+Si vous voyez :
+```
+⚠️ Cloudinary not configured, using local storage
+```
+
+→ Vérifiez que les 3 variables sont bien ajoutées et que le service a redémarré.
+
