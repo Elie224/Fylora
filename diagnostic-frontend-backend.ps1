@@ -3,6 +3,9 @@
 Write-Host "=== DIAGNOSTIC FRONTEND-BACKEND ===" -ForegroundColor Cyan
 Write-Host ""
 
+# Détecter si on est dans un environnement CI/CD
+$isCI = $env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
+
 # 1. Verifier le backend
 Write-Host "1. Verification du backend sur le port 5001..." -ForegroundColor Yellow
 try {
@@ -13,10 +16,16 @@ try {
     Write-Host "   ✗ Backend NON ACCESSIBLE" -ForegroundColor Red
     Write-Host "   Erreur: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
-    Write-Host "   SOLUTION: Demarrer le backend avec:" -ForegroundColor Yellow
-    Write-Host "   cd backend" -ForegroundColor White
-    Write-Host "   npm run dev" -ForegroundColor White
-    exit 1
+    
+    if ($isCI) {
+        Write-Host "   ⚠ Environnement CI/CD détecté - Backend non requis pour le build" -ForegroundColor Yellow
+        Write-Host "   Le backend sera démarré séparément en production" -ForegroundColor Gray
+    } else {
+        Write-Host "   SOLUTION: Demarrer le backend avec:" -ForegroundColor Yellow
+        Write-Host "   cd backend" -ForegroundColor White
+        Write-Host "   npm run dev" -ForegroundColor White
+        exit 1
+    }
 }
 
 Write-Host ""
