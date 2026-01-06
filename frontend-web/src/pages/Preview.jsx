@@ -483,11 +483,15 @@ export default function Preview() {
         )}
 
         {previewType === 'office' && (
-          <div style={{ padding: 48, textAlign: 'center' }}>
-            <p style={{ marginBottom: 24, fontSize: '16px', color: textColor }}>
-              {t('officeFilePreview') || 'This Office file can be viewed online or downloaded'}
-            </p>
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <OfficePreview 
+            fileId={id} 
+            fileName={file.name}
+            mimeType={fileMetadata?.mime_type}
+            token={token}
+            cloudinaryUrl={cloudinaryUrl}
+            previewUrl={previewUrl}
+          />
+        )}
               <button
                 onClick={async () => {
                   try {
@@ -1402,6 +1406,217 @@ function AudioPreview({ url, token }) {
     <audio controls style={{ width: '100%', maxWidth: '600px' }} src={audioUrl}>
       Votre navigateur ne supporte pas la lecture audio.
     </audio>
+  );
+}
+
+// Composant pour afficher les fichiers Office directement dans l'application
+function OfficePreview({ fileId, fileName, mimeType, token, cloudinaryUrl, previewUrl }) {
+  const { t } = useLanguage();
+  const { showToast } = useToast();
+  const { theme } = useTheme();
+  const [publicUrl, setPublicUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  
+  useEffect(() => {
+    const loadPublicUrl = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Générer une URL publique temporaire pour afficher le fichier dans un iframe
+        const publicUrlResponse = await fetch(`${apiUrl}/api/files/${fileId}/public-preview-url`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (publicUrlResponse.ok) {
+          const publicUrlData = await publicUrlResponse.json();
+          setPublicUrl(publicUrlData.publicUrl);
+        } else {
+          throw new Error('Failed to generate public preview URL');
+        }
+      } catch (err) {
+        console.error('Failed to load public URL:', err);
+        setError(err.message);
+        showToast(t('previewError') || 'Error loading preview', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPublicUrl();
+  }, [fileId, token, apiUrl, showToast, t]);
+  
+  const handleDownload = async () => {
+    try {
+      if (!token) {
+        showToast(t('mustBeConnected') || 'You must be connected', 'warning');
+        return;
+      }
+      
+      let downloadUrl = null;
+      if (cloudinaryUrl && (cloudinaryUrl.startsWith('https://res.cloudinary.com') || cloudinaryUrl.startsWith('http://res.cloudinary.com'))) {
+        downloadUrl = cloudinaryUrl;
+      } else if (previewUrl && (previewUrl.startsWith('https://res.cloudinary.com') || previewUrl.startsWith('http://res.cloudinary.com'))) {
+        downloadUrl = previewUrl;
+      } else {
+        downloadUrl = `${apiUrl}/api/files/${fileId}/download`;
+      }
+      
+      if (downloadUrl.startsWith('https://res.cloudinary.com') || downloadUrl.startsWith('http://res.cloudinary.com')) {
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = fileName || 'download';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast(t('downloadStarted') || 'Download started', 'success');
+        return;
+      }
+      
+      const response = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        redirect: 'follow'
+      });
+      
+      if (!response.ok) {
+        if (response.redirected && response.url) {
+          window.open(response.url, '_blank');
+          showToast(t('downloadStarted') || 'Download started', 'success');
+          return;
+        }
+        throw new Error('Download failed');
+      }
+      
+      if (response.redirected && response.url) {
+        window.open(response.url, '_blank');
+        showToast(t('downloadStarted') || 'Download started', 'success');
+        return;
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'download';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast(t('downloadStarted') || 'Download started', 'success');
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast(err.message || t('downloadError') || 'Download error', 'error');
+    }
+  };
+  
+  if (loading) {
+    return (
+      <div style={{ padding: 48, textAlign: 'center' }}>
+        <p style={{ color: textColor }}>{t('loading') || 'Loading...'}</p>
+      </div>
+    );
+  }
+  
+  if (error || !publicUrl) {
+    return (
+      <div style={{ padding: 48, textAlign: 'center' }}>
+        <p style={{ marginBottom: 24, fontSize: '16px', color: textColor }}>
+          {t('previewNotAvailable') || 'Preview not available for this file type'}
+        </p>
+        <button
+          onClick={handleDownload}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: theme === 'dark' ? '#4CAF50' : '#45a049',
+            color: 'white',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 500
+          }}
+        >
+          {t('download') || 'Download'}
+        </button>
+      </div>
+    );
+  }
+  
+  // Déterminer le type de viewer selon le type de fichier
+  const isWord = mimeType?.includes('wordprocessingml') || mimeType?.includes('msword');
+  const isExcel = mimeType?.includes('spreadsheetml') || mimeType?.includes('ms-excel');
+  const isPowerPoint = mimeType?.includes('presentationml') || mimeType?.includes('ms-powerpoint');
+  
+  return (
+    <div style={{ height: '80vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Barre d'outils */}
+      <div style={{
+        padding: '12px 16px',
+        backgroundColor: cardBg,
+        borderBottom: `1px solid ${borderColor}`,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: '14px', color: textColor, fontWeight: 500 }}>
+            {fileName}
+          </span>
+          {(isWord || isExcel || isPowerPoint) && (
+            <span style={{ 
+              fontSize: '12px', 
+              color: theme === 'dark' ? '#888' : '#666',
+              padding: '2px 8px',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#f0f0f0',
+              borderRadius: 4
+            }}>
+              {isWord ? 'Word' : isExcel ? 'Excel' : 'PowerPoint'}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleDownload}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: theme === 'dark' ? '#4CAF50' : '#45a049',
+            color: 'white',
+            border: 'none',
+            borderRadius: 6,
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 500
+          }}
+        >
+          ⬇️ {t('download') || 'Download'}
+        </button>
+      </div>
+      
+      {/* Viewer intégré */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <iframe
+          src={publicUrl}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            backgroundColor: cardBg
+          }}
+          title={fileName}
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        />
+      </div>
+    </div>
   );
 }
 
