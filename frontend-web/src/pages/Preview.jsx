@@ -528,44 +528,42 @@ export default function Preview() {
                       }
                     }
                     
-                    // Pour les fichiers Office, générer une URL publique temporaire pour les viewers externes
-                    // Les viewers externes (Google Docs Viewer, Office Online Viewer) nécessitent des URLs publiques
-                    try {
-                      // Générer une URL publique temporaire
-                      const publicUrlResponse = await fetch(`${apiUrl}/api/files/${id}/public-preview-url`, {
-                        headers: {
-                          'Authorization': `Bearer ${token}`
-                        }
-                      });
-                      
-                      if (publicUrlResponse.ok) {
-                        const publicUrlData = await publicUrlResponse.json();
-                        const publicUrl = publicUrlData.publicUrl;
+                    // Pour les fichiers Office, utiliser l'URL appropriée selon le type de stockage
+                    // Pour les fichiers Cloudinary : utiliser directement l'URL Cloudinary (publique)
+                    // Pour les fichiers locaux : générer une URL publique temporaire
+                    let finalUrl = null;
+                    
+                    if (fileUrl && fileUrl.startsWith('https://res.cloudinary.com')) {
+                      // Fichier Cloudinary : utiliser directement l'URL Cloudinary (publique)
+                      finalUrl = fileUrl;
+                    } else {
+                      // Fichier local : générer une URL publique temporaire
+                      try {
+                        const publicUrlResponse = await fetch(`${apiUrl}/api/files/${id}/public-preview-url`, {
+                          headers: {
+                            'Authorization': `Bearer ${token}`
+                          }
+                        });
                         
-                        // Utiliser Google Docs Viewer avec l'URL publique
-                        const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
-                        window.open(viewerUrl, '_blank');
-                        showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
-                      } else {
-                        // Fallback : utiliser directement l'URL Cloudinary si disponible
-                        if (fileUrl && fileUrl.startsWith('https://res.cloudinary.com')) {
-                          const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
-                          window.open(viewerUrl, '_blank');
-                          showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                        if (publicUrlResponse.ok) {
+                          const publicUrlData = await publicUrlResponse.json();
+                          finalUrl = publicUrlData.publicUrl;
                         } else {
                           throw new Error('Failed to generate public preview URL');
                         }
-                      }
-                    } catch (publicUrlErr) {
-                      console.error('Failed to generate public URL:', publicUrlErr);
-                      // Fallback : utiliser directement l'URL Cloudinary si disponible
-                      if (fileUrl && fileUrl.startsWith('https://res.cloudinary.com')) {
-                        const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
-                        window.open(viewerUrl, '_blank');
-                        showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
-                      } else {
+                      } catch (publicUrlErr) {
+                        console.error('Failed to generate public URL:', publicUrlErr);
                         throw publicUrlErr;
                       }
+                    }
+                    
+                    // Utiliser Google Docs Viewer avec l'URL appropriée
+                    if (finalUrl) {
+                      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(finalUrl)}&embedded=true`;
+                      window.open(viewerUrl, '_blank');
+                      showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                    } else {
+                      throw new Error('No preview URL available');
                     }
                   } catch (err) {
                     console.error('Failed to open in viewer:', err);
