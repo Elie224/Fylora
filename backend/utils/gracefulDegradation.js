@@ -3,7 +3,7 @@
  * Fallbacks intelligents quand un service est indisponible
  */
 
-const logger = require('./logger');
+const logger = require('../utils/logger');
 const { circuitBreakers } = require('./circuitBreaker');
 const { retryWithBackoff } = require('./retry');
 

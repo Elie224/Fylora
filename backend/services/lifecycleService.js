@@ -5,7 +5,6 @@
 
 const logger = require('../utils/logger');
 const FileModel = require('../models/fileModel');
-const limitationsService = require('./limitationsService');
 
 class LifecycleService {
   constructor() {

@@ -8,8 +8,8 @@ const UserModel = require('../models/userModel');
 const FileModel = require('../models/fileModel');
 const FolderModel = require('../models/folderModel');
 const ShareModel = require('../models/shareModel');
-const NotificationModel = require('../models/notificationModel');
-const ActivityLogModel = require('../models/activityLogModel');
+const Notification = require('../models/Notification');
+const ActivityLog = require('../models/ActivityLog');
 
 class GDPRService {
   /**
@@ -23,12 +23,14 @@ class GDPRService {
       }
 
       // Récupérer toutes les données
+      const mongoose = require('mongoose');
+      const Share = mongoose.models.Share || mongoose.model('Share');
       const [files, folders, shares, notifications, activities] = await Promise.all([
         FileModel.findByOwner(userId),
         FolderModel.findByOwner(userId),
-        ShareModel.find({ user_id: userId }).lean(),
-        NotificationModel.find({ user_id: userId }).lean(),
-        ActivityLogModel.find({ user_id: userId }).lean(),
+        Share.find({ created_by_id: userId }).lean(),
+        Notification.find({ user_id: userId }).lean(),
+        ActivityLog.find({ user_id: userId }).lean(),
       ]);
 
       // Construire l'export
@@ -193,26 +195,28 @@ class GDPRService {
       }
 
       // Supprimer les partages
-      const shares = await ShareModel.find({ user_id: userId });
+      const mongoose = require('mongoose');
+      const Share = mongoose.models.Share || mongoose.model('Share');
+      const shares = await Share.find({ created_by_id: userId });
       for (const share of shares) {
         try {
-          await ShareModel.findByIdAndDelete(share.id);
+          await Share.findByIdAndDelete(share._id || share.id);
           deletionLog.deletedData.shares++;
         } catch (err) {
           logger.logError(err, {
             context: 'gdpr_delete_share',
-            shareId: share.id,
+            shareId: share._id || share.id,
           });
         }
       }
 
       // Supprimer les notifications
-      await NotificationModel.deleteMany({ user_id: userId });
-      deletionLog.deletedData.notifications = (await NotificationModel.countDocuments({ user_id: userId })) || 0;
+      await Notification.deleteMany({ user_id: userId });
+      deletionLog.deletedData.notifications = (await Notification.countDocuments({ user_id: userId })) || 0;
 
       // Supprimer les activités
-      await ActivityLogModel.deleteMany({ user_id: userId });
-      deletionLog.deletedData.activities = (await ActivityLogModel.countDocuments({ user_id: userId })) || 0;
+      await ActivityLog.deleteMany({ user_id: userId });
+      deletionLog.deletedData.activities = (await ActivityLog.countDocuments({ user_id: userId })) || 0;
 
       // Supprimer l'utilisateur
       await UserModel.deleteUserAndData(userId);

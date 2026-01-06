@@ -132,14 +132,31 @@ async function retryWithIdempotence(fn, idempotencyKey, options = {}) {
  * Wrapper pour les appels HTTP avec retry
  */
 async function httpRetry(url, options = {}, retryOptions = {}) {
-  const fetch = require('node-fetch') || global.fetch;
+  // Utiliser axios si disponible, sinon fetch natif (Node.js 18+)
+  let fetchFn;
+  try {
+    const axios = require('axios');
+    fetchFn = async (url, opts) => {
+      const response = await axios({ url, ...opts, validateStatus: () => true });
+      return {
+        ok: response.status >= 200 && response.status < 300,
+        status: response.status,
+        statusText: response.statusText,
+        json: async () => response.data,
+        text: async () => JSON.stringify(response.data),
+      };
+    };
+  } catch {
+    // Node.js 18+ a fetch natif
+    fetchFn = global.fetch || require('node-fetch');
+  }
   
   return retryWithBackoff(async () => {
-    const response = await fetch(url, options);
+    const response = await fetchFn(url, options);
     
     if (!response.ok && response.status >= 500) {
       // Retry sur erreurs serveur
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText || 'Server Error'}`);
     }
     
     return response;
