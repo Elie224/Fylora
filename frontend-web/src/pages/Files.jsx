@@ -1681,10 +1681,17 @@ export default function Files() {
                                 return;
                               }
                               
+                              // Détecter si c'est un fichier Cloudinary
+                              const storageType = item.storage_type || (item.file_path && item.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+                              const isCloudinary = storageType === 'cloudinary';
+                              
+                              // Pour les fichiers Cloudinary, utiliser l'endpoint download qui redirige
+                              // Pour les fichiers locaux, télécharger le blob
                               const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
                                 headers: {
                                   'Authorization': `Bearer ${token}`
-                                }
+                                },
+                                redirect: 'follow' // Suivre les redirections pour Cloudinary
                               });
                               
                               if (!response.ok) {
@@ -1692,6 +1699,20 @@ export default function Files() {
                                 throw new Error(error.error?.message || `${t('error')} ${response.status}`);
                               }
                               
+                              // Si c'est une redirection Cloudinary, utiliser directement l'URL
+                              if (response.redirected && response.url) {
+                                const a = document.createElement('a');
+                                a.href = response.url;
+                                a.download = item.name;
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                showToast(t('downloadStarted') || 'Download started', 'success');
+                                return;
+                              }
+                              
+                              // Pour les fichiers locaux, télécharger le blob
                               const blob = await response.blob();
                               const url = window.URL.createObjectURL(blob);
                               const a = document.createElement('a');
@@ -1701,6 +1722,7 @@ export default function Files() {
                               a.click();
                               window.URL.revokeObjectURL(url);
                               document.body.removeChild(a);
+                              showToast(t('downloadStarted') || 'Download started', 'success');
                             } catch (err) {
                               console.error('Download failed:', err);
                               showToast(err.message || t('downloadError'), 'error');

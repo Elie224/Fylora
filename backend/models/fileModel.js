@@ -255,6 +255,7 @@ const FileModel = {
       folder_id: file.folder_id?.toString() || file.folder_id,
       owner_id: file.owner_id?.toString() || file.owner_id,
       file_path: file.file_path,
+      storage_type: file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local'),
       is_deleted: file.is_deleted || false,
       deleted_at: formatDate(file.deleted_at),
       created_at: formatDate(file.created_at),
