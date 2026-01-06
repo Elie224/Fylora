@@ -1930,6 +1930,8 @@ async function servePublicPreview(req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*'); // Permettre l'accès depuis n'importe quel domaine
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache pour améliorer les performances
+    res.setHeader('Content-Length', file.size); // Ajouter la taille du fichier
     
     return res.sendFile(filePath);
   } catch (err) {

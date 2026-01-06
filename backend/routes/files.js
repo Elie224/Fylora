@@ -10,6 +10,13 @@ const { uploadLimiter, generalLimiter } = require('../middlewares/rateLimiter');
 router.get('/:id/download', optionalAuthMiddleware, filesController.downloadFile);
 
 // Servir un fichier publiquement avec token temporaire (DOIT être avant authMiddleware)
+// Gérer les requêtes OPTIONS pour CORS
+router.options('/public/:token', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.status(200).end();
+});
 router.get('/public/:token', filesController.servePublicPreview);
 
 // Routes protégées (toutes les autres routes nécessitent une authentification)
