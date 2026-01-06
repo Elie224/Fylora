@@ -17,6 +17,17 @@ const { queues } = require('../utils/queue');
 const searchEngine = require('../services/searchEngine');
 const smartCache = require('../utils/smartCache');
 
+// Service Cloudinary (si configuré)
+let cloudinaryService = null;
+try {
+  cloudinaryService = require('../services/cloudinaryService');
+  if (cloudinaryService.isCloudinaryConfigured()) {
+    logger.logInfo('Cloudinary service available for file storage');
+  }
+} catch (err) {
+  logger.logWarn('Cloudinary service not available', { error: err.message });
+}
+
 // Configuration multer pour l'upload
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
@@ -949,7 +960,35 @@ async function previewFile(req, res, next) {
       return res.status(404).json({ error: { message: 'File path not found' } });
     }
     
-    // Résoudre le chemin du fichier (peut être relatif ou absolu)
+    // Vérifier le type de stockage (Cloudinary ou local)
+    const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+    
+    // Si c'est un fichier Cloudinary, utiliser l'URL Cloudinary
+    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
+          quality: 'auto',
+          format: 'auto',
+        });
+        
+        // Rediriger vers l'URL Cloudinary
+        return res.redirect(previewUrl);
+      } catch (cloudinaryErr) {
+        logger.logError(cloudinaryErr, {
+          context: 'cloudinary_preview',
+          fileId: id,
+          cloudinaryKey: file.file_path,
+          userId
+        });
+        return res.status(500).json({ 
+          error: { 
+            message: 'Failed to generate preview URL',
+          } 
+        });
+      }
+    }
+    
+    // Stockage local - résoudre le chemin du fichier
     let filePath;
     if (path.isAbsolute(file.file_path)) {
       filePath = file.file_path;
@@ -963,9 +1002,6 @@ async function previewFile(req, res, next) {
       await fs.access(filePath);
     } catch (accessErr) {
       // Le fichier n'existe pas physiquement - c'est un fichier orphelin
-      // Cela peut arriver si le fichier a été supprimé manuellement ou si le serveur a été redémarré
-      // et que les fichiers temporaires ont été perdus (sur Render, les fichiers peuvent être perdus)
-      
       logger.logWarn('File not found on disk (orphan file)', { 
         fileId: id, 
         filePath, 
@@ -977,7 +1013,6 @@ async function previewFile(req, res, next) {
         uploadDir: config.upload.uploadDir
       });
       
-      // Retourner une erreur claire avec suggestion
       return res.status(404).json({ 
         error: { 
           message: 'File not found on disk',
@@ -1318,6 +1353,31 @@ async function deleteFile(req, res, next) {
 
     // Récupérer la taille du fichier avant suppression
     const fileSize = file.size || 0;
+    const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+    
+    // Supprimer le fichier de Cloudinary si c'est un fichier Cloudinary
+    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        await cloudinaryService.deleteFile(file.file_path);
+        logger.logInfo('File deleted from Cloudinary', {
+          fileId: id,
+          cloudinaryKey: file.file_path,
+          userId
+        });
+      } catch (cloudinaryErr) {
+        logger.logError(cloudinaryErr, {
+          context: 'cloudinary_delete',
+          fileId: id,
+          cloudinaryKey: file.file_path,
+          userId
+        });
+        // Continuer même si la suppression Cloudinary échoue (soft delete en base)
+      }
+    } else if (storageType === 'local' && file.file_path) {
+      // Supprimer le fichier local (optionnel - soft delete garde le fichier)
+      // On ne supprime pas physiquement pour permettre la restauration
+      // await fs.unlink(file.file_path).catch(() => {});
+    }
     
     await FileModel.softDelete(id);
     
