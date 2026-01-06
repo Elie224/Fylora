@@ -1,6 +1,15 @@
 # Script PowerShell pour demarrer le serveur backend Fylora
 # Ce script change vers le repertoire backend et demarre le serveur Node.js
 
+# Détecter si on est dans un environnement CI/CD
+$isCI = $env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
+
+if ($isCI) {
+    Write-Host "⚠ Environnement CI/CD détecté - Le backend sera démarré séparément" -ForegroundColor Yellow
+    Write-Host "Ce script est destiné au développement local uniquement" -ForegroundColor Gray
+    exit 0
+}
+
 Write-Host "Demarrage du serveur backend Fylora..." -ForegroundColor Cyan
 
 # Verifier si Node.js est installe
