@@ -578,13 +578,10 @@ export default function Preview() {
                       return;
                     }
                     
-                    // Pour les fichiers Cloudinary, utiliser directement l'URL de téléchargement
+                    // Utiliser l'endpoint download standard
                     let downloadUrl = null;
-                    if (cloudinaryUrl && (cloudinaryUrl.startsWith('https://res.cloudinary.com') || cloudinaryUrl.startsWith('http://res.cloudinary.com'))) {
-                      // C'est une URL Cloudinary, l'utiliser directement pour le téléchargement
-                      downloadUrl = cloudinaryUrl;
-                    } else if (previewUrl && (previewUrl.startsWith('https://res.cloudinary.com') || previewUrl.startsWith('http://res.cloudinary.com'))) {
-                      // C'est une URL Cloudinary, l'utiliser directement pour le téléchargement
+                    if (previewUrl) {
+                      // Utiliser l'URL de prévisualisation si disponible
                       downloadUrl = previewUrl;
                     } else {
                       // Sinon, utiliser l'endpoint download qui gérera la redirection
