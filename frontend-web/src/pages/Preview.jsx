@@ -528,19 +528,21 @@ export default function Preview() {
                       }
                     }
                     
-                    // Utiliser l'URL Cloudinary directement avec Google Docs Viewer ou Office Online
-                    if (fileUrl) {
-                      // Essayer Office Online Viewer d'abord (meilleur support)
-                      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
-                      window.open(officeViewerUrl, '_blank');
-                      showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
-                    } else {
-                      // Fallback : utiliser l'endpoint preview avec Google Docs Viewer
-                      const previewUrl = `${apiUrl}/api/files/${id}/preview`;
-                      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`;
-                      window.open(viewerUrl, '_blank');
-                      showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
-                    }
+                    // Pour les fichiers Office, utiliser notre endpoint preview avec Google Docs Viewer
+                    // Notre endpoint preview gère l'authentification et peut servir les fichiers Cloudinary correctement
+                    // Google Docs Viewer peut accéder à notre endpoint preview via l'authentification
+                    const previewEndpointUrl = `${apiUrl}/api/files/${id}/preview`;
+                    
+                    // Pour les fichiers Cloudinary, utiliser directement l'URL Cloudinary si disponible
+                    // Sinon, utiliser notre endpoint preview qui gère l'authentification
+                    const finalUrl = fileUrl && fileUrl.startsWith('https://res.cloudinary.com') 
+                      ? fileUrl 
+                      : previewEndpointUrl;
+                    
+                    // Utiliser Google Docs Viewer qui peut mieux gérer les URLs avec authentification
+                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(finalUrl)}&embedded=true`;
+                    window.open(viewerUrl, '_blank');
+                    showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
                   } catch (err) {
                     console.error('Failed to open in viewer:', err);
                     showToast(t('viewerError') || 'Error opening viewer', 'error');
