@@ -17,16 +17,7 @@ const { queues } = require('../utils/queue');
 const searchEngine = require('../services/searchEngine');
 const smartCache = require('../utils/smartCache');
 
-// Service Cloudinary (si configuré)
-let cloudinaryService = null;
-try {
-  cloudinaryService = require('../services/cloudinaryService');
-  if (cloudinaryService.isCloudinaryConfigured()) {
-    logger.logInfo('Cloudinary service available for file storage');
-  }
-} catch (err) {
-  logger.logWarn('Cloudinary service not available', { error: err.message });
-}
+// Stockage local uniquement
 
 // Configuration multer pour l'upload
 const storage = multer.diskStorage({
@@ -557,90 +548,25 @@ async function uploadFile(req, res, next) {
       // On continue avec le fichier tel quel pour répondre rapidement
     }
 
-    // Uploader vers Cloudinary si configuré, sinon stockage local
+    // Stockage local uniquement
     let storagePath = finalFilePath;
     let storageType = 'local';
     
-    if (cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-      try {
-        // Vérifier que le fichier existe avant upload
-        await fs.access(finalFilePath);
-        
-        // Lire le fichier en Buffer
-        const fileBuffer = await fs.readFile(finalFilePath);
-        
-        // Uploader vers Cloudinary
-        // Utiliser graceful degradation avec circuit breaker
-        const { uploadWithFallback } = require('../utils/gracefulDegradation');
-        const cloudinaryResult = await uploadWithFallback(
-          fileBuffer,
-          req.file.originalname,
-          userId,
-          req.file.mimetype
-        );
-        
-        // Utiliser la clé Cloudinary comme chemin
-        storagePath = cloudinaryResult.fileKey;
-        storageType = 'cloudinary';
-        
-        // Supprimer le fichier local (plus besoin)
-        await fs.unlink(finalFilePath).catch(() => {});
-        
-        // Mettre à jour la taille réelle (Cloudinary peut optimiser)
-        if (cloudinaryResult.size && cloudinaryResult.size !== fileSize) {
-          fileSize = cloudinaryResult.size;
-          logger.logInfo('File size updated after Cloudinary optimization', {
-            originalSize: req.file.size,
-            optimizedSize: fileSize,
-            fileName: req.file.originalname
-          });
-        }
-        
-        logger.logInfo('File uploaded to Cloudinary', {
-          fileName: req.file.originalname,
-          cloudinaryKey: storagePath,
-          size: fileSize,
-          userId
-        });
-      } catch (cloudinaryErr) {
-        logger.logError(cloudinaryErr, {
-          context: 'cloudinary_upload_fallback',
-          fileName: req.file.originalname,
-          userId
-        });
-        // Fallback vers stockage local si Cloudinary échoue
-        logger.logWarn('Falling back to local storage', {
-          fileName: req.file.originalname
-        });
-        // Vérifier que le fichier local existe toujours
-        try {
-          await fs.access(finalFilePath);
-        } catch (accessErr) {
-          await fs.unlink(req.file.path).catch(() => {});
-          return res.status(500).json({ 
-            error: { 
-              message: 'File was not saved correctly. Please try again.',
-            } 
-          });
-        }
-      }
-    } else {
-      // Vérifier que le fichier existe avant de créer l'entrée en base (stockage local)
-      try {
-        await fs.access(finalFilePath);
-      } catch (finalCheckErr) {
-        logger.logError('File does not exist before database creation', { 
-          path: finalFilePath, 
-          error: finalCheckErr.message, 
-          userId 
-        });
-        await fs.unlink(req.file.path).catch(() => {});
-        return res.status(500).json({ 
-          error: { 
-            message: 'File was not saved correctly. Please try again.',
-          } 
-        });
-      }
+    // Vérifier que le fichier existe avant de créer l'entrée en base
+    try {
+      await fs.access(finalFilePath);
+    } catch (finalCheckErr) {
+      logger.logError('File does not exist before database creation', { 
+        path: finalFilePath, 
+        error: finalCheckErr.message, 
+        userId 
+      });
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(500).json({ 
+        error: { 
+          message: 'File was not saved correctly. Please try again.',
+        } 
+      });
     }
 
     // Créer l'entrée en base de données
@@ -656,53 +582,28 @@ async function uploadFile(req, res, next) {
         storageType: storageType,
       });
       
-      // Vérifier que le fichier existe (local) ou est accessible (Cloudinary)
-      if (storageType === 'local') {
-        try {
-          await fs.access(storagePath);
-          logger.logInfo('File uploaded and saved successfully (local)', {
-            fileId: file.id,
-            fileName: req.file.originalname,
-            filePath: storagePath,
-            size: fileSize,
-            userId
-          });
-        } catch (postCreateErr) {
-          logger.logError('File disappeared after database creation', {
-            fileId: file.id,
-            filePath: storagePath,
-            error: postCreateErr.message,
-            userId
-          });
-          await FileModel.delete(file.id).catch(() => {});
-          return res.status(500).json({ 
-            error: { 
-              message: 'File was not saved correctly. Please try again.',
-            } 
-          });
-        }
-      } else {
-        // Pour Cloudinary, vérifier que le fichier existe
-        const exists = await cloudinaryService.fileExists(storagePath);
-        if (!exists) {
-          logger.logError('File not found in Cloudinary after upload', {
-            fileId: file.id,
-            cloudinaryKey: storagePath,
-            userId
-          });
-          await FileModel.delete(file.id).catch(() => {});
-          return res.status(500).json({ 
-            error: { 
-              message: 'File was not saved correctly. Please try again.',
-            } 
-          });
-        }
-        logger.logInfo('File uploaded and saved successfully (Cloudinary)', {
+      // Vérifier que le fichier existe (stockage local)
+      try {
+        await fs.access(storagePath);
+        logger.logInfo('File uploaded and saved successfully (local)', {
           fileId: file.id,
           fileName: req.file.originalname,
-          cloudinaryKey: storagePath,
+          filePath: storagePath,
           size: fileSize,
           userId
+        });
+      } catch (postCreateErr) {
+        logger.logError('File disappeared after database creation', {
+          fileId: file.id,
+          filePath: storagePath,
+          error: postCreateErr.message,
+          userId
+        });
+        await FileModel.delete(file.id).catch(() => {});
+        return res.status(500).json({ 
+          error: { 
+            message: 'File was not saved correctly. Please try again.',
+          } 
         });
       }
     } catch (dbError) {
@@ -712,12 +613,9 @@ async function uploadFile(req, res, next) {
         fileName: req.file.originalname,
         folderId
       });
-      // Nettoyer le fichier physique si la création en base échoue (uniquement pour stockage local)
-      if (storageType === 'local' && finalFilePath) {
+      // Nettoyer le fichier physique si la création en base échoue
+      if (finalFilePath) {
         await fs.unlink(finalFilePath).catch(() => {});
-      } else if (storageType === 'cloudinary' && storagePath) {
-        // Supprimer de Cloudinary si la création en base échoue
-        await cloudinaryService.deleteFile(storagePath).catch(() => {});
       }
       return res.status(500).json({ 
         error: { 
@@ -954,66 +852,19 @@ async function downloadFile(req, res, next) {
       return res.status(403).json({ error: { message: 'Access denied' } });
     }
 
-    // Déterminer le type de stockage
-    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-    
-    // Si c'est un fichier Cloudinary, télécharger et servir le fichier directement
-    // Cela garantit que le nom de fichier original est préservé et fonctionne sur tous les appareils
-    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-      try {
-        const https = require('https');
-        const http = require('http');
-        const downloadUrl = cloudinaryService.generateDownloadUrl(file.file_path, file.name, file.mime_type);
-        
-        // Télécharger le fichier depuis Cloudinary et le servir avec les bons headers
-        const url = new URL(downloadUrl);
-        const client = url.protocol === 'https:' ? https : http;
-        
-        client.get(url, (cloudinaryRes) => {
-          if (cloudinaryRes.statusCode !== 200) {
-            logger.logError(new Error(`Cloudinary returned ${cloudinaryRes.statusCode}`), {
-              context: 'cloudinary_download',
-              fileId: id,
-              cloudinaryKey: file.file_path,
-              statusCode: cloudinaryRes.statusCode
-            });
-            return res.status(cloudinaryRes.statusCode).json({ 
-              error: { message: 'Failed to fetch file from Cloudinary' } 
-            });
-          }
-          
-          // Servir le fichier avec les bons headers pour préserver le nom et l'extension
-          res.setHeader('Content-Type', file.mime_type || cloudinaryRes.headers['content-type'] || 'application/octet-stream');
-          res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.name)}"`);
-          res.setHeader('Content-Length', cloudinaryRes.headers['content-length'] || file.size);
-          
-          // Stream le fichier depuis Cloudinary vers la réponse
-          cloudinaryRes.pipe(res);
-        }).on('error', (err) => {
-          logger.logError(err, {
-            context: 'cloudinary_download',
-            fileId: id,
-            cloudinaryKey: file.file_path
-          });
-          return res.status(500).json({ 
-            error: { message: 'Failed to download file from Cloudinary' } 
-          });
-        });
-        
-        return; // Ne pas continuer après avoir initié le stream
-      } catch (cloudinaryErr) {
-        logger.logError(cloudinaryErr, {
-          context: 'cloudinary_download',
+    // Vérifier que le fichier existe physiquement (stockage local uniquement)
+    // Si le fichier est marqué comme Cloudinary, retourner une erreur car Cloudinary n'est plus utilisé
+    const storageType = file.storage_type || 'local';
+    if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+      return res.status(410).json({ 
+        error: { 
+          message: 'This file is stored on Cloudinary which is no longer supported. Please re-upload the file.',
           fileId: id,
-          cloudinaryKey: file.file_path
-        });
-        return res.status(500).json({ 
-          error: { message: 'Failed to generate download URL' } 
-        });
-      }
+          fileName: file.name
+        } 
+      });
     }
-
-    // Vérifier que le fichier existe physiquement (uniquement pour stockage local)
+    
     if (storageType === 'local') {
       let fileExists = false;
       try {
@@ -1143,39 +994,16 @@ async function previewFile(req, res, next) {
       return res.status(404).json({ error: { message: 'File path not found' } });
     }
     
-    // Vérifier le type de stockage (Cloudinary ou local)
-    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-    
-    // Si c'est un fichier Cloudinary, utiliser l'URL Cloudinary
-    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-      try {
-        const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
-          quality: 'auto',
-          format: 'auto',
-          mimeType: file.mime_type, // Passer le mimeType pour déterminer le resource_type
-        });
-        
-        // Toujours retourner l'URL en JSON pour que le frontend puisse l'utiliser directement
-        // Cela évite les problèmes de redirection et permet un meilleur contrôle
-        res.setHeader('Content-Type', 'application/json');
-        return res.json({ 
-          url: previewUrl, 
-          type: 'cloudinary',
-          mimeType: file.mime_type
-        });
-      } catch (cloudinaryErr) {
-        logger.logError(cloudinaryErr, {
-          context: 'cloudinary_preview',
+    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    const storageType = file.storage_type || 'local';
+    if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+      return res.status(410).json({ 
+        error: { 
+          message: 'This file is stored on Cloudinary which is no longer supported. Please re-upload the file.',
           fileId: id,
-          cloudinaryKey: file.file_path,
-          userId
-        });
-        return res.status(500).json({ 
-          error: { 
-            message: 'Failed to generate preview URL',
-          } 
-        });
-      }
+          fileName: file.name
+        } 
+      });
     }
     
     // Stockage local - résoudre le chemin du fichier
@@ -1373,30 +1201,16 @@ async function streamFile(req, res, next) {
       const stream = require('fs').createReadStream(filePath, { start, end });
       stream.pipe(res);
     } else {
-      // Vérifier le type de stockage avant d'envoyer
-      const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-      
-      if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-        // Pour Cloudinary, rediriger vers l'URL de prévisualisation
-        try {
-          const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
-            quality: 'auto',
-            format: 'auto',
-          });
-          return res.redirect(previewUrl);
-        } catch (cloudinaryErr) {
-          logger.logError(cloudinaryErr, {
-            context: 'cloudinary_preview_redirect',
+      // Vérifier si le fichier est sur Cloudinary (non supporté)
+      const storageType = file.storage_type || 'local';
+      if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+        return res.status(410).json({ 
+          error: { 
+            message: 'This file is stored on Cloudinary which is no longer supported. Please re-upload the file.',
             fileId: id,
-            cloudinaryKey: file.file_path,
-            userId
-          });
-          return res.status(500).json({ 
-            error: { 
-              message: 'Failed to generate preview URL',
-            } 
-          });
-        }
+            fileName: file.name
+          } 
+        });
       }
       
       res.setHeader('Content-Type', file.mime_type);
@@ -1569,26 +1383,14 @@ async function deleteFile(req, res, next) {
 
     // Récupérer la taille du fichier avant suppression
     const fileSize = file.size || 0;
-    const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-    
-    // Supprimer le fichier de Cloudinary si c'est un fichier Cloudinary
-    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-      try {
-        await cloudinaryService.deleteFile(file.file_path);
-        logger.logInfo('File deleted from Cloudinary', {
-          fileId: id,
-          cloudinaryKey: file.file_path,
-          userId
-        });
-      } catch (cloudinaryErr) {
-        logger.logError(cloudinaryErr, {
-          context: 'cloudinary_delete',
-          fileId: id,
-          cloudinaryKey: file.file_path,
-          userId
-        });
-        // Continuer même si la suppression Cloudinary échoue (soft delete en base)
-      }
+    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    const storageType = file.storage_type || 'local';
+    if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+      // Pour les fichiers Cloudinary, on ne peut pas les supprimer physiquement
+      logger.logWarn('File is on Cloudinary (no longer supported), soft delete only', {
+        fileId: id,
+        fileName: file.name
+      });
     } else if (storageType === 'local' && file.file_path) {
       // Supprimer le fichier local (optionnel - soft delete garde le fichier)
       // On ne supprime pas physiquement pour permettre la restauration
@@ -1699,29 +1501,18 @@ async function permanentDeleteFile(req, res, next) {
     // Récupérer la taille du fichier avant suppression définitive
     const fileSize = file.size || 0;
     
-    // Déterminer le type de stockage
-    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    const storageType = file.storage_type || 'local';
     
     // Supprimer le fichier selon son type de stockage
     if (file.file_path) {
-      if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-        // Supprimer de Cloudinary
-        try {
-          await cloudinaryService.deleteFile(file.file_path);
-          logger.logInfo('File deleted from Cloudinary', {
-            fileId: id,
-            cloudinaryKey: file.file_path,
-            userId
-          });
-        } catch (cloudinaryErr) {
-          logger.logWarn('Could not delete file from Cloudinary', {
-            fileId: id,
-            cloudinaryKey: file.file_path,
-            error: cloudinaryErr.message,
-            userId
-          });
-          // Continuer même si la suppression Cloudinary échoue
-        }
+      if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+        // Pour les fichiers Cloudinary, on ne peut pas les supprimer physiquement
+        logger.logWarn('File is on Cloudinary (no longer supported), cannot delete physically', {
+          fileId: id,
+          fileName: file.name
+        });
+        // Continuer avec la suppression en base seulement
       } else if (storageType === 'local') {
         // Supprimer le fichier local
         const fs = require('fs').promises;
@@ -1913,80 +1704,16 @@ async function servePublicPreview(req, res, next) {
       return res.status(404).json({ error: { message: 'File has been deleted' } });
     }
 
-    // Vérifier le type de stockage
-    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-
-    // Si c'est un fichier Cloudinary, télécharger et servir le fichier directement
-    // Cela évite les problèmes avec Google Docs Viewer qui ne peut pas accéder directement à Cloudinary
-    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-      try {
-        const https = require('https');
-        const http = require('http');
-        const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
-          quality: 'auto',
-          format: 'auto',
-          mimeType: file.mime_type,
-        });
-        
-        // Télécharger le fichier depuis Cloudinary et le servir
-        const url = new URL(previewUrl);
-        const client = url.protocol === 'https:' ? https : http;
-        
-        client.get(url, (cloudinaryRes) => {
-          if (cloudinaryRes.statusCode !== 200) {
-            logger.logError(new Error(`Cloudinary returned ${cloudinaryRes.statusCode}`), {
-              context: 'public_preview_cloudinary',
-              fileId: tokenData.fileId,
-              cloudinaryKey: file.file_path,
-              statusCode: cloudinaryRes.statusCode
-            });
-            return res.status(cloudinaryRes.statusCode).json({ 
-              error: { 
-                message: 'Failed to fetch file from Cloudinary',
-              } 
-            });
-          }
-          
-          // Servir le fichier avec les bons headers CORS pour les viewers externes
-          res.setHeader('Content-Type', file.mime_type || cloudinaryRes.headers['content-type'] || 'application/octet-stream');
-          res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name || 'file')}"`);
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-          res.setHeader('Cache-Control', 'public, max-age=3600');
-          
-          if (cloudinaryRes.headers['content-length']) {
-            res.setHeader('Content-Length', cloudinaryRes.headers['content-length']);
-          }
-          
-          // Stream le fichier depuis Cloudinary vers la réponse
-          cloudinaryRes.pipe(res);
-        }).on('error', (err) => {
-          logger.logError(err, {
-            context: 'public_preview_cloudinary_download',
-            fileId: tokenData.fileId,
-            cloudinaryKey: file.file_path
-          });
-          return res.status(500).json({ 
-            error: { 
-              message: 'Failed to download file from Cloudinary',
-            } 
-          });
-        });
-        
-        return; // Ne pas continuer après avoir initié le stream
-      } catch (cloudinaryErr) {
-        logger.logError(cloudinaryErr, {
-          context: 'public_preview_cloudinary',
+    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    const storageType = file.storage_type || 'local';
+    if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+      return res.status(410).json({ 
+        error: { 
+          message: 'This file is stored on Cloudinary which is no longer supported. Please re-upload the file.',
           fileId: tokenData.fileId,
-          cloudinaryKey: file.file_path
-        });
-        return res.status(500).json({ 
-          error: { 
-            message: 'Failed to generate preview URL',
-          } 
-        });
-      }
+          fileName: file.name
+        } 
+      });
     }
 
     // Pour les fichiers locaux, servir le fichier

@@ -274,7 +274,7 @@ export default function Files() {
                     size: result.size || file.size,
                     folderId: currentFolder?.id || null,
                     filePath: result.fileKey,
-                    storageType: 'cloudinary',
+                    storageType: 'local',
                   }),
                 })
                 .then(res => res.json())
@@ -1682,7 +1682,6 @@ export default function Files() {
                               }
                               
                               // Utiliser l'endpoint download qui préserve le nom de fichier original
-                              // L'endpoint gère maintenant Cloudinary et local de manière transparente
                               const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
                                 headers: {
                                   'Authorization': `Bearer ${token}`

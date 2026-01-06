@@ -17,7 +17,6 @@ export default function Preview() {
   const [error, setError] = useState(null);
   const [previewType, setPreviewType] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [cloudinaryUrl, setCloudinaryUrl] = useState(null);
 
   useEffect(() => {
     loadFile();
@@ -120,22 +119,19 @@ export default function Preview() {
         });
         
         if (previewGetResponse.ok) {
-          // Vérifier si c'est une réponse JSON avec URL Cloudinary
+          // Vérifier si c'est une réponse JSON
           const responseContentType = previewGetResponse.headers.get('content-type') || '';
           if (responseContentType.includes('application/json')) {
             const data = await previewGetResponse.json();
-            if (data.url && data.type === 'cloudinary') {
-              // C'est une URL Cloudinary, l'utiliser directement
-              contentType = 'cloudinary-url';
+            if (data.url) {
+              // URL normale
               setPreviewUrl(data.url);
               // Si le mimeType est fourni dans la réponse, l'utiliser
               if (data.mimeType && !fileInfo) {
                 fileInfo = { mime_type: data.mimeType };
               }
-            } else {
-              // Autre type de réponse JSON (erreur probablement)
-              contentType = responseContentType;
             }
+            contentType = responseContentType;
           } else {
             // Réponse normale (fichier local)
             contentType = responseContentType;
@@ -182,8 +178,8 @@ export default function Preview() {
       const mimeType = fileInfo?.mime_type || (previewGetResponse && responseContentType.includes('application/json') ? (await previewGetResponse.json().catch(() => ({}))).mimeType : null) || contentType || 'application/octet-stream';
       let finalPreviewUrl = `${apiUrl}/api/files/${id}/preview`;
       
-      // Si on a reçu une URL Cloudinary dans la réponse JSON, l'utiliser
-      if (contentType === 'cloudinary-url' && previewUrl) {
+      // Si on a reçu une URL dans la réponse JSON, l'utiliser
+      if (previewUrl) {
         finalPreviewUrl = previewUrl;
       }
       
@@ -209,10 +205,6 @@ export default function Preview() {
         size: fileInfo?.size || null 
       });
       
-      // Stocker aussi l'URL Cloudinary si disponible pour les boutons
-      if (previewUrl && contentType === 'cloudinary-url') {
-        setCloudinaryUrl(previewUrl);
-      }
       
       // Déterminer le type de prévisualisation basé sur le MIME type
       if (mimeType.startsWith('image/')) {
@@ -503,7 +495,6 @@ export default function Preview() {
             fileName={file.name}
             mimeType={fileMetadata?.mime_type}
             token={token}
-            cloudinaryUrl={cloudinaryUrl}
             previewUrl={previewUrl}
           />
         )}
@@ -1427,7 +1418,7 @@ function AudioPreview({ url, token }) {
 }
 
 // Composant pour afficher les fichiers Office directement dans l'application
-function OfficePreview({ fileId, fileName, mimeType, token, cloudinaryUrl, previewUrl }) {
+function OfficePreview({ fileId, fileName, mimeType, token, previewUrl }) {
   const { t } = useLanguage();
   const { showToast } = useToast();
   const { theme } = useTheme();
@@ -1478,8 +1469,7 @@ function OfficePreview({ fileId, fileName, mimeType, token, cloudinaryUrl, previ
         return;
       }
       
-      // Toujours utiliser l'endpoint download qui préserve le nom de fichier original
-      // L'endpoint gère maintenant Cloudinary et local de manière transparente
+      // Utiliser l'endpoint download qui préserve le nom de fichier original
       const downloadUrl = `${apiUrl}/api/files/${fileId}/download`;
       
       // Créer un lien de téléchargement qui fonctionne sur tous les appareils
