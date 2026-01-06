@@ -1,0 +1,17 @@
+{
+  "name": "fylora-load-tests",
+  "version": "1.0.0",
+  "description": "Tests de charge pour Fylora",
+  "scripts": {
+    "test:upload": "node loadTest.js --scenario=upload --concurrent=1000",
+    "test:read": "node loadTest.js --scenario=read --requests=100000",
+    "test:mixed": "node loadTest.js --scenario=mixed --concurrent=500",
+    "test:artillery": "artillery run loadTestArtillery.js",
+    "test:all": "npm run test:upload && npm run test:read && npm run test:mixed"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "artillery": "^2.0.0"
+  }
+}
+
