@@ -191,9 +191,16 @@ function generatePreviewUrl(fileKey, options = {}) {
   if (height) transformations.height = height;
   if (crop) transformations.crop = crop;
 
+  // Déterminer le type de ressource basé sur le fileKey ou utiliser 'raw' par défaut
+  // Pour les fichiers PDF et autres documents, utiliser 'raw'
+  let resourceType = 'raw';
+  
+  // Si le format est spécifié dans les options, on peut l'utiliser pour déterminer le type
+  // Sinon, on utilise 'raw' qui fonctionne pour tous les types de fichiers
+  
   return cloudinary.url(fileKey, {
     ...transformations,
-    resource_type: 'auto',
+    resource_type: resourceType,
   });
 }
 

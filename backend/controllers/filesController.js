@@ -911,6 +911,31 @@ async function downloadFile(req, res, next) {
       // Les admins n'ont pas d'accès spécial aux fichiers des utilisateurs
     }
     
+    // Déterminer le type de stockage
+    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+    
+    // Si c'est un fichier Cloudinary, rediriger vers l'URL de téléchargement Cloudinary
+    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        const downloadUrl = cloudinaryService.generateDownloadUrl(file.file_path, file.name);
+        logger.logInfo('Redirecting to Cloudinary download URL', {
+          fileId: id,
+          fileName: file.name,
+          cloudinaryKey: file.file_path
+        });
+        return res.redirect(downloadUrl);
+      } catch (cloudinaryErr) {
+        logger.logError(cloudinaryErr, {
+          context: 'cloudinary_download_redirect',
+          fileId: id,
+          cloudinaryKey: file.file_path
+        });
+        return res.status(500).json({ 
+          error: { message: 'Failed to generate download URL' } 
+        });
+      }
+    }
+    
     // Si pas propriétaire, vérifier le partage public
     if (!hasAccess && token) {
       const ShareModel = require('../models/shareModel');
