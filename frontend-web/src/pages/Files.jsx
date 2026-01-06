@@ -543,7 +543,12 @@ export default function Files() {
       });
       
       // Recharger la liste après suppression (forcer le rechargement sans cache) - IMMÉDIATEMENT
-      await loadFiles(true);
+      // Ne pas attendre, faire en parallèle
+      loadFiles(true).catch(err => {
+        console.error('Error reloading files after deletion:', err);
+      });
+      
+      showToast(t('deletedSuccessfully') || 'Fichier supprimé avec succès', 'success');
       
       // Ne pas afficher d'alert pour une meilleure UX - la suppression est visible immédiatement
       // alert(`✅ "${itemName}" ${t('deletedSuccessfully')}`);

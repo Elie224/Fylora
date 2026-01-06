@@ -16,6 +16,7 @@ export default function Preview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [previewType, setPreviewType] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     loadFile();
@@ -150,11 +151,23 @@ export default function Preview() {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`
-            }
+            },
+            redirect: 'follow' // Suivre les redirections
           });
           
           if (previewGetResponse.ok) {
-            contentType = previewGetResponse.headers.get('content-type') || '';
+            // Vérifier si c'est une réponse JSON avec URL Cloudinary
+            const responseContentType = previewGetResponse.headers.get('content-type') || '';
+            if (responseContentType.includes('application/json')) {
+              const data = await previewGetResponse.json();
+              if (data.url) {
+                // C'est une URL Cloudinary, l'utiliser directement
+                contentType = 'cloudinary-url';
+                setPreviewUrl(data.url);
+              }
+            } else {
+              contentType = responseContentType;
+            }
           } else if (previewGetResponse.status === 404) {
             isOrphanFile = true;
             setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
@@ -190,7 +203,7 @@ export default function Preview() {
       });
       
       setFile({ 
-        previewUrl, 
+        previewUrl: finalPreviewUrl, 
         streamUrl, 
         contentType: mimeType, 
         name: fileInfo?.name || 'Fichier', 
@@ -472,12 +485,26 @@ export default function Preview() {
                   const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
                     headers: {
                       'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    redirect: 'follow' // Suivre les redirections Cloudinary
                   });
                   
                   if (!response.ok) {
+                    // Si c'est une redirection (301/302), utiliser l'URL de redirection
+                    if (response.redirected && response.url) {
+                      window.open(response.url, '_blank');
+                      showToast(t('downloadStarted') || 'Téléchargement démarré', 'success');
+                      return;
+                    }
                     const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur de téléchargement' } }));
                     throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
+                  }
+                  
+                  // Si c'est une redirection vers Cloudinary, ouvrir directement
+                  if (response.redirected && response.url) {
+                    window.open(response.url, '_blank');
+                    showToast(t('downloadStarted') || 'Téléchargement démarré', 'success');
+                    return;
                   }
                   
                   const blob = await response.blob();

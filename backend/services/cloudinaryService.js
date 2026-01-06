@@ -178,9 +178,28 @@ function generatePreviewUrl(fileKey, options = {}) {
     height,
     quality = 'auto',
     format = 'auto',
-    crop = 'limit', // Ne pas couper, juste redimensionner
+    crop = 'limit',
+    mimeType, // Ajouter mimeType pour déterminer le type de ressource
   } = options;
 
+  // Déterminer le type de ressource basé sur le mimeType
+  let resourceType = 'raw'; // Par défaut pour PDFs et documents
+  if (mimeType?.startsWith('image/')) {
+    resourceType = 'image';
+  } else if (mimeType?.startsWith('video/')) {
+    resourceType = 'video';
+  }
+
+  // Pour les PDFs et documents, retourner l'URL directe sans transformation
+  // Cloudinary ne peut pas transformer les PDFs
+  if (resourceType === 'raw') {
+    return cloudinary.url(fileKey, {
+      resource_type: 'raw',
+      secure: true,
+    });
+  }
+
+  // Pour les images et vidéos, appliquer les transformations
   const transformations = {
     quality,
     fetch_format: format,
@@ -190,13 +209,6 @@ function generatePreviewUrl(fileKey, options = {}) {
   if (width) transformations.width = width;
   if (height) transformations.height = height;
   if (crop) transformations.crop = crop;
-
-  // Déterminer le type de ressource basé sur le fileKey ou utiliser 'raw' par défaut
-  // Pour les fichiers PDF et autres documents, utiliser 'raw'
-  let resourceType = 'raw';
-  
-  // Si le format est spécifié dans les options, on peut l'utiliser pour déterminer le type
-  // Sinon, on utilise 'raw' qui fonctionne pour tous les types de fichiers
   
   return cloudinary.url(fileKey, {
     ...transformations,

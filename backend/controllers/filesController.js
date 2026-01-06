@@ -911,31 +911,6 @@ async function downloadFile(req, res, next) {
       // Les admins n'ont pas d'accès spécial aux fichiers des utilisateurs
     }
     
-    // Déterminer le type de stockage
-    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-    
-    // Si c'est un fichier Cloudinary, rediriger vers l'URL de téléchargement Cloudinary
-    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-      try {
-        const downloadUrl = cloudinaryService.generateDownloadUrl(file.file_path, file.name);
-        logger.logInfo('Redirecting to Cloudinary download URL', {
-          fileId: id,
-          fileName: file.name,
-          cloudinaryKey: file.file_path
-        });
-        return res.redirect(downloadUrl);
-      } catch (cloudinaryErr) {
-        logger.logError(cloudinaryErr, {
-          context: 'cloudinary_download_redirect',
-          fileId: id,
-          cloudinaryKey: file.file_path
-        });
-        return res.status(500).json({ 
-          error: { message: 'Failed to generate download URL' } 
-        });
-      }
-    }
-    
     // Si pas propriétaire, vérifier le partage public
     if (!hasAccess && token) {
       const ShareModel = require('../models/shareModel');
@@ -1110,7 +1085,7 @@ async function previewFile(req, res, next) {
     }
     
     // Vérifier le type de stockage (Cloudinary ou local)
-    const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
     
     // Si c'est un fichier Cloudinary, utiliser l'URL Cloudinary
     if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
@@ -1118,10 +1093,17 @@ async function previewFile(req, res, next) {
         const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
           quality: 'auto',
           format: 'auto',
+          mimeType: file.mime_type, // Passer le mimeType pour déterminer le resource_type
         });
         
-        // Rediriger vers l'URL Cloudinary
-        return res.redirect(previewUrl);
+        // Pour les PDFs et documents, retourner l'URL en JSON pour que le frontend puisse l'utiliser
+        // Pour les images/vidéos, rediriger directement
+        if (file.mime_type === 'application/pdf' || file.mime_type?.startsWith('application/')) {
+          return res.json({ url: previewUrl, type: 'cloudinary' });
+        } else {
+          // Rediriger vers l'URL Cloudinary pour les images/vidéos
+          return res.redirect(previewUrl);
+        }
       } catch (cloudinaryErr) {
         logger.logError(cloudinaryErr, {
           context: 'cloudinary_preview',

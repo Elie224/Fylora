@@ -52,6 +52,25 @@ function ThumbnailImage({ fileId, fileName, isImage, style, onError, onOrphanDet
           throw new Error('Failed to load');
         }
 
+        // Vérifier si la réponse est une redirection (status 302/301) ou JSON avec URL
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          // Réponse JSON avec URL Cloudinary
+          const data = await response.json();
+          if (data.url) {
+            setImageUrl(data.url);
+            return;
+          }
+        }
+
+        // Si c'est une redirection, suivre la redirection
+        if (response.redirected || response.status === 301 || response.status === 302) {
+          const redirectUrl = response.url;
+          setImageUrl(redirectUrl);
+          return;
+        }
+
+        // Sinon, charger le blob normalement
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
         setImageUrl(objectUrl);
