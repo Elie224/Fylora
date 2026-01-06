@@ -17,6 +17,7 @@ export default function Preview() {
   const [error, setError] = useState(null);
   const [previewType, setPreviewType] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [cloudinaryUrl, setCloudinaryUrl] = useState(null);
 
   useEffect(() => {
     loadFile();
@@ -178,7 +179,7 @@ export default function Preview() {
       }
       
       // Construire les métadonnées du fichier
-      const mimeType = fileInfo?.mime_type || contentType || 'application/octet-stream';
+      const mimeType = fileInfo?.mime_type || (previewGetResponse && responseContentType.includes('application/json') ? (await previewGetResponse.json().catch(() => ({}))).mimeType : null) || contentType || 'application/octet-stream';
       let finalPreviewUrl = `${apiUrl}/api/files/${id}/preview`;
       
       // Si on a reçu une URL Cloudinary dans la réponse JSON, l'utiliser
@@ -207,6 +208,11 @@ export default function Preview() {
         name: fileInfo?.name || 'Fichier', 
         size: fileInfo?.size || null 
       });
+      
+      // Stocker aussi l'URL Cloudinary si disponible pour les boutons
+      if (previewUrl && contentType === 'cloudinary-url') {
+        setCloudinaryUrl(previewUrl);
+      }
       
       // Déterminer le type de prévisualisation basé sur le MIME type
       if (mimeType.startsWith('image/')) {
@@ -493,13 +499,48 @@ export default function Preview() {
                       return;
                     }
                     
-                    // Essayer d'ouvrir dans un viewer en ligne (Google Docs Viewer)
-                    const previewUrl = `${apiUrl}/api/files/${id}/preview`;
-                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`;
+                    // Si on a déjà une URL Cloudinary, l'utiliser directement
+                    let fileUrl = null;
+                    if (cloudinaryUrl && (cloudinaryUrl.startsWith('https://res.cloudinary.com') || cloudinaryUrl.startsWith('http://res.cloudinary.com'))) {
+                      fileUrl = cloudinaryUrl;
+                    } else if (previewUrl && (previewUrl.startsWith('https://res.cloudinary.com') || previewUrl.startsWith('http://res.cloudinary.com'))) {
+                      fileUrl = previewUrl;
+                    } else {
+                      // Sinon, récupérer l'URL depuis l'endpoint preview
+                      try {
+                        const previewResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
+                          headers: {
+                            'Authorization': `Bearer ${token}`
+                          }
+                        });
+                        
+                        if (previewResponse.ok) {
+                          const contentType = previewResponse.headers.get('content-type') || '';
+                          if (contentType.includes('application/json')) {
+                            const data = await previewResponse.json();
+                            if (data.url && data.type === 'cloudinary') {
+                              fileUrl = data.url;
+                            }
+                          }
+                        }
+                      } catch (previewErr) {
+                        console.warn('Could not get preview URL:', previewErr);
+                      }
+                    }
                     
-                    // Ouvrir dans un nouvel onglet
-                    window.open(viewerUrl, '_blank');
-                    showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                    // Utiliser l'URL Cloudinary directement avec Google Docs Viewer ou Office Online
+                    if (fileUrl) {
+                      // Essayer Office Online Viewer d'abord (meilleur support)
+                      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+                      window.open(officeViewerUrl, '_blank');
+                      showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                    } else {
+                      // Fallback : utiliser l'endpoint preview avec Google Docs Viewer
+                      const previewUrl = `${apiUrl}/api/files/${id}/preview`;
+                      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`;
+                      window.open(viewerUrl, '_blank');
+                      showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                    }
                   } catch (err) {
                     console.error('Failed to open in viewer:', err);
                     showToast(t('viewerError') || 'Error opening viewer', 'error');
@@ -529,7 +570,34 @@ export default function Preview() {
                       return;
                     }
                     
-                    const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
+                    // Pour les fichiers Cloudinary, utiliser directement l'URL de téléchargement
+                    let downloadUrl = null;
+                    if (cloudinaryUrl && (cloudinaryUrl.startsWith('https://res.cloudinary.com') || cloudinaryUrl.startsWith('http://res.cloudinary.com'))) {
+                      // C'est une URL Cloudinary, l'utiliser directement pour le téléchargement
+                      downloadUrl = cloudinaryUrl;
+                    } else if (previewUrl && (previewUrl.startsWith('https://res.cloudinary.com') || previewUrl.startsWith('http://res.cloudinary.com'))) {
+                      // C'est une URL Cloudinary, l'utiliser directement pour le téléchargement
+                      downloadUrl = previewUrl;
+                    } else {
+                      // Sinon, utiliser l'endpoint download qui gérera la redirection
+                      downloadUrl = `${apiUrl}/api/files/${id}/download`;
+                    }
+                    
+                    // Si c'est une URL Cloudinary directe, ouvrir directement
+                    if (downloadUrl.startsWith('https://res.cloudinary.com') || downloadUrl.startsWith('http://res.cloudinary.com')) {
+                      const a = document.createElement('a');
+                      a.href = downloadUrl;
+                      a.download = file?.name || 'download';
+                      a.target = '_blank';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      showToast(t('downloadStarted') || 'Download started', 'success');
+                      return;
+                    }
+                    
+                    // Sinon, utiliser l'endpoint download
+                    const response = await fetch(downloadUrl, {
                       headers: {
                         'Authorization': `Bearer ${token}`
                       },
