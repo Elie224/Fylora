@@ -397,6 +397,7 @@ const translations = {
     redirecting: 'Redirection...',
     pleaseWaitRedirecting: 'Veuillez patienter pendant que nous vous redirigeons.',
     pleaseWaitConnecting: 'Veuillez patienter pendant que nous vous connectons.',
+    connecting: 'Connexion en cours...',
     
     // ProtectedRoute
     checkingAuth: 'Vérification de l\'authentification...',
