@@ -484,6 +484,114 @@ export default function Preview() {
           </div>
         )}
 
+        {previewType === 'office' && (
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <p style={{ marginBottom: 24, fontSize: '16px', color: textColor }}>
+              {t('officeFilePreview') || 'This Office file can be viewed online or downloaded'}
+            </p>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                    const token = localStorage.getItem('access_token');
+                    
+                    if (!token) {
+                      showToast(t('mustBeConnected') || 'You must be connected', 'warning');
+                      return;
+                    }
+                    
+                    // Essayer d'ouvrir dans un viewer en ligne (Google Docs Viewer)
+                    const previewUrl = `${apiUrl}/api/files/${id}/preview`;
+                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`;
+                    
+                    // Ouvrir dans un nouvel onglet
+                    window.open(viewerUrl, '_blank');
+                    showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                  } catch (err) {
+                    console.error('Failed to open in viewer:', err);
+                    showToast(t('viewerError') || 'Error opening viewer', 'error');
+                  }
+                }}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: theme === 'dark' ? '#2196F3' : '#1976D2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}
+              >
+                {t('viewOnline') || 'View online'}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                    const token = localStorage.getItem('access_token');
+                    
+                    if (!token) {
+                      showToast(t('mustBeConnected') || 'You must be connected', 'warning');
+                      return;
+                    }
+                    
+                    const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      },
+                      redirect: 'follow'
+                    });
+                    
+                    if (!response.ok) {
+                      if (response.redirected && response.url) {
+                        window.open(response.url, '_blank');
+                        showToast(t('downloadStarted') || 'Download started', 'success');
+                        return;
+                      }
+                      const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Download error' } }));
+                      throw new Error(error.error?.message || `${t('error') || 'Error'} ${response.status}`);
+                    }
+                    
+                    if (response.redirected && response.url) {
+                      window.open(response.url, '_blank');
+                      showToast(t('downloadStarted') || 'Download started', 'success');
+                      return;
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file?.name || 'download';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast(t('downloadStarted') || 'Download started', 'success');
+                  } catch (err) {
+                    console.error('Download failed:', err);
+                    showToast(err.message || t('downloadError') || 'Download error', 'error');
+                  }
+                }}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: theme === 'dark' ? '#4caf50' : '#388e3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}
+              >
+                {t('downloadFile') || 'Download'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {previewType === 'download' && (
           <div style={{ padding: 48, textAlign: 'center' }}>
             <p>{t('cannotPreviewFileType')}</p>
