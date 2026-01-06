@@ -494,7 +494,37 @@ const translations = {
     deleting: 'Suppression...',
     
     // Plan upgrade
-    planUpgraded: 'Plan mis à niveau avec succès !'
+    planUpgraded: 'Plan mis à niveau avec succès !',
+    
+    // Security Center
+    securityCenter: 'Centre de sécurité',
+    securityStatistics: 'Statistiques de sécurité',
+    totalLogins: 'Total connexions',
+    successfulLogins: 'Connexions réussies',
+    failedLogins: 'Connexions échouées',
+    activeSessions: 'Sessions actives',
+    uniqueIPs: 'IP uniques',
+    lastLogin: 'Dernière connexion',
+    loginHistory: 'Historique des connexions',
+    revoke: 'Révoquer',
+    revokeAllOtherSessions: 'Révoquer toutes les autres sessions',
+    confirmRevokeSession: 'Voulez-vous vraiment révoquer cette session ?',
+    confirmRevokeAllSessions: 'Voulez-vous vraiment révoquer toutes les autres sessions ?',
+    sessionRevoked: 'Session révoquée avec succès',
+    allOtherSessionsRevoked: 'Toutes les autres sessions ont été révoquées',
+    errorRevokingSession: 'Erreur lors de la révocation de la session',
+    errorRevokingSessions: 'Erreur lors de la révocation des sessions',
+    noActiveSessions: 'Aucune session active',
+    noLoginHistory: 'Aucun historique de connexion',
+    date: 'Date',
+    ipAddress: 'Adresse IP',
+    location: 'Localisation',
+    status: 'Statut',
+    success: 'Succès',
+    failed: 'Échoué',
+    lastActivity: 'Dernière activité',
+    unknown: 'Inconnu',
+    errorLoadingData: 'Erreur lors du chargement des données'
   },
   en: {
     // Navigation

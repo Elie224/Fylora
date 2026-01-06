@@ -570,7 +570,9 @@ async function uploadFile(req, res, next) {
         const fileBuffer = await fs.readFile(finalFilePath);
         
         // Uploader vers Cloudinary
-        const cloudinaryResult = await cloudinaryService.uploadFile(
+        // Utiliser graceful degradation avec circuit breaker
+        const { uploadWithFallback } = require('../utils/gracefulDegradation');
+        const cloudinaryResult = await uploadWithFallback(
           fileBuffer,
           req.file.originalname,
           userId,

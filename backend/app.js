@@ -168,6 +168,10 @@ setTimeout(() => {
 // Performance monitoring
 app.use(performanceMiddleware);
 
+// Observabilité avancée (metrics, traces, logs)
+const observabilityMiddleware = require('./middlewares/observabilityMiddleware');
+app.use(observabilityMiddleware);
+
 // Monitoring avancé des performances
 const performanceMonitor = require('./utils/performanceMonitor');
 app.use(performanceMonitor.middleware());
@@ -544,9 +548,9 @@ app.use('/api/note-templates', require('./routes/noteTemplates'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/mfa', require('./routes/mfa'));
 app.use('/api/multipart', require('./routes/multipart'));
-
-// Routes GDPR/RGPD pour la conformité avec le Règlement Général sur la Protection des Données
 app.use('/api/gdpr', require('./routes/gdpr'));
+app.use('/api/security', require('./routes/security'));
+app.use('/api/observability', require('./routes/observability'));
 
 // Nouvelles fonctionnalités intelligentes
 app.use('/api/intelligence', require('./routes/intelligence'));

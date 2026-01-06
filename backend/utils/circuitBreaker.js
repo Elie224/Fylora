@@ -1,154 +1,179 @@
 /**
- * Circuit Breaker pour résilience
- * Évite la cascade d'erreurs en cas de problème
+ * Circuit Breaker Pattern
+ * Protège contre les cascades de pannes
  */
-class CircuitBreaker {
-  constructor(options = {}) {
-    this.failureThreshold = options.failureThreshold || 5;
-    this.resetTimeout = options.resetTimeout || 60000; // 1 minute
-    this.monitoringPeriod = options.monitoringPeriod || 60000; // 1 minute
-    
-    this.states = {
-      CLOSED: 'closed',
-      OPEN: 'open',
-      HALF_OPEN: 'half_open',
-    };
 
-    this.circuits = new Map();
+const logger = require('./logger');
+
+class CircuitBreaker {
+  constructor(name, options = {}) {
+    this.name = name;
+    this.failureThreshold = options.failureThreshold || 5; // Nombre d'échecs avant ouverture
+    this.resetTimeout = options.resetTimeout || 60000; // 60 secondes
+    this.monitoringWindow = options.monitoringWindow || 60000; // Fenêtre de monitoring
+    
+    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
+    this.failureCount = 0;
+    this.successCount = 0;
+    this.lastFailureTime = null;
+    this.nextAttemptTime = null;
+    
+    // Statistiques
+    this.stats = {
+      totalRequests: 0,
+      totalFailures: 0,
+      totalSuccesses: 0,
+      stateChanges: [],
+    };
   }
 
   /**
    * Exécuter une fonction avec circuit breaker
    */
-  async execute(name, fn, fallback = null) {
-    const circuit = this.getOrCreateCircuit(name);
+  async execute(fn, ...args) {
+    this.stats.totalRequests++;
 
-    // Si le circuit est ouvert, utiliser le fallback
-    if (circuit.state === this.states.OPEN) {
-      if (Date.now() - circuit.lastFailureTime < this.resetTimeout) {
-        if (fallback) {
-          return await fallback();
-        }
-        throw new Error(`Circuit breaker ${name} is OPEN`);
+    // Vérifier l'état du circuit
+    if (this.state === 'OPEN') {
+      // Vérifier si on peut tenter une réouverture (half-open)
+      if (Date.now() >= this.nextAttemptTime) {
+        this.state = 'HALF_OPEN';
+        this.successCount = 0;
+        logger.logInfo('Circuit breaker entering HALF_OPEN state', {
+          circuit: this.name,
+        });
       } else {
-        // Tenter de rouvrir (half-open)
-        circuit.state = this.states.HALF_OPEN;
+        // Circuit ouvert, rejeter immédiatement
+        this.stats.totalFailures++;
+        throw new Error(`Circuit breaker OPEN: ${this.name} is unavailable`);
       }
     }
 
     try {
-      const result = await fn();
-      this.onSuccess(circuit);
+      // Exécuter la fonction
+      const result = await fn(...args);
+      
+      // Succès
+      this.onSuccess();
       return result;
     } catch (error) {
-      this.onFailure(circuit);
-      if (fallback) {
-        return await fallback();
-      }
+      // Échec
+      this.onFailure();
       throw error;
     }
   }
 
   /**
-   * Obtenir ou créer un circuit
+   * Gérer un succès
    */
-  getOrCreateCircuit(name) {
-    if (!this.circuits.has(name)) {
-      this.circuits.set(name, {
-        name,
-        state: this.states.CLOSED,
-        failures: 0,
-        successes: 0,
-        lastFailureTime: 0,
-        lastSuccessTime: Date.now(),
+  onSuccess() {
+    this.stats.totalSuccesses++;
+    this.failureCount = 0;
+
+    if (this.state === 'HALF_OPEN') {
+      // Si on a plusieurs succès en half-open, fermer le circuit
+      this.successCount++;
+      if (this.successCount >= 2) {
+        this.state = 'CLOSED';
+        this.successCount = 0;
+        this.stats.stateChanges.push({
+          from: 'HALF_OPEN',
+          to: 'CLOSED',
+          timestamp: new Date().toISOString(),
+        });
+        logger.logInfo('Circuit breaker CLOSED', {
+          circuit: this.name,
+        });
+      }
+    }
+  }
+
+  /**
+   * Gérer un échec
+   */
+  onFailure() {
+    this.stats.totalFailures++;
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+
+    if (this.state === 'HALF_OPEN') {
+      // En half-open, un seul échec rouvre le circuit
+      this.state = 'OPEN';
+      this.nextAttemptTime = Date.now() + this.resetTimeout;
+      this.stats.stateChanges.push({
+        from: 'HALF_OPEN',
+        to: 'OPEN',
+        timestamp: new Date().toISOString(),
+      });
+      logger.logWarn('Circuit breaker reopened', {
+        circuit: this.name,
+      });
+    } else if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) {
+      // Ouvrir le circuit
+      this.state = 'OPEN';
+      this.nextAttemptTime = Date.now() + this.resetTimeout;
+      this.stats.stateChanges.push({
+        from: 'CLOSED',
+        to: 'OPEN',
+        timestamp: new Date().toISOString(),
+      });
+      logger.logError(new Error('Circuit breaker OPENED'), {
+        circuit: this.name,
+        failureCount: this.failureCount,
+        threshold: this.failureThreshold,
       });
     }
-    return this.circuits.get(name);
   }
 
   /**
-   * Gérer le succès
+   * Obtenir l'état actuel
    */
-  onSuccess(circuit) {
-    circuit.successes++;
-    circuit.lastSuccessTime = Date.now();
-    
-    if (circuit.state === this.states.HALF_OPEN) {
-      // Réussite en half-open -> fermer le circuit
-      circuit.state = this.states.CLOSED;
-      circuit.failures = 0;
-    }
+  getState() {
+    return {
+      state: this.state,
+      failureCount: this.failureCount,
+      lastFailureTime: this.lastFailureTime,
+      nextAttemptTime: this.nextAttemptTime,
+      stats: { ...this.stats },
+    };
   }
 
   /**
-   * Gérer l'échec
+   * Réinitialiser manuellement
    */
-  onFailure(circuit) {
-    circuit.failures++;
-    circuit.lastFailureTime = Date.now();
-
-    if (circuit.failures >= this.failureThreshold) {
-      circuit.state = this.states.OPEN;
-    }
-  }
-
-  /**
-   * Obtenir l'état d'un circuit
-   */
-  getState(name) {
-    const circuit = this.circuits.get(name);
-    return circuit ? circuit.state : this.states.CLOSED;
-  }
-
-  /**
-   * Réinitialiser un circuit
-   */
-  reset(name) {
-    const circuit = this.circuits.get(name);
-    if (circuit) {
-      circuit.state = this.states.CLOSED;
-      circuit.failures = 0;
-      circuit.successes = 0;
-    }
-  }
-
-  /**
-   * Obtenir les statistiques de tous les circuits
-   */
-  getStats() {
-    const stats = {};
-    this.circuits.forEach((circuit, name) => {
-      stats[name] = {
-        state: circuit.state,
-        failures: circuit.failures,
-        successes: circuit.successes,
-        lastFailureTime: circuit.lastFailureTime,
-        lastSuccessTime: circuit.lastSuccessTime,
-      };
+  reset() {
+    this.state = 'CLOSED';
+    this.failureCount = 0;
+    this.successCount = 0;
+    this.lastFailureTime = null;
+    this.nextAttemptTime = null;
+    logger.logInfo('Circuit breaker manually reset', {
+      circuit: this.name,
     });
-    return stats;
   }
 }
 
-// Instance globale
-const circuitBreaker = new CircuitBreaker();
-
-// Circuit breakers spécifiques
-const dbCircuitBreaker = new CircuitBreaker({
-  failureThreshold: 3,
-  resetTimeout: 30000,
-});
-
-const cacheCircuitBreaker = new CircuitBreaker({
-  failureThreshold: 5,
-  resetTimeout: 10000,
-});
-
-module.exports = {
-  circuitBreaker,
-  dbCircuitBreaker,
-  cacheCircuitBreaker,
-  CircuitBreaker,
+// Instances globales pour les services critiques
+const circuitBreakers = {
+  elasticsearch: new CircuitBreaker('elasticsearch', {
+    failureThreshold: 5,
+    resetTimeout: 30000, // 30 secondes
+  }),
+  cloudinary: new CircuitBreaker('cloudinary', {
+    failureThreshold: 3,
+    resetTimeout: 60000, // 60 secondes
+  }),
+  redis: new CircuitBreaker('redis', {
+    failureThreshold: 5,
+    resetTimeout: 30000,
+  }),
+  mongodb: new CircuitBreaker('mongodb', {
+    failureThreshold: 10,
+    resetTimeout: 60000,
+  }),
 };
 
-
+module.exports = {
+  CircuitBreaker,
+  circuitBreakers,
+};

@@ -222,8 +222,27 @@ async function login(req, res, next) {
 
     // Vérifier le mot de passe
     const motDePasseValide = await bcrypt.compare(password, utilisateur.password_hash);
+    const userAgent = req.get('user-agent') || null;
+    const adresseIP = req.ip || req.headers['x-forwarded-for'] || null;
+    
     if (!motDePasseValide) {
       logger.logWarn(`Tentative de connexion avec mot de passe incorrect pour: ${email}`);
+      
+      // Enregistrer l'échec dans Security Center
+      try {
+        const securityCenterService = require('../services/securityCenterService');
+        await securityCenterService.recordLogin(
+          utilisateur.id,
+          adresseIP,
+          userAgent,
+          null,
+          false,
+          'Invalid password'
+        );
+      } catch (securityErr) {
+        // Ignorer les erreurs de Security Center
+      }
+      
       return res.status(401).json({ 
         error: { 
           message: 'Identifiants incorrects. Vérifiez votre email et votre mot de passe.' 
