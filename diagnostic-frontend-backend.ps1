@@ -1,24 +1,14 @@
 # Script de diagnostic pour la connexion frontend-backend
 
-# Détecter si on est sur Linux (où PowerShell peut ne pas être disponible)
-$isLinux = $IsLinux -or ($PSVersionTable.Platform -eq "Unix") -or (Test-Path "/proc/version")
-
-# Si on est sur Linux et qu'on est en CI/CD, utiliser la version bash à la place
-if ($isLinux -and ($env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI)) {
-    if (Test-Path "diagnostic-frontend-backend.sh") {
-        bash diagnostic-frontend-backend.sh
-        exit $LASTEXITCODE
-    } else {
-        Write-Host "⚠ Environnement CI/CD Linux détecté - Script de diagnostic ignoré" -ForegroundColor Yellow
-        exit 0
-    }
+# Détecter si on est sur Render (déploiement)
+if ($env:RENDER) {
+    Write-Host "⚠ Environnement Render détecté - Diagnostic non nécessaire" -ForegroundColor Yellow
+    Write-Host "Le backend et le frontend sont gérés par Render" -ForegroundColor Gray
+    exit 0
 }
 
 Write-Host "=== DIAGNOSTIC FRONTEND-BACKEND ===" -ForegroundColor Cyan
 Write-Host ""
-
-# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
-$isCI = $env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
 
 # 1. Verifier le backend
 Write-Host "1. Verification du backend sur le port 5001..." -ForegroundColor Yellow
@@ -31,9 +21,9 @@ try {
     Write-Host "   Erreur: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
     
-    if ($isCI) {
-        Write-Host "   ⚠ Environnement CI/CD détecté - Backend non requis pour le build" -ForegroundColor Yellow
-        Write-Host "   Le backend sera démarré séparément en production" -ForegroundColor Gray
+    if ($env:RENDER) {
+        Write-Host "   ⚠ Environnement Render détecté - Backend non requis pour le build" -ForegroundColor Yellow
+        Write-Host "   Le backend sera démarré par Render en production" -ForegroundColor Gray
     } else {
         Write-Host "   SOLUTION: Demarrer le backend avec:" -ForegroundColor Yellow
         Write-Host "   cd backend" -ForegroundColor White

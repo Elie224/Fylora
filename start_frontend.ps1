@@ -1,11 +1,9 @@
 # Script PowerShell pour demarrer le frontend web Fylora
 # Ce script change vers le repertoire frontend-web et demarre le serveur de developpement
 
-# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
-$isCI = $env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
-
-if ($isCI) {
-    Write-Host "⚠ Environnement CI/CD détecté - Le frontend sera buildé séparément" -ForegroundColor Yellow
+# Détecter si on est sur Render (déploiement)
+if ($env:RENDER) {
+    Write-Host "⚠ Environnement Render détecté - Le frontend sera buildé par Render" -ForegroundColor Yellow
     Write-Host "Ce script est destiné au développement local uniquement" -ForegroundColor Gray
     exit 0
 }

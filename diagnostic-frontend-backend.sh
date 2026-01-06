@@ -5,8 +5,8 @@
 echo "=== DIAGNOSTIC FRONTEND-BACKEND ==="
 echo ""
 
-# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
-if [ -n "$CI" ] || [ -n "$RENDER" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ]; then
+# Détecter si on est sur Render (déploiement)
+if [ -n "$RENDER" ]; then
     IS_CI=true
 else
     IS_CI=false
@@ -23,8 +23,8 @@ else
     echo ""
     
     if [ "$IS_CI" = true ]; then
-        echo "   ⚠ Environnement CI/CD détecté - Backend non requis pour le build"
-        echo "   Le backend sera démarré séparément en production"
+        echo "   ⚠ Environnement Render détecté - Backend non requis pour le build"
+        echo "   Le backend sera démarré par Render en production"
     else
         echo "   SOLUTION: Démarrer le backend avec:"
         echo "   cd backend"
