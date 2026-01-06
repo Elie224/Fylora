@@ -12,7 +12,7 @@ router.get('/:id/download', optionalAuthMiddleware, filesController.downloadFile
 // Routes protégées (toutes les autres routes nécessitent une authentification)
 router.use(authMiddleware);
 router.use(generalLimiter); // Rate limiting pour toutes les routes fichiers
-router.use(validateObjectId); // Valider tous les ObjectIds dans les paramètres
+// Note: validateObjectId est appliqué individuellement aux routes qui en ont besoin
 
 // Lister les fichiers
 router.get('/', filesController.listFiles);
@@ -40,7 +40,7 @@ router.put('/:id', filesController.uploadMiddleware, filesController.updateFileC
 router.delete('/:id', filesController.deleteFile);
 
 // Restaurer un fichier
-router.post('/:id/restore', filesController.restoreFile);
+router.post('/:id/restore', validateObjectId, filesController.restoreFile);
 
 // Supprimer définitivement un fichier
 router.delete('/:id/permanent', filesController.permanentDeleteFile);
