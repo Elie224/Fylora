@@ -5,12 +5,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../stores/authStore';
-import API from '../utils/api';
+import { useAuthStore } from '../services/authStore';
+import apiClient from '../services/api';
 
 const MFASettings = () => {
   const { t } = useLanguage();
-  const { user, accessToken } = useAuth();
+  const { user, accessToken } = useAuthStore();
   const navigate = useNavigate();
 
   const [mfaStatus, setMfaStatus] = useState(null);
@@ -30,8 +30,8 @@ const MFASettings = () => {
 
   const loadMFAStatus = async () => {
     try {
-      const response = await API.get('/mfa/status');
-      setMfaStatus(response.data);
+      const response = await apiClient.get('/mfa/status');
+      setMfaStatus(response.data.data || response.data);
     } catch (err) {
       console.error('Error loading MFA status:', err);
     }
@@ -41,9 +41,10 @@ const MFASettings = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await API.post('/mfa/setup');
-      setQrCode(response.data.qrCode);
-      setSecret(response.data.manualEntryKey);
+      const response = await apiClient.post('/mfa/setup');
+      const data = response.data.data || response.data;
+      setQrCode(data.qrCode || data.qr_code);
+      setSecret(data.manualEntryKey || data.manual_entry_key || data.secret);
       setSetupStep('verify');
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Erreur lors de la configuration MFA');
@@ -61,8 +62,9 @@ const MFASettings = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await API.post('/mfa/verify', { token: verificationToken });
-      setBackupCodes(response.data.backupCodes);
+      const response = await apiClient.post('/mfa/verify', { token: verificationToken });
+      const data = response.data.data || response.data;
+      setBackupCodes(data.backupCodes || data.backup_codes || []);
       setSuccess('MFA activé avec succès ! Sauvegardez vos codes de backup.');
       setSetupStep('backup');
       await loadMFAStatus();
@@ -82,7 +84,7 @@ const MFASettings = () => {
     setLoading(true);
     setError(null);
     try {
-      await API.post('/mfa/disable', { password });
+      await apiClient.post('/mfa/disable', { password });
       setSuccess('MFA désactivé avec succès');
       setSetupStep('status');
       await loadMFAStatus();
