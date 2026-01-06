@@ -841,12 +841,19 @@ export default function Preview() {
 
 // Composant pour prévisualiser les images avec authentification
 function ImagePreview({ url, token }) {
+  const { t } = useLanguage();
   const [imageUrl, setImageUrl] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadImage = async () => {
       try {
+        // Si l'URL est déjà une URL Cloudinary, l'utiliser directement
+        if (url && (url.startsWith('https://res.cloudinary.com') || url.startsWith('http://res.cloudinary.com'))) {
+          setImageUrl(url);
+          return;
+        }
+        
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -917,12 +924,19 @@ function ImagePreview({ url, token }) {
 
 // Composant pour prévisualiser les PDF avec authentification
 function PdfPreview({ url, token }) {
+  const { t } = useLanguage();
   const [pdfUrl, setPdfUrl] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadPdf = async () => {
       try {
+        // Si l'URL est déjà une URL Cloudinary, l'utiliser directement
+        if (url && (url.startsWith('https://res.cloudinary.com') || url.startsWith('http://res.cloudinary.com'))) {
+          setPdfUrl(url);
+          return;
+        }
+        
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -993,6 +1007,7 @@ function PdfPreview({ url, token }) {
 
 // Composant pour prévisualiser les vidéos avec authentification et contrôles avancés
 function VideoPreview({ url, token }) {
+  const { t } = useLanguage();
   const [videoUrl, setVideoUrl] = useState(null);
   const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -1256,6 +1271,7 @@ function VideoPreview({ url, token }) {
 
 // Composant pour prévisualiser les fichiers audio avec authentification
 function AudioPreview({ url, token }) {
+  const { t } = useLanguage();
   const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState(null);
 
@@ -1307,6 +1323,8 @@ function AudioPreview({ url, token }) {
 
 // Composant éditeur de texte/Markdown avec prévisualisation
 function TextEditor({ url, token, fileId, fileName, mimeType }) {
+  const { t } = useLanguage();
+  const { showToast } = useToast();
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [loading, setLoading] = useState(true);
