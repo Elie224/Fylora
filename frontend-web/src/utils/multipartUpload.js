@@ -4,7 +4,6 @@
  */
 
 import API from './api';
-import crypto from 'crypto-js';
 
 class MultipartUploader {
   constructor(file, options = {}) {
@@ -24,19 +23,14 @@ class MultipartUploader {
   }
 
   /**
-   * Calculer le hash SHA-256 d'un chunk
+   * Calculer le hash SHA-256 d'un chunk (Web Crypto API)
    */
   async calculateHash(chunk) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const arrayBuffer = e.target.result;
-        const wordArray = crypto.lib.WordArray.create(arrayBuffer);
-        const hash = crypto.SHA256(wordArray).toString();
-        resolve(hash);
-      };
-      reader.readAsArrayBuffer(chunk);
-    });
+    const arrayBuffer = await chunk.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
   }
 
   /**

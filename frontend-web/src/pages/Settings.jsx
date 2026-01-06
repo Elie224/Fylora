@@ -383,6 +383,38 @@ export default function Settings() {
             </div>
           </div>
         </div>
+        
+        {/* Section Sécurité - MFA */}
+        <section style={{ 
+          marginBottom: 32, 
+          padding: 24, 
+          backgroundColor: cardBg, 
+          borderRadius: 12, 
+          boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+          border: `1px solid ${borderColor}`
+        }}>
+          <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🔐 Sécurité</h2>
+          <p style={{ marginBottom: 20, color: textSecondary }}>
+            Protégez votre compte avec l'authentification à deux facteurs (MFA)
+          </p>
+          <button
+            onClick={() => navigate('/mfa')}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '1em',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            Configurer MFA
+          </button>
+          </div>
+        </div>
         </div>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>

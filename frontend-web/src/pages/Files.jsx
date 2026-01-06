@@ -234,36 +234,97 @@ export default function Files() {
     setUploading(true);
     const progress = {};
     const uploadedFiles = []; // Pour la mise à jour optimiste
+    const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024; // 50 MB
+    
     try {
       for (const file of files) {
         progress[file.name] = 0;
         setUploadProgress({ ...progress });
         
         try {
-          const response = await fileService.upload(
-            file, 
-            currentFolder?.id || null,
-            (percent) => {
-              progress[file.name] = percent;
-              setUploadProgress({ ...progress });
-            }
-          );
-          
-          // Mise à jour optimiste : ajouter le fichier immédiatement à la liste
-          if (response?.data?.data) {
-            const uploadedFile = response.data.data;
-            uploadedFiles.push(uploadedFile);
-            // Ajouter immédiatement à la liste pour feedback instantané
-            setItems(prevItems => {
-              // Vérifier si le fichier n'est pas déjà dans la liste
-              const exists = prevItems.some(item => (item.id || item._id) === (uploadedFile.id || uploadedFile._id));
-              if (exists) return prevItems;
-              return [...prevItems, { ...uploadedFile, type: 'file' }];
+          // Utiliser upload multipart pour les gros fichiers (> 50MB)
+          if (file.size > LARGE_FILE_THRESHOLD) {
+            const MultipartUploader = (await import('../utils/multipartUpload')).default;
+            const uploader = new MultipartUploader(file, {
+              onProgress: (percent, uploaded, total) => {
+                progress[file.name] = percent;
+                setUploadProgress({ ...progress });
+              },
+              onComplete: (result) => {
+                progress[file.name] = 100;
+                setUploadProgress({ ...progress });
+                
+                // Créer l'entrée en base de données
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                const token = localStorage.getItem('access_token');
+                
+                fetch(`${apiUrl}/api/files`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    name: file.name,
+                    mimeType: file.type,
+                    size: result.size || file.size,
+                    folderId: currentFolder?.id || null,
+                    filePath: result.fileKey,
+                    storageType: 'cloudinary',
+                  }),
+                })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.data) {
+                    uploadedFiles.push(data.data);
+                    setItems(prevItems => {
+                      const exists = prevItems.some(item => (item.id || item._id) === (data.data.id || data.data._id));
+                      if (exists) return prevItems;
+                      return [...prevItems, { ...data.data, type: 'file' }];
+                    });
+                  }
+                })
+                .catch(err => {
+                  console.error('Error creating file record:', err);
+                });
+              },
+              onError: (err) => {
+                console.error(`Multipart upload failed for ${file.name}:`, err);
+                const errorMsg = err.response?.data?.error?.message || err.message || t('uploadError');
+                alert(`${t('error')} ${file.name}: ${errorMsg}`);
+                progress[file.name] = -1;
+                setUploadProgress({ ...progress });
+              },
             });
+            
+            await uploader.start();
+          } else {
+            // Upload normal pour petits fichiers
+            const response = await fileService.upload(
+              file, 
+              currentFolder?.id || null,
+              (percent) => {
+                progress[file.name] = percent;
+                setUploadProgress({ ...progress });
+              }
+            );
+            
+            // Mise à jour optimiste : ajouter le fichier immédiatement à la liste
+            if (response?.data?.data) {
+              const uploadedFile = response.data.data;
+              uploadedFiles.push(uploadedFile);
+              // Ajouter immédiatement à la liste pour feedback instantané
+              setItems(prevItems => {
+                // Vérifier si le fichier n'est pas déjà dans la liste
+                const exists = prevItems.some(item => (item.id || item._id) === (uploadedFile.id || uploadedFile._id));
+                if (exists) return prevItems;
+                return [...prevItems, { ...uploadedFile, type: 'file' }];
+              });
+            }
+            
+            progress[file.name] = 100;
+            setUploadProgress({ ...progress });
           }
-          
-          progress[file.name] = 100;
-          setUploadProgress({ ...progress });
         } catch (fileErr) {
           console.error(`Upload failed for ${file.name}:`, fileErr);
           const errorMsg = fileErr.response?.data?.error?.message || fileErr.message || t('uploadError');
