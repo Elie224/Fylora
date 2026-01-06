@@ -280,6 +280,7 @@ module.exports = {
   get,
   set,
   del,
+  delete: del, // Alias pour compatibilité avec delete()
   delPattern,
   incr,
   mget,
