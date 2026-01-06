@@ -322,7 +322,20 @@ export default function Gallery() {
 
   // Callback pour détecter les fichiers orphelins
   const handleOrphanDetected = useCallback((fileId) => {
-    setOrphanFiles(prev => new Set([...prev, String(fileId)]));
+    const fileIdStr = String(fileId);
+    // Ajouter à la liste des fichiers orphelins
+    setOrphanFiles(prev => {
+      const newSet = new Set(prev);
+      newSet.add(fileIdStr);
+      return newSet;
+    });
+    // Retirer immédiatement le fichier orphelin de mediaFiles pour qu'il ne s'affiche plus
+    setMediaFiles(prevFiles => {
+      return prevFiles.filter(file => {
+        const id = file.id || file._id;
+        return String(id) !== fileIdStr;
+      });
+    });
   }, []);
 
   const openLightbox = useCallback((file, index) => {
