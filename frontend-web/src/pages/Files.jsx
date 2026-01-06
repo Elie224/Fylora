@@ -19,6 +19,8 @@ export default function Files() {
   const { t, language } = useLanguage(); // Inclure language pour forcer le re-render
   const { logout } = useAuthStore();
   const { theme } = useTheme();
+  const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [items, setItems] = useState([]);
   
   // Couleurs dynamiques selon le thème - Thème clair amélioré
@@ -591,7 +593,7 @@ export default function Files() {
     // Vérifier que l'utilisateur est connecté
     const token = localStorage.getItem('access_token');
     if (!token) {
-      alert(t('mustBeConnected') + '. ' + (t('language') === 'en' ? 'Redirecting to login...' : 'Redirection vers la page de connexion...'));
+      showToast(t('mustBeConnected'), 'warning');
       navigate('/login');
       return;
     }
@@ -600,7 +602,7 @@ export default function Files() {
       // Partage interne
       if (shareType === 'internal') {
         if (!selectedShareUser) {
-          alert(t('selectUserError'));
+          showToast(t('selectUserError'), 'warning');
           return;
         }
         
@@ -611,7 +613,7 @@ export default function Files() {
         );
         
         if (response.data) {
-          alert(`${t('share')} ${t('success')}: ${selectedShareUser.email || selectedShareUser.display_name}`);
+          showToast(`${t('share')} ${t('success')}: ${selectedShareUser.email || selectedShareUser.display_name}`, 'success');
           setShowShareModal(null);
           setSharePassword('');
           setShareExpiresAt('');
@@ -628,7 +630,7 @@ export default function Files() {
       // Gérer le mot de passe
       if (sharePassword && typeof sharePassword === 'string' && sharePassword.trim() !== '') {
         if (sharePassword.trim().length < 6) {
-          alert(t('passwordMinLength'));
+          showToast(t('passwordMinLength'), 'warning');
           return;
         }
         options.password = sharePassword.trim();
@@ -675,10 +677,10 @@ export default function Files() {
       
       // Si c'est une erreur 401, rediriger vers login
       if (err.response?.status === 401) {
-        alert(t('sessionExpired'));
+        showToast(t('sessionExpired'), 'warning');
         navigate('/login');
       } else {
-        alert(errorMsg);
+        showToast(errorMsg, 'error');
       }
     }
   };
@@ -783,7 +785,7 @@ export default function Files() {
     } catch (err) {
       console.error('Failed to move:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || t('moveError');
-      alert(errorMsg);
+      showToast(errorMsg, 'error');
       // Recharger en cas d'erreur pour récupérer l'état correct
       await loadFiles(true);
     }
@@ -1193,7 +1195,7 @@ export default function Files() {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(shareLink);
-                      alert(t('linkCopied'));
+                      showToast(t('linkCopied'), 'success');
                     }}
                     style={{ marginTop: 8, padding: '4px 8px', fontSize: '12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
                   >
@@ -1661,7 +1663,7 @@ export default function Files() {
                               const token = localStorage.getItem('access_token');
                               
                               if (!token) {
-                                alert(t('mustBeConnected'));
+                                showToast(t('mustBeConnected'), 'warning');
                                 return;
                               }
                               
@@ -1687,7 +1689,7 @@ export default function Files() {
                               document.body.removeChild(a);
                             } catch (err) {
                               console.error('Download failed:', err);
-                              alert(err.message || t('downloadError'));
+                              showToast(err.message || t('downloadError'), 'error');
                             }
                           }}
                           style={{
@@ -1730,7 +1732,7 @@ export default function Files() {
                               const token = localStorage.getItem('access_token');
                               
                               if (!token) {
-                                alert(t('mustBeConnected'));
+                                showToast(t('mustBeConnected'), 'warning');
                                 return;
                               }
                               
@@ -1756,7 +1758,7 @@ export default function Files() {
                               document.body.removeChild(a);
                             } catch (err) {
                               console.error('Download failed:', err);
-                              alert(err.message || t('downloadError'));
+                              showToast(err.message || t('downloadError'), 'error');
                             }
                           }}
                           style={{
