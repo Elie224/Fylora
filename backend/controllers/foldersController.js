@@ -4,6 +4,7 @@ const archiver = require('archiver');
 const path = require('path');
 const fs = require('fs').promises;
 const { calculateRealQuotaUsed, syncQuotaUsed } = require('../utils/quota');
+const logger = require('../utils/logger');
 
 // Créer un dossier
 // IMPORTANT: Même les admins ne peuvent créer des dossiers que pour eux-mêmes
@@ -338,13 +339,51 @@ async function permanentDeleteFolder(req, res, next) {
     
     // Supprimer définitivement tous les fichiers du dossier
     const fs = require('fs').promises;
+    const path = require('path');
+    const config = require('../config');
+    const cloudinaryService = require('../services/cloudinaryService');
     let totalSize = 0;
     for (const file of files) {
       if (file.file_path) {
-        try {
-          await fs.unlink(file.file_path);
-        } catch (err) {
-          console.warn(`Could not delete physical file: ${file.file_path}`, err);
+        // Déterminer le type de stockage
+        const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+        
+        if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+          // Supprimer de Cloudinary
+          try {
+            await cloudinaryService.deleteFile(file.file_path);
+            logger.logInfo('File deleted from Cloudinary', {
+              fileId: file._id,
+              cloudinaryKey: file.file_path,
+              userId
+            });
+          } catch (cloudinaryErr) {
+            logger.logWarn('Could not delete file from Cloudinary', {
+              fileId: file._id,
+              cloudinaryKey: file.file_path,
+              error: cloudinaryErr.message,
+              userId
+            });
+            // Continuer même si la suppression Cloudinary échoue
+          }
+        } else if (storageType === 'local') {
+          // Supprimer le fichier local
+          try {
+            let filePath = file.file_path;
+            if (!path.isAbsolute(filePath)) {
+              filePath = path.resolve(config.upload.uploadDir, filePath);
+            }
+            await fs.unlink(filePath);
+          } catch (err) {
+            // Le fichier n'existe peut-être pas (déjà supprimé ou fichier orphelin)
+            logger.logWarn('Could not delete physical file', {
+              fileId: file._id,
+              filePath: file.file_path,
+              error: err.message,
+              userId
+            });
+            // Continuer même si le fichier physique n'existe pas
+          }
         }
       }
       totalSize += file.size || 0;
