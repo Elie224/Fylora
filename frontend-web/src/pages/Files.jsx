@@ -650,11 +650,15 @@ export default function Files() {
         navigate('/files', { replace: false });
       }
       setCurrentFolder(previousFolder);
+      // Recharger immédiatement
+      loadFiles(true);
     } else {
       // Retour à la racine
       navigate('/files', { replace: false });
       setCurrentFolder(null);
       setFolderHistory([]);
+      // Recharger immédiatement
+      loadFiles(true);
     }
   };
 
