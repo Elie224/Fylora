@@ -104,36 +104,62 @@ export default function Preview() {
       }
       
       // Récupérer le Content-Type depuis l'endpoint preview pour déterminer le type
+      // Utiliser GET directement pour gérer les réponses JSON Cloudinary
       let contentType = '';
       let previewError = null;
       let isOrphanFile = false;
       
       try {
-        const previewHeadResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
-          method: 'HEAD',
+        const previewGetResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          redirect: 'follow' // Suivre les redirections
         });
         
-        if (previewHeadResponse.ok) {
-          contentType = previewHeadResponse.headers.get('content-type') || '';
-        } else if (previewHeadResponse.status === 404) {
+        if (previewGetResponse.ok) {
+          // Vérifier si c'est une réponse JSON avec URL Cloudinary
+          const responseContentType = previewGetResponse.headers.get('content-type') || '';
+          if (responseContentType.includes('application/json')) {
+            const data = await previewGetResponse.json();
+            if (data.url && data.type === 'cloudinary') {
+              // C'est une URL Cloudinary, l'utiliser directement
+              contentType = 'cloudinary-url';
+              setPreviewUrl(data.url);
+              // Si le mimeType est fourni dans la réponse, l'utiliser
+              if (data.mimeType && !fileInfo) {
+                fileInfo = { mime_type: data.mimeType };
+              }
+            } else {
+              // Autre type de réponse JSON (erreur probablement)
+              contentType = responseContentType;
+            }
+          } else {
+            // Réponse normale (fichier local)
+            contentType = responseContentType;
+          }
+        } else if (previewGetResponse.status === 404) {
           // Le fichier n'existe pas physiquement (fichier orphelin)
           isOrphanFile = true;
           try {
-            const errorData = await previewHeadResponse.json().catch(() => ({}));
+            const errorData = await previewGetResponse.json().catch(() => ({}));
             previewError = errorData.error?.message || 'File not found on disk';
           } catch (e) {
             previewError = 'File not found on disk';
           }
+        } else {
+          // Autre erreur
+          const errorData = await previewGetResponse.json().catch(() => ({}));
+          previewError = errorData.error?.message || `Erreur ${previewGetResponse.status}`;
         }
-      } catch (headErr) {
-        console.warn('Could not fetch preview headers:', headErr);
-        // Si c'est une erreur réseau, essayer quand même avec GET
-        if (headErr.message && headErr.message.includes('404')) {
+      } catch (getErr) {
+        console.warn('Could not fetch preview:', getErr);
+        if (getErr.message && getErr.message.includes('404')) {
           isOrphanFile = true;
           previewError = 'File not found on disk';
+        } else {
+          previewError = getErr.message || 'Erreur lors du chargement du fichier';
         }
       }
       
@@ -144,45 +170,11 @@ export default function Preview() {
         return;
       }
       
-      // Essayer aussi avec GET si HEAD a échoué
-      if (!contentType && !isOrphanFile) {
-        try {
-          const previewGetResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            redirect: 'follow' // Suivre les redirections
-          });
-          
-          if (previewGetResponse.ok) {
-            // Vérifier si c'est une réponse JSON avec URL Cloudinary
-            const responseContentType = previewGetResponse.headers.get('content-type') || '';
-            if (responseContentType.includes('application/json')) {
-              const data = await previewGetResponse.json();
-              if (data.url) {
-                // C'est une URL Cloudinary, l'utiliser directement
-                contentType = 'cloudinary-url';
-                setPreviewUrl(data.url);
-              }
-            } else {
-              contentType = responseContentType;
-            }
-          } else if (previewGetResponse.status === 404) {
-            isOrphanFile = true;
-            setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
-            setLoading(false);
-            return;
-          }
-        } catch (getErr) {
-          console.warn('Could not fetch preview with GET:', getErr);
-          if (getErr.message && getErr.message.includes('404')) {
-            isOrphanFile = true;
-            setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
-            setLoading(false);
-            return;
-          }
-        }
+      // Si erreur autre que 404
+      if (previewError && !isOrphanFile) {
+        setError(previewError);
+        setLoading(false);
+        return;
       }
       
       // Construire les métadonnées du fichier

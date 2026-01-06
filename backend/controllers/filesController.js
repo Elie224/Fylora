@@ -1121,14 +1121,14 @@ async function previewFile(req, res, next) {
           mimeType: file.mime_type, // Passer le mimeType pour déterminer le resource_type
         });
         
-        // Pour les PDFs et documents, retourner l'URL en JSON pour que le frontend puisse l'utiliser
-        // Pour les images/vidéos, rediriger directement
-        if (file.mime_type === 'application/pdf' || file.mime_type?.startsWith('application/')) {
-          return res.json({ url: previewUrl, type: 'cloudinary' });
-        } else {
-          // Rediriger vers l'URL Cloudinary pour les images/vidéos
-          return res.redirect(previewUrl);
-        }
+        // Toujours retourner l'URL en JSON pour que le frontend puisse l'utiliser directement
+        // Cela évite les problèmes de redirection et permet un meilleur contrôle
+        res.setHeader('Content-Type', 'application/json');
+        return res.json({ 
+          url: previewUrl, 
+          type: 'cloudinary',
+          mimeType: file.mime_type
+        });
       } catch (cloudinaryErr) {
         logger.logError(cloudinaryErr, {
           context: 'cloudinary_preview',
