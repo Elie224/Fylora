@@ -734,6 +734,21 @@ async function uploadFile(req, res, next) {
       });
     }
 
+    // Publier événement via Event Bus
+    const eventBus = require('../services/eventBus');
+    eventBus.publish(eventBus.Events.FILE_UPLOADED, {
+      fileId: file.id,
+      fileName: file.name,
+      fileSize: file.size,
+      userId,
+      folderId,
+      storageType,
+    }, {
+      requestId: req.requestId,
+    }).catch(err => {
+      logger.logError(err, { context: 'event_publish_file_uploaded' });
+    });
+
     // OPTIMISATION: Répondre immédiatement, puis traiter en arrière-plan
     res.status(201).json({
       data: file,
