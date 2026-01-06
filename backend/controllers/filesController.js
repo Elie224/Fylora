@@ -617,6 +617,13 @@ async function uploadFile(req, res, next) {
       });
     }
 
+    // Invalider le cache de la liste des fichiers pour cet utilisateur IMMÉDIATEMENT
+    const cacheKey = `files:list:${userId}:${folderId || 'root'}`;
+    await redisCache.delete(cacheKey).catch(() => {});
+    if (filesListCache) {
+      filesListCache.delete(cacheKey);
+    }
+    
     // OPTIMISATION: Mettre à jour le quota de manière asynchrone (ne pas attendre)
     if (!isDuplicate) {
       updateQuotaAfterOperation(userId, fileSize).catch(err => {
