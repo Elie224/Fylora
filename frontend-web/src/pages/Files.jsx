@@ -129,7 +129,7 @@ export default function Files() {
 
   const downloadBatch = async () => {
     if (selectedItems.size === 0) {
-      alert(t('selectAtLeastOne'));
+      showToast(t('selectAtLeastOne'), 'warning');
       return;
     }
 
@@ -555,7 +555,7 @@ export default function Files() {
       });
       
       const errorMessage = err.message || 'Erreur lors de la suppression';
-      alert(`❌ ${t('deleteError')}:\n\n${errorMessage}\n\n${t('language') === 'en' ? 'Check the console (F12) for more details.' : 'Vérifiez la console (F12) pour plus de détails.'}`);
+      showToast(`${t('deleteError')}: ${errorMessage}`, 'error');
     }
     
     console.log('=== CONFIRM DELETE END ===');
