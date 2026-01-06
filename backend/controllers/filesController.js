@@ -1027,15 +1027,59 @@ async function previewFile(req, res, next) {
       
       // Utiliser sendFile avec gestion d'erreur
       try {
+        // Vérifier une dernière fois que le fichier existe avant d'essayer de le servir
+        await fs.access(filePath);
+        
         return res.sendFile(filePath, (err) => {
           if (err) {
-            logger.logError('Error sending file', { error: err.message, filePath, fileId: id, userId });
-            if (!res.headersSent) {
-              res.status(500).json({ error: { message: 'Error sending file' } });
+            // Gérer spécifiquement les erreurs ENOENT (fichier non trouvé)
+            if (err.code === 'ENOENT' || err.message?.includes('ENOENT')) {
+              logger.logWarn('File not found when sending (orphan file)', { 
+                error: err.message, 
+                filePath, 
+                fileId: id, 
+                userId,
+                fileName: file.name 
+              });
+              if (!res.headersSent) {
+                return res.status(404).json({ 
+                  error: { 
+                    message: 'File not found on disk',
+                    details: 'The file record exists in the database but the physical file is missing.',
+                    isOrphan: true,
+                    fileId: id,
+                    fileName: file.name
+                  } 
+                });
+              }
+            } else {
+              logger.logError('Error sending file', { error: err.message, filePath, fileId: id, userId });
+              if (!res.headersSent) {
+                res.status(500).json({ error: { message: 'Error sending file' } });
+              }
             }
           }
         });
       } catch (sendErr) {
+        // Gérer spécifiquement les erreurs ENOENT
+        if (sendErr.code === 'ENOENT' || sendErr.message?.includes('ENOENT')) {
+          logger.logWarn('File not found when accessing (orphan file)', { 
+            error: sendErr.message, 
+            filePath, 
+            fileId: id, 
+            userId,
+            fileName: file.name 
+          });
+          return res.status(404).json({ 
+            error: { 
+              message: 'File not found on disk',
+              details: 'The file record exists in the database but the physical file is missing.',
+              isOrphan: true,
+              fileId: id,
+              fileName: file.name
+            } 
+          });
+        }
         logger.logError('Error in sendFile', { error: sendErr.message, filePath, fileId: id, userId });
         return res.status(500).json({ error: { message: 'Error sending file' } });
       }
