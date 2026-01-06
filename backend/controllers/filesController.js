@@ -957,19 +957,53 @@ async function downloadFile(req, res, next) {
     // Déterminer le type de stockage
     const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
     
-    // Si c'est un fichier Cloudinary, rediriger vers l'URL de téléchargement Cloudinary
+    // Si c'est un fichier Cloudinary, télécharger et servir le fichier directement
+    // Cela garantit que le nom de fichier original est préservé et fonctionne sur tous les appareils
     if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
       try {
-        const downloadUrl = cloudinaryService.generateDownloadUrl(file.file_path, file.name);
-        logger.logInfo('Redirecting to Cloudinary download URL', {
-          fileId: id,
-          fileName: file.name,
-          cloudinaryKey: file.file_path
+        const https = require('https');
+        const http = require('http');
+        const downloadUrl = cloudinaryService.generateDownloadUrl(file.file_path, file.name, file.mime_type);
+        
+        // Télécharger le fichier depuis Cloudinary et le servir avec les bons headers
+        const url = new URL(downloadUrl);
+        const client = url.protocol === 'https:' ? https : http;
+        
+        client.get(url, (cloudinaryRes) => {
+          if (cloudinaryRes.statusCode !== 200) {
+            logger.logError(new Error(`Cloudinary returned ${cloudinaryRes.statusCode}`), {
+              context: 'cloudinary_download',
+              fileId: id,
+              cloudinaryKey: file.file_path,
+              statusCode: cloudinaryRes.statusCode
+            });
+            return res.status(cloudinaryRes.statusCode).json({ 
+              error: { message: 'Failed to fetch file from Cloudinary' } 
+            });
+          }
+          
+          // Servir le fichier avec les bons headers pour préserver le nom et l'extension
+          res.setHeader('Content-Type', file.mime_type || cloudinaryRes.headers['content-type'] || 'application/octet-stream');
+          res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.name)}"`);
+          res.setHeader('Content-Length', cloudinaryRes.headers['content-length'] || file.size);
+          
+          // Stream le fichier depuis Cloudinary vers la réponse
+          cloudinaryRes.pipe(res);
+        }).on('error', (err) => {
+          logger.logError(err, {
+            context: 'cloudinary_download',
+            fileId: id,
+            cloudinaryKey: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to download file from Cloudinary' } 
+          });
         });
-        return res.redirect(downloadUrl);
+        
+        return; // Ne pas continuer après avoir initié le stream
       } catch (cloudinaryErr) {
         logger.logError(cloudinaryErr, {
-          context: 'cloudinary_download_redirect',
+          context: 'cloudinary_download',
           fileId: id,
           cloudinaryKey: file.file_path
         });

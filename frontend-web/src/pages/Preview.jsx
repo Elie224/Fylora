@@ -325,11 +325,26 @@ export default function Preview() {
                 throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
               }
               
+              // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
+              const contentDisposition = response.headers.get('Content-Disposition');
+              let finalFileName = file?.name || 'download';
+              if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                  finalFileName = fileNameMatch[1].replace(/['"]/g, '');
+                  try {
+                    finalFileName = decodeURIComponent(finalFileName);
+                  } catch (e) {
+                    // Si le décodage échoue, utiliser le nom tel quel
+                  }
+                }
+              }
+              
               const blob = await response.blob();
               const url = window.URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = file?.name || 'download';
+              a.download = finalFileName; // Utiliser le nom de fichier original avec extension
               document.body.appendChild(a);
               a.click();
               window.URL.revokeObjectURL(url);
@@ -1463,54 +1478,49 @@ function OfficePreview({ fileId, fileName, mimeType, token, cloudinaryUrl, previ
         return;
       }
       
-      let downloadUrl = null;
-      if (cloudinaryUrl && (cloudinaryUrl.startsWith('https://res.cloudinary.com') || cloudinaryUrl.startsWith('http://res.cloudinary.com'))) {
-        downloadUrl = cloudinaryUrl;
-      } else if (previewUrl && (previewUrl.startsWith('https://res.cloudinary.com') || previewUrl.startsWith('http://res.cloudinary.com'))) {
-        downloadUrl = previewUrl;
-      } else {
-        downloadUrl = `${apiUrl}/api/files/${fileId}/download`;
-      }
+      // Toujours utiliser l'endpoint download qui préserve le nom de fichier original
+      // L'endpoint gère maintenant Cloudinary et local de manière transparente
+      const downloadUrl = `${apiUrl}/api/files/${fileId}/download`;
       
-      if (downloadUrl.startsWith('https://res.cloudinary.com') || downloadUrl.startsWith('http://res.cloudinary.com')) {
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = fileName || 'download';
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showToast(t('downloadStarted') || 'Download started', 'success');
-        return;
-      }
+      // Créer un lien de téléchargement qui fonctionne sur tous les appareils
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName || 'download'; // Préserver le nom de fichier original avec extension
+      a.style.display = 'none';
       
+      // Ajouter le token d'authentification dans l'en-tête via fetch puis créer un blob
+      // Cela garantit que le nom de fichier est préservé
       const response = await fetch(downloadUrl, {
         headers: {
           'Authorization': `Bearer ${token}`
-        },
-        redirect: 'follow'
+        }
       });
       
       if (!response.ok) {
-        if (response.redirected && response.url) {
-          window.open(response.url, '_blank');
-          showToast(t('downloadStarted') || 'Download started', 'success');
-          return;
-        }
         throw new Error('Download failed');
       }
       
-      if (response.redirected && response.url) {
-        window.open(response.url, '_blank');
-        showToast(t('downloadStarted') || 'Download started', 'success');
-        return;
+      // Obtenir le nom de fichier depuis les headers Content-Disposition si disponible
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let finalFileName = fileName || 'download';
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          finalFileName = fileNameMatch[1].replace(/['"]/g, '');
+          // Décoder l'URL si nécessaire
+          try {
+            finalFileName = decodeURIComponent(finalFileName);
+          } catch (e) {
+            // Si le décodage échoue, utiliser le nom tel quel
+          }
+        }
       }
       
+      // Créer un blob et télécharger avec le nom de fichier original
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
       a.href = url;
-      a.download = fileName || 'download';
+      a.download = finalFileName; // Utiliser le nom de fichier original avec extension
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
