@@ -5,8 +5,8 @@
 echo "=== DIAGNOSTIC FRONTEND-BACKEND ==="
 echo ""
 
-# Détecter si on est dans un environnement CI/CD
-if [ -n "$CI" ] || [ -n "$TEAMCITY_VERSION" ] || [ -n "$JENKINS_URL" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ]; then
+# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
+if [ -n "$CI" ] || [ -n "$RENDER" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ]; then
     IS_CI=true
 else
     IS_CI=false

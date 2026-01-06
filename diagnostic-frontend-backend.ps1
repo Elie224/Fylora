@@ -4,7 +4,7 @@
 $isLinux = $IsLinux -or ($PSVersionTable.Platform -eq "Unix") -or (Test-Path "/proc/version")
 
 # Si on est sur Linux et qu'on est en CI/CD, utiliser la version bash à la place
-if ($isLinux -and ($env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI)) {
+if ($isLinux -and ($env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI)) {
     if (Test-Path "diagnostic-frontend-backend.sh") {
         bash diagnostic-frontend-backend.sh
         exit $LASTEXITCODE
@@ -17,8 +17,8 @@ if ($isLinux -and ($env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $e
 Write-Host "=== DIAGNOSTIC FRONTEND-BACKEND ===" -ForegroundColor Cyan
 Write-Host ""
 
-# Détecter si on est dans un environnement CI/CD
-$isCI = $env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
+# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
+$isCI = $env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
 
 # 1. Verifier le backend
 Write-Host "1. Verification du backend sur le port 5001..." -ForegroundColor Yellow

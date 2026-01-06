@@ -1,8 +1,8 @@
 # Script PowerShell pour démarrer l'application Fylora complète
 # Ce script démarre le backend et le frontend en parallèle
 
-# Détecter si on est dans un environnement CI/CD
-$isCI = $env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
+# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
+$isCI = $env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
 
 if ($isCI) {
     Write-Host "⚠ Environnement CI/CD détecté - Les services seront démarrés séparément" -ForegroundColor Yellow

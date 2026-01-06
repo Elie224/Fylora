@@ -1,8 +1,8 @@
 # Script PowerShell pour demarrer MongoDB
 # Ce script tente de demarrer MongoDB sur Windows
 
-# Détecter si on est dans un environnement CI/CD
-$isCI = $env:CI -or $env:TEAMCITY_VERSION -or $env:JENKINS_URL -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
+# Détecter si on est dans un environnement CI/CD (Render, GitHub Actions, etc.)
+$isCI = $env:CI -or $env:RENDER -or $env:GITHUB_ACTIONS -or $env:GITLAB_CI
 
 if ($isCI) {
     Write-Host "⚠ Environnement CI/CD détecté - MongoDB sera géré par l'infrastructure" -ForegroundColor Yellow
