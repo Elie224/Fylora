@@ -557,21 +557,88 @@ async function uploadFile(req, res, next) {
       // On continue avec le fichier tel quel pour répondre rapidement
     }
 
-    // Vérifier une dernière fois que le fichier existe avant de créer l'entrée en base
-    try {
-      await fs.access(finalFilePath);
-    } catch (finalCheckErr) {
-      logger.logError('File does not exist before database creation', { 
-        path: finalFilePath, 
-        error: finalCheckErr.message, 
-        userId 
-      });
-      await fs.unlink(req.file.path).catch(() => {});
-      return res.status(500).json({ 
-        error: { 
-          message: 'File was not saved correctly. Please try again.',
-        } 
-      });
+    // Uploader vers Cloudinary si configuré, sinon stockage local
+    let storagePath = finalFilePath;
+    let storageType = 'local';
+    
+    if (cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        // Vérifier que le fichier existe avant upload
+        await fs.access(finalFilePath);
+        
+        // Lire le fichier en Buffer
+        const fileBuffer = await fs.readFile(finalFilePath);
+        
+        // Uploader vers Cloudinary
+        const cloudinaryResult = await cloudinaryService.uploadFile(
+          fileBuffer,
+          req.file.originalname,
+          userId,
+          req.file.mimetype
+        );
+        
+        // Utiliser la clé Cloudinary comme chemin
+        storagePath = cloudinaryResult.fileKey;
+        storageType = 'cloudinary';
+        
+        // Supprimer le fichier local (plus besoin)
+        await fs.unlink(finalFilePath).catch(() => {});
+        
+        // Mettre à jour la taille réelle (Cloudinary peut optimiser)
+        if (cloudinaryResult.size && cloudinaryResult.size !== fileSize) {
+          fileSize = cloudinaryResult.size;
+          logger.logInfo('File size updated after Cloudinary optimization', {
+            originalSize: req.file.size,
+            optimizedSize: fileSize,
+            fileName: req.file.originalname
+          });
+        }
+        
+        logger.logInfo('File uploaded to Cloudinary', {
+          fileName: req.file.originalname,
+          cloudinaryKey: storagePath,
+          size: fileSize,
+          userId
+        });
+      } catch (cloudinaryErr) {
+        logger.logError(cloudinaryErr, {
+          context: 'cloudinary_upload_fallback',
+          fileName: req.file.originalname,
+          userId
+        });
+        // Fallback vers stockage local si Cloudinary échoue
+        logger.logWarn('Falling back to local storage', {
+          fileName: req.file.originalname
+        });
+        // Vérifier que le fichier local existe toujours
+        try {
+          await fs.access(finalFilePath);
+        } catch (accessErr) {
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(500).json({ 
+            error: { 
+              message: 'File was not saved correctly. Please try again.',
+            } 
+          });
+        }
+      }
+    } else {
+      // Vérifier que le fichier existe avant de créer l'entrée en base (stockage local)
+      try {
+        await fs.access(finalFilePath);
+      } catch (finalCheckErr) {
+        logger.logError('File does not exist before database creation', { 
+          path: finalFilePath, 
+          error: finalCheckErr.message, 
+          userId 
+        });
+        await fs.unlink(req.file.path).catch(() => {});
+        return res.status(500).json({ 
+          error: { 
+            message: 'File was not saved correctly. Please try again.',
+          } 
+        });
+      }
     }
 
     // Créer l'entrée en base de données
@@ -583,32 +650,57 @@ async function uploadFile(req, res, next) {
         size: fileSize,
         folderId,
         ownerId: userId,
-        filePath: finalFilePath,
+        filePath: storagePath,
+        storageType: storageType,
       });
       
-      // Vérifier que le fichier existe toujours après la création en base
-      try {
-        await fs.access(finalFilePath);
-        logger.logInfo('File uploaded and saved successfully', {
+      // Vérifier que le fichier existe (local) ou est accessible (Cloudinary)
+      if (storageType === 'local') {
+        try {
+          await fs.access(storagePath);
+          logger.logInfo('File uploaded and saved successfully (local)', {
+            fileId: file.id,
+            fileName: req.file.originalname,
+            filePath: storagePath,
+            size: fileSize,
+            userId
+          });
+        } catch (postCreateErr) {
+          logger.logError('File disappeared after database creation', {
+            fileId: file.id,
+            filePath: storagePath,
+            error: postCreateErr.message,
+            userId
+          });
+          await FileModel.delete(file.id).catch(() => {});
+          return res.status(500).json({ 
+            error: { 
+              message: 'File was not saved correctly. Please try again.',
+            } 
+          });
+        }
+      } else {
+        // Pour Cloudinary, vérifier que le fichier existe
+        const exists = await cloudinaryService.fileExists(storagePath);
+        if (!exists) {
+          logger.logError('File not found in Cloudinary after upload', {
+            fileId: file.id,
+            cloudinaryKey: storagePath,
+            userId
+          });
+          await FileModel.delete(file.id).catch(() => {});
+          return res.status(500).json({ 
+            error: { 
+              message: 'File was not saved correctly. Please try again.',
+            } 
+          });
+        }
+        logger.logInfo('File uploaded and saved successfully (Cloudinary)', {
           fileId: file.id,
           fileName: req.file.originalname,
-          filePath: finalFilePath,
+          cloudinaryKey: storagePath,
           size: fileSize,
           userId
-        });
-      } catch (postCreateErr) {
-        // Si le fichier n'existe plus après création en base, supprimer l'entrée
-        logger.logError('File disappeared after database creation', {
-          fileId: file.id,
-          filePath: finalFilePath,
-          error: postCreateErr.message,
-          userId
-        });
-        await FileModel.delete(file.id).catch(() => {});
-        return res.status(500).json({ 
-          error: { 
-            message: 'File was not saved correctly. Please try again.',
-          } 
         });
       }
     } catch (dbError) {
@@ -1183,6 +1275,32 @@ async function streamFile(req, res, next) {
       const stream = require('fs').createReadStream(filePath, { start, end });
       stream.pipe(res);
     } else {
+      // Vérifier le type de stockage avant d'envoyer
+      const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+      
+      if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+        // Pour Cloudinary, rediriger vers l'URL de prévisualisation
+        try {
+          const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
+            quality: 'auto',
+            format: 'auto',
+          });
+          return res.redirect(previewUrl);
+        } catch (cloudinaryErr) {
+          logger.logError(cloudinaryErr, {
+            context: 'cloudinary_preview_redirect',
+            fileId: id,
+            cloudinaryKey: file.file_path,
+            userId
+          });
+          return res.status(500).json({ 
+            error: { 
+              message: 'Failed to generate preview URL',
+            } 
+          });
+        }
+      }
+      
       res.setHeader('Content-Type', file.mime_type);
       res.setHeader('Content-Length', file.size);
       res.sendFile(path.resolve(file.file_path));
