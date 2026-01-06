@@ -3,7 +3,7 @@
  * Gère l'upload de gros fichiers avec chunks et résume
  */
 
-import API from './api';
+import apiClient from '../services/api';
 
 class MultipartUploader {
   constructor(file, options = {}) {
@@ -67,7 +67,7 @@ class MultipartUploader {
         reader.readAsArrayBuffer(chunk);
       });
 
-      const response = await API.post(`/multipart/chunk/${this.uploadId}`, {
+      const response = await apiClient.post(`/multipart/chunk/${this.uploadId}`, {
         chunkIndex,
         chunkHash,
         chunk: chunkBase64,
@@ -119,14 +119,15 @@ class MultipartUploader {
   async start() {
     try {
       // 1. Initialiser l'upload
-      const initResponse = await API.post('/multipart/initiate', {
+      const initResponse = await apiClient.post('/multipart/initiate', {
         fileName: this.file.name,
         fileSize: this.file.size,
         mimeType: this.file.type,
       });
 
-      this.uploadId = initResponse.data.uploadId;
-      this.totalChunks = initResponse.data.totalChunks;
+      const responseData = initResponse.data.data || initResponse.data;
+      this.uploadId = responseData.uploadId;
+      this.totalChunks = responseData.totalChunks || this.totalChunks;
 
       // 2. Uploader tous les chunks
       await this.uploadAllChunks();
@@ -137,10 +138,11 @@ class MultipartUploader {
       }
 
       // 3. Finaliser l'upload
-      const finalizeResponse = await API.post(`/multipart/finalize/${this.uploadId}`);
+      const finalizeResponse = await apiClient.post(`/multipart/finalize/${this.uploadId}`);
       
-      this.onComplete(finalizeResponse.data);
-      return finalizeResponse.data;
+      const finalData = finalizeResponse.data.data || finalizeResponse.data;
+      this.onComplete(finalData);
+      return finalData;
     } catch (err) {
       this.onError(err);
       throw err;
@@ -159,9 +161,10 @@ class MultipartUploader {
     await this.uploadAllChunks();
 
     if (!this.isCancelled) {
-      const finalizeResponse = await API.post(`/multipart/finalize/${this.uploadId}`);
-      this.onComplete(finalizeResponse.data);
-      return finalizeResponse.data;
+      const finalizeResponse = await apiClient.post(`/multipart/finalize/${this.uploadId}`);
+      const finalData = finalizeResponse.data.data || finalizeResponse.data;
+      this.onComplete(finalData);
+      return finalData;
     }
   }
 
@@ -179,7 +182,7 @@ class MultipartUploader {
     this.isCancelled = true;
     if (this.uploadId) {
       try {
-        await API.delete(`/multipart/cancel/${this.uploadId}`);
+        await apiClient.delete(`/multipart/cancel/${this.uploadId}`);
       } catch (err) {
         console.error('Error cancelling upload:', err);
       }
@@ -195,8 +198,8 @@ class MultipartUploader {
     }
 
     try {
-      const response = await API.get(`/multipart/status/${this.uploadId}`);
-      return response.data;
+      const response = await apiClient.get(`/multipart/status/${this.uploadId}`);
+      return response.data.data || response.data;
     } catch (err) {
       return null;
     }
