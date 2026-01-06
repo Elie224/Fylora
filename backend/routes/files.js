@@ -25,25 +25,25 @@ router.post('/upload', uploadLimiter, attachPlanInfo, checkFileSizeLimit, filesC
 router.get('/trash', filesController.listTrash);
 
 // Prévisualiser un fichier
-router.get('/:id/preview', filesController.previewFile);
+router.get('/:id/preview', validateObjectId, filesController.previewFile);
 
 // Stream audio/vidéo
-router.get('/:id/stream', filesController.streamFile);
+router.get('/:id/stream', validateObjectId, filesController.streamFile);
 
 // Mettre à jour un fichier (rename/move)
-router.patch('/:id', filesController.updateFile);
+router.patch('/:id', validateObjectId, filesController.updateFile);
 
 // Mettre à jour le contenu d'un fichier texte
-router.put('/:id', filesController.uploadMiddleware, filesController.updateFileContent);
+router.put('/:id', validateObjectId, filesController.uploadMiddleware, filesController.updateFileContent);
 
 // Supprimer un fichier
-router.delete('/:id', filesController.deleteFile);
+router.delete('/:id', validateObjectId, filesController.deleteFile);
 
 // Restaurer un fichier
 router.post('/:id/restore', validateObjectId, filesController.restoreFile);
 
 // Supprimer définitivement un fichier
-router.delete('/:id/permanent', filesController.permanentDeleteFile);
+router.delete('/:id/permanent', validateObjectId, filesController.permanentDeleteFile);
 
 // Téléchargement en lot (ZIP)
 const batchDownloadController = require('../controllers/batchDownloadController');
