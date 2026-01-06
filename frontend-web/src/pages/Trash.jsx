@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fileService, folderService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useToast } from '../components/Toast';
+import { useToast, useConfirm } from '../components/Toast';
 
 export default function Trash() {
   const { t, language } = useLanguage(); // Inclure language pour forcer le re-render
