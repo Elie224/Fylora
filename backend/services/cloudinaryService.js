@@ -61,7 +61,8 @@ async function uploadFile(fileBuffer, fileName, userId, mimeType) {
   const fileExtension = fileName.split('.').pop() || '';
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
   const folder = `fylora/users/${userId}`;
-  const publicId = `${folder}/${uniqueFileName.replace(/\.[^/.]+$/, '')}`;
+  // Ne pas inclure le folder dans public_id, Cloudinary le gère automatiquement
+  const publicId = uniqueFileName.replace(/\.[^/.]+$/, '');
 
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
