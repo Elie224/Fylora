@@ -286,4 +286,5 @@ if (eventBus.isConnected) {
 }
 
 module.exports = eventBus;
+module.exports.Events = EventBus.Events;
 

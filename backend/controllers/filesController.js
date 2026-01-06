@@ -743,7 +743,8 @@ async function uploadFile(req, res, next) {
 
     // Publier événement via Event Bus
     const eventBus = require('../services/eventBus');
-    eventBus.publish(eventBus.Events.FILE_UPLOADED, {
+    const { Events } = require('../services/eventBus');
+    eventBus.publish(Events.FILE_UPLOADED, {
       fileId: file.id,
       fileName: file.name,
       fileSize: file.size,
