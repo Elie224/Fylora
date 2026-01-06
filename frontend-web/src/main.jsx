@@ -291,6 +291,19 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// Enregistrer le Service Worker pour le mode offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('✅ Service Worker registered:', registration);
+      })
+      .catch((error) => {
+        console.log('⚠️ Service Worker registration failed:', error);
+      });
+  });
+}
+
 // Log de démarrage
 console.log('🚀 Starting Fylora application...');
 console.log('React version:', React.version);
