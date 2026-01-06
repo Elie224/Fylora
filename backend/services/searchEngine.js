@@ -165,9 +165,17 @@ class SearchEngine {
   /**
    * Indexer un fichier de manière asynchrone
    */
-  async indexFileAsync(fileId, userId, filePath, mimeType) {
+  async indexFileAsync(fileId, userId, filePath, mimeType, storageType = null, storagePath = null) {
+    // Déterminer le type de stockage si non fourni
+    if (!storageType) {
+      storageType = filePath && filePath.startsWith('fylora/') ? 'cloudinary' : 'local';
+    }
+    if (!storagePath && storageType === 'cloudinary') {
+      storagePath = filePath;
+    }
+    
     // Ajouter à la queue d'indexation
-    this.indexingQueue.push({ fileId, userId, filePath, mimeType });
+    this.indexingQueue.push({ fileId, userId, filePath, mimeType, storageType, storagePath });
     
     // Traiter si pas déjà en cours
     if (!this.isIndexing) {
@@ -193,7 +201,9 @@ class SearchEngine {
           job.fileId,
           job.userId,
           job.filePath,
-          job.mimeType
+          job.mimeType,
+          job.storageType || 'local',
+          job.storagePath || null
         );
       } catch (error) {
         console.error('Indexing error:', error);

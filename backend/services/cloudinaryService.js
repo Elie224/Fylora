@@ -220,16 +220,25 @@ function generatePreviewUrl(fileKey, options = {}) {
  * Générer une URL de téléchargement
  * @param {string} fileKey - Clé publique du fichier
  * @param {string} fileName - Nom du fichier pour le téléchargement
+ * @param {string} mimeType - Type MIME du fichier (optionnel, pour déterminer resource_type)
  * @returns {string} URL de téléchargement
  */
-function generateDownloadUrl(fileKey, fileName) {
+function generateDownloadUrl(fileKey, fileName, mimeType = null) {
   if (!isConfigured) {
     throw new Error('Cloudinary not configured');
   }
 
+  // Déterminer le type de ressource basé sur le mimeType
+  let resourceType = 'raw'; // Par défaut pour PDFs et documents
+  if (mimeType?.startsWith('image/')) {
+    resourceType = 'image';
+  } else if (mimeType?.startsWith('video/')) {
+    resourceType = 'video';
+  }
+
   // URL avec flag de téléchargement
   return cloudinary.url(fileKey, {
-    resource_type: 'auto',
+    resource_type: resourceType,
     secure: true,
     flags: `attachment:${fileName}`,
   });

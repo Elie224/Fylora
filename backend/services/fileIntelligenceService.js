@@ -33,7 +33,7 @@ class FileIntelligenceService {
       }
 
       // Détection de données sensibles
-      await this.detectSensitiveData(filePath, mimeType, metadata);
+      await this.detectSensitiveData(filePath, mimeType, metadata, storageType, storagePath);
 
       // Extraction de mots-clés
       await this.extractKeywords(metadata);
@@ -101,7 +101,20 @@ class FileIntelligenceService {
    */
   async extractText(filePath, metadata, storageType = 'local', storagePath = null) {
     try {
-      const content = await fs.readFile(filePath, 'utf-8');
+      let content = '';
+      
+      // Si le fichier est sur Cloudinary, le télécharger d'abord
+      if (storageType === 'cloudinary' && storagePath) {
+        const cloudinaryService = require('./cloudinaryService');
+        const axios = require('axios');
+        const downloadUrl = cloudinaryService.generateDownloadUrl(storagePath, 'file.txt');
+        const response = await axios.get(downloadUrl, { responseType: 'text' });
+        content = response.data;
+      } else {
+        // Lire depuis le stockage local
+        content = await fs.readFile(filePath, 'utf-8');
+      }
+      
       metadata.ocr_text = content.substring(0, 10000); // Limiter
     } catch (error) {
       console.error('Text extraction failed:', error);
@@ -111,13 +124,22 @@ class FileIntelligenceService {
   /**
    * Détecter les données sensibles dans un fichier
    */
-  async detectSensitiveData(filePath, mimeType, metadata) {
+  async detectSensitiveData(filePath, mimeType, metadata, storageType = 'local', storagePath = null) {
     try {
       let content = '';
       
       // Lire le contenu selon le type
       if (mimeType.startsWith('text/') || mimeType === 'application/json') {
-        content = await fs.readFile(filePath, 'utf-8');
+        // Si le fichier est sur Cloudinary, le télécharger d'abord
+        if (storageType === 'cloudinary' && storagePath) {
+          const cloudinaryService = require('./cloudinaryService');
+          const axios = require('axios');
+          const downloadUrl = cloudinaryService.generateDownloadUrl(storagePath, 'file.txt');
+          const response = await axios.get(downloadUrl, { responseType: 'text' });
+          content = response.data;
+        } else {
+          content = await fs.readFile(filePath, 'utf-8');
+        }
       } else if (metadata.ocr_text) {
         content = metadata.ocr_text;
       }

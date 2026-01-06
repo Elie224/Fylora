@@ -22,12 +22,16 @@ async function getFileMetadata(req, res, next) {
     let metadata = await FileMetadata.findOne({ file_id: id });
     if (!metadata) {
       // Traiter le fichier si pas encore traité
-      const filePath = path.join(config.upload.uploadDir, file.file_path);
+      const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+      const filePath = storageType === 'cloudinary' ? file.file_path : path.join(config.upload.uploadDir, file.file_path);
+      const storagePath = storageType === 'cloudinary' ? file.file_path : null;
       metadata = await fileIntelligenceService.processFile(
         id,
         userId,
         filePath,
-        file.mime_type
+        file.mime_type,
+        storageType,
+        storagePath
       );
     }
 
@@ -48,12 +52,16 @@ async function processFile(req, res, next) {
       return res.status(404).json({ error: { message: 'File not found' } });
     }
 
-    const filePath = path.join(config.upload.uploadDir, file.file_path);
+    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+    const filePath = storageType === 'cloudinary' ? file.file_path : path.join(config.upload.uploadDir, file.file_path);
+    const storagePath = storageType === 'cloudinary' ? file.file_path : null;
     const metadata = await fileIntelligenceService.processFile(
       id,
       userId,
       filePath,
-      file.mime_type
+      file.mime_type,
+      storageType,
+      storagePath
     );
 
     res.status(200).json({
