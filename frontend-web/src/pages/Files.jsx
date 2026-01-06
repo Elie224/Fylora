@@ -159,7 +159,7 @@ export default function Files() {
       setSelectedItems(new Set());
     } catch (err) {
       console.error('Batch download failed:', err);
-      alert(err.response?.data?.error?.message || 'Erreur lors du téléchargement');
+      showToast(err.response?.data?.error?.message || t('downloadError'), 'error');
     }
   };
 
@@ -293,7 +293,7 @@ export default function Files() {
               onError: (err) => {
                 console.error(`Multipart upload failed for ${file.name}:`, err);
                 const errorMsg = err.response?.data?.error?.message || err.message || t('uploadError');
-                alert(`${t('error')} ${file.name}: ${errorMsg}`);
+                showToast(`${t('error')} ${file.name}: ${errorMsg}`, 'error');
                 progress[file.name] = -1;
                 setUploadProgress({ ...progress });
               },
@@ -330,7 +330,7 @@ export default function Files() {
         } catch (fileErr) {
           console.error(`Upload failed for ${file.name}:`, fileErr);
           const errorMsg = fileErr.response?.data?.error?.message || fileErr.message || t('uploadError');
-          alert(`${t('error')} ${file.name}: ${errorMsg}`);
+          showToast(`${t('error')} ${file.name}: ${errorMsg}`, 'error');
           progress[file.name] = -1; // Marquer comme échoué
           setUploadProgress({ ...progress });
         }
@@ -341,7 +341,7 @@ export default function Files() {
       setUploadProgress({});
     } catch (err) {
       console.error('Upload failed:', err);
-      alert(t('uploadError') + ': ' + (err.response?.data?.error?.message || err.message));
+      showToast(t('uploadError') + ': ' + (err.response?.data?.error?.message || err.message), 'error');
       // Recharger même en cas d'erreur pour avoir l'état correct
       await loadFiles(true);
     } finally {
@@ -419,7 +419,7 @@ export default function Files() {
         errorMessage = err.message;
       }
       
-      alert(`Erreur lors de la création du dossier:\n${errorMessage}`);
+      showToast(t('createFolderError') + ': ' + errorMessage, 'error');
     }
   };
 
@@ -452,7 +452,7 @@ export default function Files() {
       await loadFiles(true);
     } catch (err) {
       console.error('Failed to rename:', err);
-      alert(t('renameError'));
+      showToast(t('renameError'), 'error');
       // Recharger en cas d'erreur pour récupérer l'état correct
       await loadFiles(true);
     }
@@ -464,7 +464,7 @@ export default function Files() {
     
     if (!item) {
       console.error('❌ No item provided');
-      alert(t('errorNoItemSelected'));
+      showToast(t('errorNoItemSelected'), 'warning');
       return;
     }
     

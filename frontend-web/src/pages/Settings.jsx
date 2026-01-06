@@ -720,24 +720,24 @@ export default function Settings() {
                   });
 
                   if (response.ok) {
-                    alert(t('deleteAccountSuccess') || 'Votre compte a été supprimé avec succès.');
+                    showToast(t('deleteAccountSuccess') || 'Votre compte a été supprimé avec succès.', 'success');
                     // Déconnexion et redirection
                     logout();
                     navigate('/');
                     window.location.reload();
                   } else {
                     const error = await response.json();
-                    alert(error.error?.message || t('deleteAccountError') || 'Erreur lors de la suppression du compte.');
+                    showToast(error.error?.message || t('deleteAccountError') || 'Erreur lors de la suppression du compte.', 'error');
                   }
                 } catch (error) {
                   console.error('Error deleting account:', error);
-                  alert(t('deleteAccountError') || 'Erreur lors de la suppression du compte.');
+                  showToast(t('deleteAccountError') || 'Erreur lors de la suppression du compte.', 'error');
                 } finally {
                   setSaving(false);
                 }
               }
             } else if (userInput !== null) {
-              alert(t('deleteAccountCancelled') || 'Suppression annulée. Le texte saisi ne correspond pas.');
+              showToast(t('deleteAccountCancelled') || 'Suppression annulée. Le texte saisi ne correspond pas.', 'warning');
             }
           }}
           disabled={saving}

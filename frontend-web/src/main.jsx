@@ -263,6 +263,7 @@ function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
+          </ToastProvider>
       </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
