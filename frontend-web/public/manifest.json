@@ -22,14 +22,14 @@
       "short_name": "Fichiers",
       "description": "Accéder à mes fichiers",
       "url": "/files",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": []
     },
     {
       "name": "Galerie",
       "short_name": "Galerie",
       "description": "Voir mes photos et vidéos",
       "url": "/gallery",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": []
     }
   ]
 }
