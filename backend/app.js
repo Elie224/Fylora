@@ -542,6 +542,8 @@ app.use('/api/notes', require('./routes/notes'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/note-templates', require('./routes/noteTemplates'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/mfa', require('./routes/mfa'));
+app.use('/api/multipart', require('./routes/multipart'));
 
 // Routes GDPR/RGPD pour la conformité avec le Règlement Général sur la Protection des Données
 app.use('/api/gdpr', require('./routes/gdpr'));
