@@ -187,7 +187,13 @@ export default function Preview() {
       
       // Construire les métadonnées du fichier
       const mimeType = fileInfo?.mime_type || contentType || 'application/octet-stream';
-      const previewUrl = `${apiUrl}/api/files/${id}/preview`;
+      let finalPreviewUrl = `${apiUrl}/api/files/${id}/preview`;
+      
+      // Si on a reçu une URL Cloudinary dans la réponse JSON, l'utiliser
+      if (contentType === 'cloudinary-url' && previewUrl) {
+        finalPreviewUrl = previewUrl;
+      }
+      
       const streamUrl = `${apiUrl}/api/files/${id}/stream`;
       
       // Stocker les métadonnées complètes
