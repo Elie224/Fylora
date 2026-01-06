@@ -33,6 +33,13 @@ class PrefetchManager {
       return this.prefetchCache.get(cacheKey);
     }
 
+    // Vérifier que le token est disponible avant de précharger
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      // Ne pas précharger si pas de token - éviter les erreurs 401
+      return null;
+    }
+
     try {
       const response = await apiClient.get(url);
       this.prefetchCache.set(cacheKey, response.data);
@@ -44,7 +51,10 @@ class PrefetchManager {
 
       return response.data;
     } catch (error) {
-      console.warn('Prefetch failed:', url, error);
+      // Ne pas logger les erreurs 401 pour éviter le spam dans la console
+      if (error.response?.status !== 401) {
+        console.warn('Prefetch failed:', url, error);
+      }
       return null;
     }
   }

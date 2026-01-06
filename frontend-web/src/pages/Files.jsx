@@ -1336,7 +1336,9 @@ export default function Files() {
               return (
                 <div
                   key={itemId}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     if (itemType === 'folder') {
                       openFolder({ ...item, type: itemType, id: itemId });
                     } else {
@@ -1345,6 +1347,7 @@ export default function Files() {
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     toggleSelection(itemId);
                   }}
                   style={{
@@ -1621,7 +1624,11 @@ export default function Files() {
                     <td style={{ padding: '16px' }}>
                       {itemType === 'folder' ? (
                         <span
-                          onClick={() => openFolder({ ...item, type: itemType, id: itemId })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openFolder({ ...item, type: itemType, id: itemId });
+                          }}
                           style={{ 
                             cursor: 'pointer', 
                             fontWeight: '600', 
