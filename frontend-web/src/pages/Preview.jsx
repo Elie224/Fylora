@@ -492,7 +492,13 @@ export default function Preview() {
             previewUrl={previewUrl}
           />
         )}
-              <button
+
+        {previewType === 'download' && (
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <p style={{ marginBottom: 24, fontSize: '16px', color: textColor }}>
+              {t('downloadOnly') || 'This file type can only be downloaded'}
+            </p>
+            <button
                 onClick={async () => {
                   try {
                     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -676,12 +682,8 @@ export default function Preview() {
               >
                 {t('downloadFile') || 'Download'}
               </button>
-            </div>
           </div>
         )}
-
-        {previewType === 'download' && (
-          <div style={{ padding: 48, textAlign: 'center' }}>
             <p>{t('cannotPreviewFileType')}</p>
             <button
               onClick={async () => {
