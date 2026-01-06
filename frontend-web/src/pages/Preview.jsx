@@ -227,6 +227,16 @@ export default function Preview() {
         setPreviewType('video');
       } else if (mimeType.startsWith('audio/')) {
         setPreviewType('audio');
+      } else if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || // .docx
+        mimeType === 'application/msword' || // .doc
+        mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || // .pptx
+        mimeType === 'application/vnd.ms-powerpoint' || // .ppt
+        mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || // .xlsx
+        mimeType === 'application/vnd.ms-excel' // .xls
+      ) {
+        // Formats Office - utiliser iframe avec viewer en ligne ou téléchargement
+        setPreviewType('office');
       } else {
         setPreviewType('download');
       }

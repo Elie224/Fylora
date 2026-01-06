@@ -240,7 +240,13 @@ const translations = {
     fileSize: 'Taille du fichier',
     createdAt: 'Créé le',
     updatedAt: 'Modifié le',
+    modifiedAt: 'Modifié le',
+    folderId: 'ID du dossier',
     edit: 'Éditer',
+    officeFilePreview: 'Ce fichier Office peut être visualisé ou téléchargé',
+    viewOnline: 'Voir en ligne',
+    openingInViewer: 'Ouverture dans le visualiseur...',
+    viewerError: 'Erreur lors de l\'ouverture du visualiseur',
     
     // Gallery
     gallery: 'Galerie',
