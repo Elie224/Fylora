@@ -50,7 +50,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-microsoft": "^2.1.0",
     "pdf-parse": "^1.1.1",
-    "qrcode": "^1.5.3",
+    "qrcode": "^1.5.4",
     "quill": "^2.0.3",
     "react-quill": "^2.0.0",
     "redis": "^4.6.12",

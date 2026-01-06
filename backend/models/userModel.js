@@ -74,6 +74,12 @@ const UserSchema = new Schema({
   
   // Date de dernière connexion
   last_login_at: Date,
+  
+  // MFA (Multi-Factor Authentication)
+  mfa_enabled: { type: Boolean, default: false },
+  mfa_secret: String, // Secret TOTP (chiffré)
+  mfa_type: { type: String, enum: ['totp', 'email', 'sms'], default: null },
+  mfa_backup_codes: [String], // Codes de backup (hashés)
 }, { 
   timestamps: { 
     createdAt: 'created_at', 

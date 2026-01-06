@@ -1,143 +1,155 @@
 /**
- * Service de chiffrement de bout en bout (E2E)
- * Chiffre les fichiers avant l'upload et déchiffre lors du téléchargement
+ * Service de Chiffrement - AES-256 at rest
+ * Chiffre les fichiers sensibles avant stockage
  */
+
 const crypto = require('crypto');
-const fs = require('fs').promises;
-const path = require('path');
 const logger = require('../utils/logger');
 
-const ALGORITHM = 'aes-256-gcm';
-const KEY_LENGTH = 32; // 256 bits
-const IV_LENGTH = 16; // 128 bits
-const SALT_LENGTH = 32;
+class EncryptionService {
+  constructor() {
+    // Clé de chiffrement (doit être dans les variables d'environnement)
+    this.encryptionKey = process.env.ENCRYPTION_KEY || this.generateKey();
+    this.algorithm = 'aes-256-gcm'; // AES-256 avec GCM pour authentification
+    this.keyLength = 32; // 256 bits
+  }
 
-/**
- * Générer une clé de chiffrement à partir d'un mot de passe
- */
-function deriveKey(password, salt) {
-  return crypto.pbkdf2Sync(password, salt, 100000, KEY_LENGTH, 'sha256');
-}
+  /**
+   * Générer une clé de chiffrement (pour développement uniquement)
+   */
+  generateKey() {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ENCRYPTION_KEY must be set in production');
+    }
+    return crypto.randomBytes(this.keyLength).toString('hex');
+  }
 
-/**
- * Chiffrer un fichier
- */
-async function encryptFile(inputPath, outputPath, encryptionKey) {
-  try {
-    const key = Buffer.from(encryptionKey, 'hex');
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const salt = crypto.randomBytes(SALT_LENGTH);
-
-    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-    
-    const input = await fs.readFile(inputPath);
-    const encrypted = Buffer.concat([cipher.update(input), cipher.final()]);
-    
-    const authTag = cipher.getAuthTag();
-
-    // Format: salt + iv + authTag + encryptedData
-    const output = Buffer.concat([
+  /**
+   * Dériver une clé depuis la clé principale et un salt
+   */
+  deriveKey(salt) {
+    return crypto.pbkdf2Sync(
+      this.encryptionKey,
       salt,
-      iv,
-      authTag,
-      encrypted,
-    ]);
-
-    await fs.writeFile(outputPath, output);
-
-    return {
-      encrypted: true,
-      salt: salt.toString('hex'),
-      iv: iv.toString('hex'),
-      authTag: authTag.toString('hex'),
-    };
-  } catch (error) {
-    logger.logError(error, { context: 'encryptFile' });
-    throw error;
-  }
-}
-
-/**
- * Déchiffrer un fichier
- */
-async function decryptFile(inputPath, outputPath, encryptionKey) {
-  try {
-    const key = Buffer.from(encryptionKey, 'hex');
-    const encryptedData = await fs.readFile(inputPath);
-
-    // Extraire les composants
-    const salt = encryptedData.slice(0, SALT_LENGTH);
-    const iv = encryptedData.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-    const authTag = encryptedData.slice(
-      SALT_LENGTH + IV_LENGTH,
-      SALT_LENGTH + IV_LENGTH + 16
+      100000, // 100k itérations
+      this.keyLength,
+      'sha256'
     );
-    const encrypted = encryptedData.slice(SALT_LENGTH + IV_LENGTH + 16);
+  }
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  /**
+   * Chiffrer un buffer de données
+   */
+  encrypt(buffer, userId) {
+    try {
+      // Générer un salt unique pour cet utilisateur/fichier
+      const salt = crypto.randomBytes(16);
+      const key = this.deriveKey(salt);
+      
+      // Générer un IV (Initialization Vector)
+      const iv = crypto.randomBytes(16);
+      
+      // Créer le cipher
+      const cipher = crypto.createCipheriv(this.algorithm, key, iv);
+      
+      // Chiffrer les données
+      const encrypted = Buffer.concat([
+        cipher.update(buffer),
+        cipher.final(),
+      ]);
+      
+      // Récupérer l'authentification tag
+      const authTag = cipher.getAuthTag();
+      
+      // Combiner: salt + iv + authTag + données chiffrées
+      const result = Buffer.concat([
+        salt,
+        iv,
+        authTag,
+        encrypted,
+      ]);
+      
+      return result;
+    } catch (err) {
+      logger.logError(err, { context: 'encryption_error', userId });
+      throw new Error('Encryption failed');
+    }
+  }
+
+  /**
+   * Déchiffrer un buffer de données
+   */
+  decrypt(encryptedBuffer, userId) {
+    try {
+      // Extraire les composants
+      const salt = encryptedBuffer.slice(0, 16);
+      const iv = encryptedBuffer.slice(16, 32);
+      const authTag = encryptedBuffer.slice(32, 48);
+      const encrypted = encryptedBuffer.slice(48);
+      
+      // Dériver la clé
+      const key = this.deriveKey(salt);
+      
+      // Créer le decipher
+      const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
+      decipher.setAuthTag(authTag);
+      
+      // Déchiffrer
+      const decrypted = Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final(),
+      ]);
+      
+      return decrypted;
+    } catch (err) {
+      logger.logError(err, { context: 'decryption_error', userId });
+      throw new Error('Decryption failed');
+    }
+  }
+
+  /**
+   * Chiffrer un fichier stream (pour gros fichiers)
+   */
+  createEncryptStream(userId) {
+    const salt = crypto.randomBytes(16);
+    const key = this.deriveKey(salt);
+    const iv = crypto.randomBytes(16);
+    
+    const cipher = crypto.createCipheriv(this.algorithm, key, iv);
+    
+    // Écrire le salt et l'IV en premier
+    const saltIvBuffer = Buffer.concat([salt, iv]);
+    
+    return {
+      stream: cipher,
+      saltIv: saltIvBuffer,
+      getAuthTag: () => cipher.getAuthTag(),
+    };
+  }
+
+  /**
+   * Déchiffrer un fichier stream
+   */
+  createDecryptStream(encryptedStream, saltIv, authTag, userId) {
+    const salt = saltIv.slice(0, 16);
+    const iv = saltIv.slice(16);
+    const key = this.deriveKey(salt);
+    
+    const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
     decipher.setAuthTag(authTag);
+    
+    return decipher;
+  }
 
-    const decrypted = Buffer.concat([
-      decipher.update(encrypted),
-      decipher.final(),
-    ]);
-
-    await fs.writeFile(outputPath, decrypted);
-
-    return { decrypted: true };
-  } catch (error) {
-    logger.logError(error, { context: 'decryptFile' });
-    throw error;
+  /**
+   * Vérifier si le chiffrement est activé
+   */
+  isEnabled() {
+    return !!process.env.ENCRYPTION_KEY;
   }
 }
 
-/**
- * Générer une clé de chiffrement pour un utilisateur
- */
-function generateEncryptionKey() {
-  return crypto.randomBytes(KEY_LENGTH).toString('hex');
-}
+// Instance singleton
+const encryptionService = new EncryptionService();
 
-/**
- * Chiffrer un buffer en mémoire (pour les petits fichiers)
- */
-function encryptBuffer(buffer, encryptionKey) {
-  const key = Buffer.from(encryptionKey, 'hex');
-  const iv = crypto.randomBytes(IV_LENGTH);
-  
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
-  const authTag = cipher.getAuthTag();
-
-  return {
-    encrypted: Buffer.concat([iv, authTag, encrypted]),
-    iv: iv.toString('hex'),
-    authTag: authTag.toString('hex'),
-  };
-}
-
-/**
- * Déchiffrer un buffer en mémoire
- */
-function decryptBuffer(encryptedBuffer, encryptionKey) {
-  const key = Buffer.from(encryptionKey, 'hex');
-  const iv = encryptedBuffer.slice(0, IV_LENGTH);
-  const authTag = encryptedBuffer.slice(IV_LENGTH, IV_LENGTH + 16);
-  const encrypted = encryptedBuffer.slice(IV_LENGTH + 16);
-
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
-
-  return Buffer.concat([decipher.update(encrypted), decipher.final()]);
-}
-
-module.exports = {
-  encryptFile,
-  decryptFile,
-  generateEncryptionKey,
-  encryptBuffer,
-  decryptBuffer,
-  ALGORITHM,
-};
-
-
+module.exports = encryptionService;

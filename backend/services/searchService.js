@@ -1,402 +1,347 @@
 /**
- * Service de Recherche avec ElasticSearch
- * Recherche instantanée < 100ms
- * 
- * Architecture: ElasticSearch pour recherche, MongoDB pour métadonnées
+ * Service de Recherche Avancée avec ElasticSearch
+ * Recherche full-text, sémantique, autocomplétion
  */
 
 const { Client } = require('@elastic/elasticsearch');
 const logger = require('../utils/logger');
 
-let esClient = null;
-const ES_ENABLED = process.env.ELASTICSEARCH_URL && process.env.ELASTICSEARCH_URL !== '';
-
-/**
- * Initialiser le client ElasticSearch
- */
-function initElasticSearch() {
-  if (!ES_ENABLED) {
-    logger.logWarn('ElasticSearch not configured, using MongoDB search fallback');
-    return null;
+class SearchService {
+  constructor() {
+    this.client = null;
+    this.isConnected = false;
+    this.indexName = 'fylora_files';
   }
 
-  try {
-    esClient = new Client({
-      node: process.env.ELASTICSEARCH_URL,
-      auth: process.env.ELASTICSEARCH_AUTH ? {
-        username: process.env.ELASTICSEARCH_USERNAME || '',
-        password: process.env.ELASTICSEARCH_PASSWORD || '',
-      } : undefined,
-      requestTimeout: 30000,
-      pingTimeout: 3000,
-    });
+  /**
+   * Initialiser la connexion ElasticSearch
+   */
+  async init() {
+    try {
+      const elasticUrl = process.env.ELASTICSEARCH_URL || 'http://localhost:9200';
+      
+      this.client = new Client({
+        node: elasticUrl,
+        requestTimeout: 30000,
+        pingTimeout: 3000,
+      });
 
-    logger.logInfo('ElasticSearch client initialized', {
-      node: process.env.ELASTICSEARCH_URL.replace(/\/\/.*@/, '//****@')
-    });
+      // Tester la connexion
+      const health = await this.client.cluster.health();
+      this.isConnected = true;
 
-    return esClient;
-  } catch (error) {
-    logger.logError(error, { context: 'elasticsearch_init' });
-    return null;
-  }
-}
+      logger.logInfo('ElasticSearch connected', {
+        cluster: health.cluster_name,
+        status: health.status,
+      });
 
-// Initialiser au démarrage
-if (ES_ENABLED) {
-  initElasticSearch();
-}
+      // Créer l'index s'il n'existe pas
+      await this.createIndex();
 
-/**
- * Créer l'index ElasticSearch
- */
-async function createIndex() {
-  if (!esClient) {
-    return;
+      return true;
+    } catch (err) {
+      logger.logError(err, { context: 'elasticsearch_init' });
+      this.isConnected = false;
+      return false;
+    }
   }
 
-  const indexName = 'fylora-files';
+  /**
+   * Créer l'index avec mapping optimisé
+   */
+  async createIndex() {
+    if (!this.isConnected) return;
 
-  try {
-    const exists = await esClient.indices.exists({ index: indexName });
-    
-    if (!exists) {
-      await esClient.indices.create({
-        index: indexName,
-        body: {
-          mappings: {
-            properties: {
-              file_id: { type: 'keyword' },
-              name: {
-                type: 'text',
-                analyzer: 'standard',
-                fields: {
-                  keyword: { type: 'keyword' }
-                }
+    try {
+      const exists = await this.client.indices.exists({ index: this.indexName });
+      
+      if (!exists) {
+        await this.client.indices.create({
+          index: this.indexName,
+          body: {
+            settings: {
+              number_of_shards: 1,
+              number_of_replicas: 0,
+              analysis: {
+                analyzer: {
+                  fylora_analyzer: {
+                    type: 'custom',
+                    tokenizer: 'standard',
+                    filter: ['lowercase', 'asciifolding', 'french_stemmer'],
+                  },
+                },
+                filter: {
+                  french_stemmer: {
+                    type: 'stemmer',
+                    language: 'french',
+                  },
+                },
               },
-              content: {
-                type: 'text',
-                analyzer: 'standard'
+            },
+            mappings: {
+              properties: {
+                fileId: { type: 'keyword' },
+                userId: { type: 'keyword' },
+                fileName: {
+                  type: 'text',
+                  analyzer: 'fylora_analyzer',
+                  fields: {
+                    keyword: { type: 'keyword' },
+                  },
+                },
+                mimeType: { type: 'keyword' },
+                content: {
+                  type: 'text',
+                  analyzer: 'fylora_analyzer',
+                },
+                tags: { type: 'keyword' },
+                folderId: { type: 'keyword' },
+                createdAt: { type: 'date' },
+                updatedAt: { type: 'date' },
+                size: { type: 'long' },
               },
-              tags: { type: 'keyword' },
-              owner_id: { type: 'keyword' },
-              mime_type: { type: 'keyword' },
-              folder_id: { type: 'keyword' },
-              size: { type: 'long' },
-              created_at: { type: 'date' },
-              updated_at: { type: 'date' },
-            }
+            },
           },
-          settings: {
-            number_of_shards: 1,
-            number_of_replicas: 0, // 0 en développement, 1+ en production
-            analysis: {
-              analyzer: {
-                french: {
-                  type: 'standard',
-                  stopwords: '_french_'
-                }
-              }
-            }
-          }
-        }
+        });
+
+        logger.logInfo('ElasticSearch index created', { index: this.indexName });
+      }
+    } catch (err) {
+      logger.logError(err, { context: 'elasticsearch_create_index' });
+    }
+  }
+
+  /**
+   * Indexer un fichier
+   */
+  async indexFile(file) {
+    if (!this.isConnected) {
+      logger.logWarn('ElasticSearch not connected, skipping indexing');
+      return;
+    }
+
+    try {
+      await this.client.index({
+        index: this.indexName,
+        id: file.id || file._id,
+        body: {
+          fileId: String(file.id || file._id),
+          userId: String(file.owner_id || file.ownerId),
+          fileName: file.name,
+          mimeType: file.mime_type || file.mimeType,
+          content: file.content || '', // Contenu OCR/extrait
+          tags: file.tags || [],
+          folderId: String(file.folder_id || file.folderId || ''),
+          createdAt: file.created_at || file.createdAt,
+          updatedAt: file.updated_at || file.updatedAt,
+          size: file.size || 0,
+        },
       });
 
-      logger.logInfo('ElasticSearch index created', { index: indexName });
-    }
-  } catch (error) {
-    logger.logError(error, { context: 'create_elasticsearch_index' });
-  }
-}
-
-/**
- * Indexer un fichier
- * @param {string} fileId - ID du fichier
- * @param {Object} fileData - { name, content?, tags?, ownerId, mimeType, folderId, size, createdAt, updatedAt }
- */
-async function indexFile(fileId, fileData) {
-  if (!esClient) {
-    return;
-  }
-
-  try {
-    await esClient.index({
-      index: 'fylora-files',
-      id: fileId,
-      body: {
-        file_id: fileId,
-        name: fileData.name,
-        content: fileData.content || '',
-        tags: fileData.tags || [],
-        owner_id: fileData.ownerId,
-        mime_type: fileData.mimeType,
-        folder_id: fileData.folderId || null,
-        size: fileData.size || 0,
-        created_at: fileData.createdAt,
-        updated_at: fileData.updatedAt,
-      }
-    });
-
-    // Rafraîchir l'index pour que les résultats soient immédiatement disponibles
-    await esClient.indices.refresh({ index: 'fylora-files' });
-  } catch (error) {
-    logger.logError(error, { context: 'index_file', fileId });
-  }
-}
-
-/**
- * Supprimer un fichier de l'index
- * @param {string} fileId - ID du fichier
- */
-async function deleteFile(fileId) {
-  if (!esClient) {
-    return;
-  }
-
-  try {
-    await esClient.delete({
-      index: 'fylora-files',
-      id: fileId,
-      ignore: [404] // Ignorer si le fichier n'existe pas
-    });
-  } catch (error) {
-    logger.logError(error, { context: 'delete_file_index', fileId });
-  }
-}
-
-/**
- * Rechercher des fichiers
- * @param {string} userId - ID utilisateur
- * @param {string} query - Requête de recherche
- * @param {Object} options - { folderId?, mimeType?, tags?, skip?, limit? }
- * @returns {Promise<Array>} Fichiers trouvés
- */
-async function searchFiles(userId, query, options = {}) {
-  if (!esClient) {
-    // Fallback sur MongoDB si ElasticSearch non disponible
-    return searchFilesMongoDB(userId, query, options);
-  }
-
-  const {
-    folderId,
-    mimeType,
-    tags,
-    skip = 0,
-    limit = 50
-  } = options;
-
-  try {
-    const must = [
-      { term: { owner_id: userId } },
-    ];
-
-    // Requête de recherche
-    if (query && query.trim()) {
-      must.push({
-        multi_match: {
-          query: query.trim(),
-          fields: ['name^3', 'content', 'tags^2'], // name a plus de poids
-          type: 'best_fields',
-          fuzziness: 'AUTO'
-        }
+      logger.logInfo('File indexed in ElasticSearch', {
+        fileId: file.id || file._id,
+        fileName: file.name,
+      });
+    } catch (err) {
+      logger.logError(err, {
+        context: 'elasticsearch_index',
+        fileId: file.id || file._id,
       });
     }
+  }
 
-    // Filtres
-    const filters = [];
-    if (folderId) {
-      filters.push({ term: { folder_id: folderId } });
-    }
-    if (mimeType) {
-      filters.push({ term: { mime_type: mimeType } });
-    }
-    if (tags && tags.length > 0) {
-      filters.push({ terms: { tags: tags } });
+  /**
+   * Rechercher des fichiers
+   */
+  async search(query, userId, options = {}) {
+    if (!this.isConnected) {
+      // Fallback vers recherche MongoDB basique
+      logger.logWarn('ElasticSearch not connected, using MongoDB fallback');
+      return this.mongoFallbackSearch(query, userId, options);
     }
 
-    const body = {
-      query: {
-        bool: {
-          must,
-          filter: filters
-        }
-      },
-      sort: [
-        { updated_at: { order: 'desc' } },
-        { _score: { order: 'desc' } }
-      ],
-      from: skip,
-      size: limit,
-      highlight: {
-        fields: {
-          name: {},
-          content: {}
-        }
+    try {
+      const {
+        folderId = null,
+        mimeType = null,
+        limit = 20,
+        offset = 0,
+      } = options;
+
+      // Construire la requête
+      const mustClauses = [
+        {
+          match: {
+            query: {
+              query,
+              analyzer: 'fylora_analyzer',
+              fuzziness: 'AUTO',
+            },
+          },
+        },
+        {
+          term: { userId: String(userId) },
+        },
+      ];
+
+      if (folderId) {
+        mustClauses.push({ term: { folderId: String(folderId) } });
       }
-    };
 
-    const result = await esClient.search({
-      index: 'fylora-files',
-      body
-    });
+      if (mimeType) {
+        mustClauses.push({ term: { mimeType } });
+      }
 
-    return {
-      files: result.body.hits.hits.map(hit => ({
-        id: hit._id,
-        score: hit._score,
-        ...hit._source,
-        highlights: hit.highlight
-      })),
-      total: result.body.hits.total.value,
-      took: result.body.took
-    };
-  } catch (error) {
-    logger.logError(error, { context: 'search_files_elasticsearch', userId, query });
-    // Fallback sur MongoDB
-    return searchFilesMongoDB(userId, query, options);
-  }
-}
-
-/**
- * Recherche avec MongoDB (fallback)
- */
-async function searchFilesMongoDB(userId, query, options) {
-  const mongoose = require('mongoose');
-  const File = mongoose.models.File || mongoose.model('File');
-  
-  const searchQuery = {
-    owner_id: new mongoose.Types.ObjectId(userId),
-    is_deleted: false
-  };
-
-  if (options.folderId) {
-    searchQuery.folder_id = new mongoose.Types.ObjectId(options.folderId);
-  }
-
-  if (options.mimeType) {
-    searchQuery.mime_type = options.mimeType;
-  }
-
-  const files = await File.find(searchQuery)
-    .select('name size mime_type folder_id owner_id created_at updated_at _id')
-    .sort({ updated_at: -1 })
-    .skip(options.skip || 0)
-    .limit(options.limit || 50)
-    .lean()
-    .maxTimeMS(2000);
-
-  return {
-    files: files.map(f => ({
-      id: f._id.toString(),
-      ...f
-    })),
-    total: files.length,
-    took: 0
-  };
-}
-
-/**
- * Autocomplétion
- * @param {string} userId - ID utilisateur
- * @param {string} prefix - Préfixe de recherche
- * @param {number} limit - Nombre de suggestions
- * @returns {Promise<Array>} Suggestions
- */
-async function autocomplete(userId, prefix, limit = 10) {
-  if (!esClient) {
-    return [];
-  }
-
-  try {
-    const result = await esClient.search({
-      index: 'fylora-files',
-      body: {
+      const searchBody = {
         query: {
           bool: {
-            must: [
-              { term: { owner_id: userId } },
-              {
-                prefix: {
-                  'name.keyword': prefix
-                }
-              }
-            ]
-          }
+            must: mustClauses,
+          },
         },
+        highlight: {
+          fields: {
+            fileName: {},
+            content: {},
+          },
+        },
+        sort: [{ _score: { order: 'desc' } }, { updatedAt: { order: 'desc' } }],
+        from: offset,
         size: limit,
-        _source: ['name', 'mime_type']
+      };
+
+      const result = await this.client.search({
+        index: this.indexName,
+        body: searchBody,
+      });
+
+      // Formater les résultats
+      const files = result.body.hits.hits.map((hit) => ({
+        id: hit._id,
+        score: hit._score,
+        fileName: hit._source.fileName,
+        mimeType: hit._source.mimeType,
+        highlights: hit.highlight,
+        ...hit._source,
+      }));
+
+      return {
+        files,
+        total: result.body.hits.total.value,
+        took: result.body.took,
+      };
+    } catch (err) {
+      logger.logError(err, { context: 'elasticsearch_search', query });
+      return this.mongoFallbackSearch(query, userId, options);
+    }
+  }
+
+  /**
+   * Recherche par autocomplétion
+   */
+  async autocomplete(query, userId, limit = 10) {
+    if (!this.isConnected) {
+      return [];
+    }
+
+    try {
+      const result = await this.client.search({
+        index: this.indexName,
+        body: {
+          query: {
+            bool: {
+              must: [
+                {
+                  match_phrase_prefix: {
+                    fileName: {
+                      query,
+                      max_expansions: 50,
+                    },
+                  },
+                },
+                { term: { userId: String(userId) } },
+              ],
+            },
+          },
+          size: limit,
+          _source: ['fileId', 'fileName', 'mimeType'],
+        },
+      });
+
+      return result.body.hits.hits.map((hit) => ({
+        id: hit._source.fileId,
+        name: hit._source.fileName,
+        mimeType: hit._source.mimeType,
+      }));
+    } catch (err) {
+      logger.logError(err, { context: 'elasticsearch_autocomplete', query });
+      return [];
+    }
+  }
+
+  /**
+   * Supprimer un fichier de l'index
+   */
+  async deleteFile(fileId) {
+    if (!this.isConnected) return;
+
+    try {
+      await this.client.delete({
+        index: this.indexName,
+        id: String(fileId),
+      });
+
+      logger.logInfo('File deleted from ElasticSearch', { fileId });
+    } catch (err) {
+      // Ignorer si le document n'existe pas
+      if (err.meta?.statusCode !== 404) {
+        logger.logError(err, { context: 'elasticsearch_delete', fileId });
       }
-    });
+    }
+  }
 
-    return result.body.hits.hits.map(hit => ({
-      name: hit._source.name,
-      mimeType: hit._source.mime_type
-    }));
-  } catch (error) {
-    logger.logError(error, { context: 'autocomplete', userId, prefix });
-    return [];
+  /**
+   * Fallback vers MongoDB si ElasticSearch n'est pas disponible
+   */
+  async mongoFallbackSearch(query, userId, options) {
+    const FileModel = require('../models/fileModel');
+    const mongoose = require('mongoose');
+    const File = mongoose.models.File;
+
+    const searchQuery = {
+      owner_id: userId,
+      is_deleted: false,
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { mime_type: { $regex: query, $options: 'i' } },
+      ],
+    };
+
+    if (options.folderId) {
+      searchQuery.folder_id = options.folderId;
+    }
+
+    const files = await File.find(searchQuery)
+      .limit(options.limit || 20)
+      .skip(options.offset || 0)
+      .sort({ updated_at: -1 })
+      .lean();
+
+    return {
+      files: files.map(f => FileModel.toDTO(f)),
+      total: files.length,
+      took: 0,
+    };
   }
 }
 
-/**
- * Recherche naturelle (parsing intelligent)
- * @param {string} userId - ID utilisateur
- * @param {string} naturalQuery - Requête naturelle ("fichiers images de la semaine dernière")
- * @returns {Promise<Array>} Fichiers trouvés
- */
-async function naturalSearch(userId, naturalQuery) {
-  // Parser la requête naturelle
-  const query = naturalQuery.toLowerCase();
-  const options = {};
+// Instance singleton
+const searchService = new SearchService();
 
-  // Détecter le type MIME
-  if (query.includes('image') || query.includes('photo')) {
-    options.mimeType = 'image/';
-  } else if (query.includes('video') || query.includes('film')) {
-    options.mimeType = 'video/';
-  } else if (query.includes('document') || query.includes('pdf')) {
-    options.mimeType = 'application/pdf';
-  }
-
-  // Détecter la période
-  if (query.includes('semaine') || query.includes('week')) {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    options.dateFrom = weekAgo;
-  } else if (query.includes('mois') || query.includes('month')) {
-    const monthAgo = new Date();
-    monthAgo.setMonth(monthAgo.getMonth() - 1);
-    options.dateFrom = monthAgo;
-  }
-
-  // Extraire les mots-clés
-  const keywords = query
-    .replace(/fichiers?|files?/gi, '')
-    .replace(/de|du|la|le|les/gi, '')
-    .trim()
-    .split(/\s+/)
-    .filter(w => w.length > 2);
-
-  const searchQuery = keywords.join(' ');
-
-  return await searchFiles(userId, searchQuery, options);
-}
-
-// Créer l'index au démarrage
-if (ES_ENABLED && esClient) {
-  createIndex().catch(err => {
-    logger.logError(err, { context: 'create_elasticsearch_index_startup' });
+// Initialiser au démarrage
+if (process.env.ELASTICSEARCH_URL) {
+  searchService.init().catch(err => {
+    logger.logError(err, { context: 'search_service_startup' });
   });
 }
 
-module.exports = {
-  initElasticSearch,
-  createIndex,
-  indexFile,
-  deleteFile,
-  searchFiles,
-  autocomplete,
-  naturalSearch,
-  isEnabled: () => ES_ENABLED && esClient !== null,
-};
-
+module.exports = searchService;
