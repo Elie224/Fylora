@@ -4,7 +4,7 @@
 
 const gdprService = require('../services/gdprService');
 const logger = require('../utils/logger');
-const { AppError } = require('../utils/errors');
+const { AppError } = require('../middlewares/errorHandler');
 
 /**
  * Exporter les données utilisateur
