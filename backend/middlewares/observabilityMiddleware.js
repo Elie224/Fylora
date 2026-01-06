@@ -18,8 +18,9 @@ function observabilityMiddleware(req, res, next) {
     // Enregistrer la requête
     observabilityService.recordRequest(method, endpoint, statusCode, duration);
 
-    // Enregistrer les erreurs
-    if (statusCode >= 400) {
+    // Enregistrer les erreurs (sauf 401 qui sont normales lors du refresh token)
+    // Les 401 sont gérées par le frontend avec refresh automatique
+    if (statusCode >= 400 && statusCode !== 401) {
       const error = new Error(`HTTP ${statusCode}`);
       error.statusCode = statusCode;
       observabilityService.recordError(error, {
