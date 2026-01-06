@@ -128,24 +128,38 @@ async function deleteFile(fileKey) {
     throw new Error('Cloudinary not configured');
   }
 
-  try {
-    // Supprimer toutes les versions et transformations
-    const result = await cloudinary.uploader.destroy(fileKey, {
-      invalidate: true,
-      resource_type: 'auto', // Détecte automatiquement le type
-    });
+  // Essayer de supprimer avec différents types de ressources
+  const resourceTypes = ['raw', 'image', 'video'];
+  
+  for (const resourceType of resourceTypes) {
+    try {
+      const result = await cloudinary.uploader.destroy(fileKey, {
+        invalidate: true,
+        resource_type: resourceType,
+      });
 
-    if (result.result === 'ok' || result.result === 'not found') {
-      logger.logInfo('File deleted from Cloudinary', { fileKey });
-      return true;
-    } else {
-      logger.logWarn('File deletion result', { fileKey, result: result.result });
-      return false;
+      if (result.result === 'ok' || result.result === 'not found') {
+        logger.logInfo('File deleted from Cloudinary', { fileKey, resourceType });
+        return true;
+      }
+    } catch (error) {
+      // Si c'est une erreur de type invalide, continuer avec le type suivant
+      if (error.message && error.message.includes('Invalid resource type')) {
+        continue;
+      }
+      // Pour les autres erreurs, logger et continuer
+      logger.logWarn('Error deleting file with resource type', { 
+        fileKey, 
+        resourceType, 
+        error: error.message 
+      });
     }
-  } catch (error) {
-    logger.logError(error, { context: 'cloudinary_delete', fileKey });
-    throw error;
   }
+  
+  // Si aucun type n'a fonctionné, logger un avertissement mais retourner true
+  // (le fichier peut ne pas exister ou avoir été supprimé)
+  logger.logWarn('File deletion attempted with all resource types', { fileKey });
+  return true;
 }
 
 /**
@@ -214,7 +228,6 @@ async function fileExists(fileKey) {
 
   try {
     // Nettoyer le fileKey si nécessaire (enlever les doublons de folder)
-    // Exemple: fylora/users/xxx/fylora/users/xxx/file -> fylora/users/xxx/file
     let cleanFileKey = fileKey;
     const duplicatePattern = /^fylora\/users\/[^/]+\/fylora\/users\/[^/]+\//;
     if (duplicatePattern.test(fileKey)) {
@@ -222,24 +235,46 @@ async function fileExists(fileKey) {
       logger.logWarn('Cleaned duplicate folder in fileKey', { original: fileKey, cleaned: cleanFileKey });
     }
     
-    const result = await cloudinary.api.resource(cleanFileKey, {
-      resource_type: 'auto',
-    });
-    return !!result;
-  } catch (error) {
-    if (error.http_code === 404) {
-      return false;
+    // Essayer avec différents types de ressources
+    const resourceTypes = ['raw', 'image', 'video'];
+    
+    for (const resourceType of resourceTypes) {
+      try {
+        const result = await cloudinary.api.resource(cleanFileKey, {
+          resource_type: resourceType,
+        });
+        if (result) {
+          return true;
+        }
+      } catch (error) {
+        // Si c'est 404, le fichier n'existe pas avec ce type, continuer
+        if (error.http_code === 404) {
+          continue;
+        }
+        // Si c'est une erreur de type invalide, continuer avec le type suivant
+        if (error.message && error.message.includes('Invalid resource type')) {
+          continue;
+        }
+        // Pour les autres erreurs, logger et continuer
+        logger.logWarn('Error checking file existence', { 
+          fileKey: cleanFileKey, 
+          resourceType, 
+          error: error.message 
+        });
+      }
     }
-    // Logger l'erreur avec plus de détails
+    
+    // Si aucun type n'a fonctionné, considérer que le fichier n'existe pas
+    return false;
+  } catch (error) {
+    // En cas d'erreur inconnue, considérer que le fichier existe
+    // car l'upload vient de réussir, donc le fichier devrait exister
     logger.logError(error, { 
       context: 'cloudinary_file_exists', 
       fileKey,
       errorMessage: error.message,
       httpCode: error.http_code
     });
-    // En cas d'erreur inconnue (pas 404), considérer que le fichier existe
-    // car l'upload vient de réussir, donc le fichier devrait exister
-    // Cela évite de supprimer par erreur un fichier qui vient d'être uploadé
     return true;
   }
 }

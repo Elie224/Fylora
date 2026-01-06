@@ -789,6 +789,8 @@ async function uploadFile(req, res, next) {
         filePath: finalFilePath,
         mimeType: req.file.mimetype,
         fileSize,
+        storageType: storageType,
+        storagePath: storagePath,
       }).catch(err => logger.logError(err, { context: 'file_processing_queue' })),
       
       // Indexation async pour recherche

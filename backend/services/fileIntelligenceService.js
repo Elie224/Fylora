@@ -12,7 +12,7 @@ class FileIntelligenceService {
   /**
    * Traiter un fichier pour extraire les métadonnées intelligentes
    */
-  async processFile(fileId, userId, filePath, mimeType) {
+  async processFile(fileId, userId, filePath, mimeType, storageType = 'local', storagePath = null) {
     try {
       let metadata = await FileMetadata.findOne({ file_id: fileId });
       if (!metadata) {
@@ -24,12 +24,12 @@ class FileIntelligenceService {
 
       // OCR pour PDF et images
       if (mimeType === 'application/pdf' || mimeType.startsWith('image/')) {
-        await this.extractOCR(filePath, mimeType, metadata);
+        await this.extractOCR(filePath, mimeType, metadata, storageType, storagePath);
       }
 
       // Extraction de texte pour fichiers texte
       if (mimeType.startsWith('text/') || mimeType === 'application/json') {
-        await this.extractText(filePath, metadata);
+        await this.extractText(filePath, metadata, storageType, storagePath);
       }
 
       // Détection de données sensibles
@@ -57,7 +57,7 @@ class FileIntelligenceService {
   /**
    * Extraire le texte via OCR (simulation - nécessiterait Tesseract.js ou similaire)
    */
-  async extractOCR(filePath, mimeType, metadata) {
+  async extractOCR(filePath, mimeType, metadata, storageType = 'local', storagePath = null) {
     try {
       // Simulation OCR - Dans un vrai système, utiliser Tesseract.js ou Google Cloud Vision
       // Pour l'instant, on marque comme traité mais sans texte extrait
@@ -68,7 +68,20 @@ class FileIntelligenceService {
       if (mimeType === 'application/pdf') {
         try {
           const pdfParse = require('pdf-parse');
-          const dataBuffer = await fs.readFile(filePath);
+          let dataBuffer;
+          
+          // Si le fichier est sur Cloudinary, le télécharger d'abord
+          if (storageType === 'cloudinary' && storagePath) {
+            const cloudinaryService = require('./cloudinaryService');
+            const axios = require('axios');
+            const downloadUrl = cloudinaryService.generateDownloadUrl(storagePath, 'file.pdf');
+            const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+            dataBuffer = Buffer.from(response.data);
+          } else {
+            // Lire depuis le stockage local
+            dataBuffer = await fs.readFile(filePath);
+          }
+          
           const pdfData = await pdfParse(dataBuffer);
           if (pdfData.text) {
             metadata.ocr_text = pdfData.text.substring(0, 10000); // Limiter à 10k caractères
@@ -86,7 +99,7 @@ class FileIntelligenceService {
   /**
    * Extraire le texte d'un fichier texte
    */
-  async extractText(filePath, metadata) {
+  async extractText(filePath, metadata, storageType = 'local', storagePath = null) {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       metadata.ocr_text = content.substring(0, 10000); // Limiter
