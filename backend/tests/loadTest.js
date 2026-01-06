@@ -10,9 +10,10 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const FormData = require('form-data');
 
 // Configuration
-const API_URL = process.env.API_URL || 'http://localhost:5001';
+const API_URL = process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:5001';
 const TEST_USER = {
   email: process.env.TEST_EMAIL || 'test@fylora.com',
   password: process.env.TEST_PASSWORD || 'Test1234!',
@@ -69,16 +70,20 @@ async function testUpload(token, fileIndex) {
   const startTime = Date.now();
   const testFile = Buffer.from(`Test file content ${fileIndex} - ${Date.now()}`);
   const formData = new FormData();
-  const blob = new Blob([testFile], { type: 'text/plain' });
-  formData.append('file', blob, `test-file-${fileIndex}.txt`);
+  formData.append('file', testFile, {
+    filename: `test-file-${fileIndex}.txt`,
+    contentType: 'text/plain',
+  });
 
   try {
     const response = await axios.post(`${API_URL}/api/files/upload`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
+        ...formData.getHeaders(), // Inclure les headers FormData (Content-Type avec boundary)
       },
       timeout: 30000, // 30 secondes
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
 
     const latency = Date.now() - startTime;
@@ -339,6 +344,17 @@ async function main() {
   console.log(`API URL: ${API_URL}`);
   console.log(`Scénario: ${scenario}`);
   console.log('');
+  
+  // Vérifier que le serveur est accessible
+  try {
+    const healthCheck = await axios.get(`${API_URL}/health`, { timeout: 5000 });
+    console.log('✅ Serveur accessible');
+  } catch (err) {
+    console.error('❌ Serveur non accessible:', err.message);
+    console.error(`   Vérifiez que le serveur est démarré sur ${API_URL}`);
+    console.error('   Ou configurez API_URL avec: export API_URL=https://votre-api.com');
+    process.exit(1);
+  }
 
   try {
     switch (scenario) {
