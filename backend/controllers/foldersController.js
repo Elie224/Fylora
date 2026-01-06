@@ -341,31 +341,18 @@ async function permanentDeleteFolder(req, res, next) {
     const fs = require('fs').promises;
     const path = require('path');
     const config = require('../config');
-    const cloudinaryService = require('../services/cloudinaryService');
     let totalSize = 0;
     for (const file of files) {
       if (file.file_path) {
-        // Déterminer le type de stockage
-        const storageType = file.storage_type || (file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-        
-        if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
-          // Supprimer de Cloudinary
-          try {
-            await cloudinaryService.deleteFile(file.file_path);
-            logger.logInfo('File deleted from Cloudinary', {
-              fileId: file._id,
-              cloudinaryKey: file.file_path,
-              userId
-            });
-          } catch (cloudinaryErr) {
-            logger.logWarn('Could not delete file from Cloudinary', {
-              fileId: file._id,
-              cloudinaryKey: file.file_path,
-              error: cloudinaryErr.message,
-              userId
-            });
-            // Continuer même si la suppression Cloudinary échoue
-          }
+        // Vérifier si le fichier est sur Cloudinary (non supporté)
+        const storageType = file.storage_type || 'local';
+        if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
+          // Pour les fichiers Cloudinary, on ne peut pas les supprimer physiquement
+          logger.logWarn('File is on Cloudinary (no longer supported), cannot delete physically', {
+            fileId: file._id,
+            fileName: file.name
+          });
+          // Continuer avec la suppression en base seulement
         } else if (storageType === 'local') {
           // Supprimer le fichier local
           try {

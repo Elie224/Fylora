@@ -515,45 +515,13 @@ export default function Preview() {
                       return;
                     }
                     
-                    // Si on a déjà une URL Cloudinary, l'utiliser directement
-                    let fileUrl = null;
-                    if (cloudinaryUrl && (cloudinaryUrl.startsWith('https://res.cloudinary.com') || cloudinaryUrl.startsWith('http://res.cloudinary.com'))) {
-                      fileUrl = cloudinaryUrl;
-                    } else if (previewUrl && (previewUrl.startsWith('https://res.cloudinary.com') || previewUrl.startsWith('http://res.cloudinary.com'))) {
-                      fileUrl = previewUrl;
-                    } else {
-                      // Sinon, récupérer l'URL depuis l'endpoint preview
-                      try {
-                        const previewResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
-                          headers: {
-                            'Authorization': `Bearer ${token}`
-                          }
-                        });
-                        
-                        if (previewResponse.ok) {
-                          const contentType = previewResponse.headers.get('content-type') || '';
-                          if (contentType.includes('application/json')) {
-                            const data = await previewResponse.json();
-                            if (data.url && data.type === 'cloudinary') {
-                              fileUrl = data.url;
-                            }
-                          }
-                        }
-                      } catch (previewErr) {
-                        console.warn('Could not get preview URL:', previewErr);
-                      }
-                    }
+                    // Utiliser l'URL de prévisualisation
+                    let fileUrl = previewUrl;
                     
-                    // Pour les fichiers Office, utiliser l'URL appropriée selon le type de stockage
-                    // Pour les fichiers Cloudinary : utiliser directement l'URL Cloudinary (publique)
-                    // Pour les fichiers locaux : générer une URL publique temporaire
+                    // Pour les fichiers Office, générer une URL publique temporaire
                     let finalUrl = null;
                     
-                    if (fileUrl && fileUrl.startsWith('https://res.cloudinary.com')) {
-                      // Fichier Cloudinary : utiliser directement l'URL Cloudinary (publique)
-                      finalUrl = fileUrl;
-                    } else {
-                      // Fichier local : générer une URL publique temporaire
+                    // Fichier local : générer une URL publique temporaire
                       try {
                         const publicUrlResponse = await fetch(`${apiUrl}/api/files/${id}/public-preview-url`, {
                           headers: {
