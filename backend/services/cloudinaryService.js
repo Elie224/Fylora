@@ -213,7 +213,16 @@ async function fileExists(fileKey) {
   }
 
   try {
-    const result = await cloudinary.api.resource(fileKey, {
+    // Nettoyer le fileKey si nécessaire (enlever les doublons de folder)
+    // Exemple: fylora/users/xxx/fylora/users/xxx/file -> fylora/users/xxx/file
+    let cleanFileKey = fileKey;
+    const duplicatePattern = /^fylora\/users\/[^/]+\/fylora\/users\/[^/]+\//;
+    if (duplicatePattern.test(fileKey)) {
+      cleanFileKey = fileKey.replace(/^fylora\/users\/[^/]+\//, '');
+      logger.logWarn('Cleaned duplicate folder in fileKey', { original: fileKey, cleaned: cleanFileKey });
+    }
+    
+    const result = await cloudinary.api.resource(cleanFileKey, {
       resource_type: 'auto',
     });
     return !!result;
@@ -221,8 +230,17 @@ async function fileExists(fileKey) {
     if (error.http_code === 404) {
       return false;
     }
-    logger.logError(error, { context: 'cloudinary_file_exists', fileKey });
-    return false;
+    // Logger l'erreur avec plus de détails
+    logger.logError(error, { 
+      context: 'cloudinary_file_exists', 
+      fileKey,
+      errorMessage: error.message,
+      httpCode: error.http_code
+    });
+    // En cas d'erreur inconnue (pas 404), considérer que le fichier existe
+    // car l'upload vient de réussir, donc le fichier devrait exister
+    // Cela évite de supprimer par erreur un fichier qui vient d'être uploadé
+    return true;
   }
 }
 
