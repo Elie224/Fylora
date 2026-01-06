@@ -13,21 +13,63 @@ const FileModel = require('../models/fileModel');
  * Worker pour traitement de fichiers (OCR, métadonnées, empreinte)
  */
 async function processFileWorker(job) {
-  const { fileId, userId, filePath, mimeType } = job.data;
+  const { fileId, userId, filePath, mimeType, storageType, storagePath } = job.data;
   
   try {
     // Traitement en parallèle
     const [metadata, fingerprint] = await Promise.all([
       // Métadonnées intelligentes
-      fileIntelligenceService.processFile(fileId, userId, filePath, mimeType),
-      // Empreinte unique
-      fingerprintService.createFingerprint(
-        fileId,
-        userId,
-        filePath,
-        mimeType,
-        job.data.fileSize
-      ),
+      fileIntelligenceService.processFile(fileId, userId, filePath, mimeType, storageType, storagePath),
+      // Empreinte unique (nécessite le fichier local, donc télécharger depuis Cloudinary si nécessaire)
+      (async () => {
+        try {
+          let localFilePath = filePath;
+          
+          // Si le fichier est sur Cloudinary, le télécharger temporairement
+          if (storageType === 'cloudinary' && storagePath) {
+            const cloudinaryService = require('./cloudinaryService');
+            const axios = require('axios');
+            const fs = require('fs').promises;
+            const path = require('path');
+            const { v4: uuidv4 } = require('uuid');
+            const config = require('../config');
+            
+            const downloadUrl = cloudinaryService.generateDownloadUrl(storagePath, 'file');
+            const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+            const tempPath = path.join(config.upload.uploadDir, `temp_${uuidv4()}`);
+            await fs.writeFile(tempPath, Buffer.from(response.data));
+            localFilePath = tempPath;
+            
+            try {
+              const fingerprint = await fingerprintService.createFingerprint(
+                fileId,
+                userId,
+                localFilePath,
+                mimeType,
+                job.data.fileSize
+              );
+              // Nettoyer le fichier temporaire
+              await fs.unlink(tempPath).catch(() => {});
+              return fingerprint;
+            } catch (err) {
+              // Nettoyer le fichier temporaire même en cas d'erreur
+              await fs.unlink(tempPath).catch(() => {});
+              throw err;
+            }
+          } else {
+            return await fingerprintService.createFingerprint(
+              fileId,
+              userId,
+              localFilePath,
+              mimeType,
+              job.data.fileSize
+            );
+          }
+        } catch (err) {
+          console.error('Fingerprint creation failed:', err);
+          return null;
+        }
+      })(),
     ]);
 
     return { metadata, fingerprint };
