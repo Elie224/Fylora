@@ -1681,17 +1681,12 @@ export default function Files() {
                                 return;
                               }
                               
-                              // Détecter si c'est un fichier Cloudinary
-                              const storageType = item.storage_type || (item.file_path && item.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
-                              const isCloudinary = storageType === 'cloudinary';
-                              
-                              // Pour les fichiers Cloudinary, utiliser l'endpoint download qui redirige
-                              // Pour les fichiers locaux, télécharger le blob
+                              // Utiliser l'endpoint download qui préserve le nom de fichier original
+                              // L'endpoint gère maintenant Cloudinary et local de manière transparente
                               const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
                                 headers: {
                                   'Authorization': `Bearer ${token}`
-                                },
-                                redirect: 'follow' // Suivre les redirections pour Cloudinary
+                                }
                               });
                               
                               if (!response.ok) {
@@ -1699,25 +1694,27 @@ export default function Files() {
                                 throw new Error(error.error?.message || `${t('error')} ${response.status}`);
                               }
                               
-                              // Si c'est une redirection Cloudinary, utiliser directement l'URL
-                              if (response.redirected && response.url) {
-                                const a = document.createElement('a');
-                                a.href = response.url;
-                                a.download = item.name;
-                                a.target = '_blank';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                showToast(t('downloadStarted') || 'Download started', 'success');
-                                return;
+                              // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
+                              const contentDisposition = response.headers.get('Content-Disposition');
+                              let finalFileName = item.name || 'download';
+                              if (contentDisposition) {
+                                const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                                if (fileNameMatch && fileNameMatch[1]) {
+                                  finalFileName = fileNameMatch[1].replace(/['"]/g, '');
+                                  try {
+                                    finalFileName = decodeURIComponent(finalFileName);
+                                  } catch (e) {
+                                    // Si le décodage échoue, utiliser le nom tel quel
+                                  }
+                                }
                               }
                               
-                              // Pour les fichiers locaux, télécharger le blob
+                              // Télécharger le blob avec le nom de fichier original
                               const blob = await response.blob();
                               const url = window.URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.href = url;
-                              a.download = item.name;
+                              a.download = finalFileName; // Utiliser le nom de fichier original avec extension
                               document.body.appendChild(a);
                               a.click();
                               window.URL.revokeObjectURL(url);
