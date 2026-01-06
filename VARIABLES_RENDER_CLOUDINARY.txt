@@ -1,0 +1,31 @@
+# Variables d'Environnement Cloudinary pour Render
+
+## Ajoutez ces 3 variables dans Render Dashboard → Backend Service → Environment
+
+CLOUDINARY_CLOUD_NAME=dzuhijqtm
+CLOUDINARY_API_KEY=361656381538443
+CLOUDINARY_API_SECRET=kcg1ER6F4oN18koAphZztquudZU
+
+---
+
+## Instructions
+
+1. Allez dans Render Dashboard
+2. Sélectionnez votre service Backend
+3. Cliquez sur "Environment"
+4. Ajoutez chaque variable une par une :
+   - Cliquez sur "Add Environment Variable"
+   - Nom : CLOUDINARY_CLOUD_NAME
+   - Valeur : dzuhijqtm
+   - Répétez pour les 2 autres variables
+5. Redémarrez le service backend
+6. Vérifiez les logs : vous devriez voir "✅ Cloudinary storage service initialized"
+
+---
+
+## ⚠️ IMPORTANT
+
+- Ne commitez JAMAIS ce fichier avec les vraies clés dans Git
+- Ces clés sont sensibles et doivent rester privées
+- Si vous avez déjà commité ce fichier, supprimez-le de Git immédiatement
+

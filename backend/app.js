@@ -27,6 +27,14 @@ configurePassport(); // Configurer les stratégies OAuth
 // Initialize Queue Manager (initialisation automatique dans le constructeur)
 require('./utils/queue'); // Charge et initialise automatiquement les queues
 
+// Initialize Cloudinary service (si configuré)
+const cloudinaryService = require('./services/cloudinaryService');
+if (cloudinaryService.isCloudinaryConfigured()) {
+  console.log('✅ Cloudinary storage service initialized');
+} else {
+  console.log('⚠️ Cloudinary not configured, using local storage');
+}
+
 // Créer le répertoire d'upload au démarrage
 async function ensureUploadDir() {
   try {

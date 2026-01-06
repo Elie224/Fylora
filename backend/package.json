@@ -27,6 +27,7 @@
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "bull": "^4.12.0",
+    "cloudinary": "^2.8.0",
     "compression": "^1.8.1",
     "connect-redis": "^7.1.1",
     "cors": "^2.8.5",
