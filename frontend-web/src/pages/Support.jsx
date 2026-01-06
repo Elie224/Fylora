@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../components/Toast';
 
 export default function Support() {
   const { t } = useLanguage();
