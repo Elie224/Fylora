@@ -345,7 +345,7 @@ async function listFiles(req, res, next) {
 
 // Uploader un fichier
 async function uploadFile(req, res, next) {
-  try {
+  try { {
     const userId = req.user.id;
     const { folder_id } = req.body;
 
