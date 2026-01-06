@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../utils/LanguageContext';
-import api from '../utils/api';
+import { useLanguage } from '../contexts/LanguageContext';
+import api from '../services/api';
 
 const SecurityCenter = () => {
   const { t } = useLanguage();
