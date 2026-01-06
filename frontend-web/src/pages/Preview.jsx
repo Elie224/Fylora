@@ -1604,10 +1604,10 @@ function OfficePreview({ fileId, fileName, mimeType, token, cloudinaryUrl, previ
         </button>
       </div>
       
-      {/* Viewer intégré */}
+      {/* Viewer intégré - Utiliser Google Docs Viewer dans un iframe */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <iframe
-          src={publicUrl}
+          src={`https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`}
           style={{
             width: '100%',
             height: '100%',
@@ -1615,7 +1615,7 @@ function OfficePreview({ fileId, fileName, mimeType, token, cloudinaryUrl, previ
             backgroundColor: cardBg
           }}
           title={fileName}
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads"
         />
       </div>
     </div>
