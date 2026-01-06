@@ -902,6 +902,7 @@ const translations = {
     redirecting: 'Redirecting...',
     pleaseWaitRedirecting: 'Please wait while we redirect you.',
     pleaseWaitConnecting: 'Please wait while we connect you.',
+    connecting: 'Connecting...',
     
     // ProtectedRoute
     checkingAuth: 'Checking authentication...',
