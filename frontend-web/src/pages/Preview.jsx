@@ -528,21 +528,45 @@ export default function Preview() {
                       }
                     }
                     
-                    // Pour les fichiers Office, utiliser notre endpoint preview avec Google Docs Viewer
-                    // Notre endpoint preview gère l'authentification et peut servir les fichiers Cloudinary correctement
-                    // Google Docs Viewer peut accéder à notre endpoint preview via l'authentification
-                    const previewEndpointUrl = `${apiUrl}/api/files/${id}/preview`;
-                    
-                    // Pour les fichiers Cloudinary, utiliser directement l'URL Cloudinary si disponible
-                    // Sinon, utiliser notre endpoint preview qui gère l'authentification
-                    const finalUrl = fileUrl && fileUrl.startsWith('https://res.cloudinary.com') 
-                      ? fileUrl 
-                      : previewEndpointUrl;
-                    
-                    // Utiliser Google Docs Viewer qui peut mieux gérer les URLs avec authentification
-                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(finalUrl)}&embedded=true`;
-                    window.open(viewerUrl, '_blank');
-                    showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                    // Pour les fichiers Office, générer une URL publique temporaire pour les viewers externes
+                    // Les viewers externes (Google Docs Viewer, Office Online Viewer) nécessitent des URLs publiques
+                    try {
+                      // Générer une URL publique temporaire
+                      const publicUrlResponse = await fetch(`${apiUrl}/api/files/${id}/public-preview-url`, {
+                        headers: {
+                          'Authorization': `Bearer ${token}`
+                        }
+                      });
+                      
+                      if (publicUrlResponse.ok) {
+                        const publicUrlData = await publicUrlResponse.json();
+                        const publicUrl = publicUrlData.publicUrl;
+                        
+                        // Utiliser Google Docs Viewer avec l'URL publique
+                        const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
+                        window.open(viewerUrl, '_blank');
+                        showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                      } else {
+                        // Fallback : utiliser directement l'URL Cloudinary si disponible
+                        if (fileUrl && fileUrl.startsWith('https://res.cloudinary.com')) {
+                          const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+                          window.open(viewerUrl, '_blank');
+                          showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                        } else {
+                          throw new Error('Failed to generate public preview URL');
+                        }
+                      }
+                    } catch (publicUrlErr) {
+                      console.error('Failed to generate public URL:', publicUrlErr);
+                      // Fallback : utiliser directement l'URL Cloudinary si disponible
+                      if (fileUrl && fileUrl.startsWith('https://res.cloudinary.com')) {
+                        const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+                        window.open(viewerUrl, '_blank');
+                        showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
+                      } else {
+                        throw publicUrlErr;
+                      }
+                    }
                   } catch (err) {
                     console.error('Failed to open in viewer:', err);
                     showToast(t('viewerError') || 'Error opening viewer', 'error');

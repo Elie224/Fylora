@@ -1760,6 +1760,175 @@ async function listTrash(req, res, next) {
   }
 }
 
+// Store pour les tokens de prévisualisation publique temporaires
+// Format: { token: { fileId, userId, expiresAt } }
+const publicPreviewTokens = new Map();
+
+// Nettoyer les tokens expirés toutes les 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of publicPreviewTokens.entries()) {
+    if (data.expiresAt < now) {
+      publicPreviewTokens.delete(token);
+    }
+  }
+}, 5 * 60 * 1000);
+
+// Générer une URL publique temporaire pour les viewers externes
+async function generatePublicPreviewUrl(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    // Valider l'ID
+    if (!id) {
+      return res.status(400).json({ error: { message: 'File ID is required' } });
+    }
+
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: { message: 'Invalid file ID format' } });
+    }
+
+    const File = mongoose.models.File;
+    if (!File) {
+      return res.status(500).json({ error: { message: 'File model not available' } });
+    }
+
+    const file = await File.findById(id).lean();
+    if (!file) {
+      return res.status(404).json({ error: { message: 'File not found' } });
+    }
+
+    // Vérifier que l'utilisateur est le propriétaire
+    const fileOwnerId = file.owner_id?.toString ? file.owner_id.toString() : String(file.owner_id);
+    const userOwnerId = userId?.toString ? userId.toString() : String(userId);
+    
+    if (fileOwnerId !== userOwnerId) {
+      return res.status(403).json({ error: { message: 'Access denied' } });
+    }
+
+    // Vérifier que le fichier n'est pas supprimé
+    if (file.is_deleted) {
+      return res.status(404).json({ error: { message: 'File has been deleted' } });
+    }
+
+    // Générer un token temporaire (valide 1 heure)
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + (60 * 60 * 1000); // 1 heure
+
+    // Stocker le token
+    publicPreviewTokens.set(token, {
+      fileId: id,
+      userId: userId,
+      expiresAt: expiresAt
+    });
+
+    // Générer l'URL publique
+    const apiUrl = process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:5001';
+    const publicUrl = `${apiUrl}/api/files/public/${token}`;
+
+    return res.json({
+      publicUrl: publicUrl,
+      expiresAt: new Date(expiresAt).toISOString()
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Servir un fichier publiquement avec validation du token
+async function servePublicPreview(req, res, next) {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ error: { message: 'Token is required' } });
+    }
+
+    // Vérifier le token
+    const tokenData = publicPreviewTokens.get(token);
+    if (!tokenData) {
+      return res.status(404).json({ error: { message: 'Invalid or expired token' } });
+    }
+
+    if (tokenData.expiresAt < Date.now()) {
+      publicPreviewTokens.delete(token);
+      return res.status(404).json({ error: { message: 'Token has expired' } });
+    }
+
+    // Récupérer le fichier
+    const mongoose = require('mongoose');
+    const File = mongoose.models.File;
+    const file = await File.findById(tokenData.fileId).lean();
+
+    if (!file) {
+      return res.status(404).json({ error: { message: 'File not found' } });
+    }
+
+    if (file.is_deleted) {
+      return res.status(404).json({ error: { message: 'File has been deleted' } });
+    }
+
+    // Vérifier le type de stockage
+    const storageType = file.storage_type || (file.file_path && file.file_path.startsWith('fylora/') ? 'cloudinary' : 'local');
+
+    // Si c'est un fichier Cloudinary, rediriger vers l'URL Cloudinary
+    if (storageType === 'cloudinary' && cloudinaryService && cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        const previewUrl = cloudinaryService.generatePreviewUrl(file.file_path, {
+          quality: 'auto',
+          format: 'auto',
+          mimeType: file.mime_type,
+        });
+        return res.redirect(previewUrl);
+      } catch (cloudinaryErr) {
+        logger.logError(cloudinaryErr, {
+          context: 'public_preview_cloudinary',
+          fileId: tokenData.fileId,
+          cloudinaryKey: file.file_path
+        });
+        return res.status(500).json({ 
+          error: { 
+            message: 'Failed to generate preview URL',
+          } 
+        });
+      }
+    }
+
+    // Pour les fichiers locaux, servir le fichier
+    let filePath;
+    if (path.isAbsolute(file.file_path)) {
+      filePath = file.file_path;
+    } else {
+      filePath = path.resolve(config.upload.uploadDir, file.file_path);
+    }
+
+    // Vérifier que le fichier existe
+    try {
+      await fs.access(filePath);
+    } catch (accessErr) {
+      return res.status(404).json({ 
+        error: { 
+          message: 'File not found on disk',
+        } 
+      });
+    }
+
+    // Servir le fichier avec les bons headers CORS pour les viewers externes
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.name || 'file')}"`);
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Permettre l'accès depuis n'importe quel domaine
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    return res.sendFile(filePath);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   uploadMiddleware,
   listFiles,
@@ -1773,6 +1942,8 @@ module.exports = {
   restoreFile,
   permanentDeleteFile,
   listTrash,
+  generatePublicPreviewUrl,
+  servePublicPreview,
   // Exporter les caches pour invalidation depuis d'autres contrôleurs
   filesListCache,
   rootFolderCache,

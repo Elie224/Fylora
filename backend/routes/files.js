@@ -9,6 +9,9 @@ const { uploadLimiter, generalLimiter } = require('../middlewares/rateLimiter');
 // Télécharger un fichier (peut être public avec token de partage - DOIT être avant authMiddleware)
 router.get('/:id/download', optionalAuthMiddleware, filesController.downloadFile);
 
+// Servir un fichier publiquement avec token temporaire (DOIT être avant authMiddleware)
+router.get('/public/:token', filesController.servePublicPreview);
+
 // Routes protégées (toutes les autres routes nécessitent une authentification)
 router.use(authMiddleware);
 router.use(generalLimiter); // Rate limiting pour toutes les routes fichiers
@@ -26,6 +29,9 @@ router.get('/trash', filesController.listTrash);
 
 // Prévisualiser un fichier
 router.get('/:id/preview', validateObjectId, filesController.previewFile);
+
+// Générer une URL publique temporaire pour les viewers externes
+router.get('/:id/public-preview-url', validateObjectId, filesController.generatePublicPreviewUrl);
 
 // Stream audio/vidéo
 router.get('/:id/stream', validateObjectId, filesController.streamFile);
