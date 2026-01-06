@@ -804,7 +804,9 @@ export default function Files() {
     : [];
 
   return (
-    <div style={{ 
+    <>
+      <ConfirmDialog />
+      <div style={{ 
       padding: '24px', 
       maxWidth: '1400px', 
       margin: '0 auto',
@@ -2097,5 +2099,6 @@ export default function Files() {
         </div>
       )}
     </div>
+    </>
   );
 }

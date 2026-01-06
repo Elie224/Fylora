@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fileService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../components/Toast';
 
 export default function Preview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [file, setFile] = useState(null);
   const [fileMetadata, setFileMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -307,7 +309,7 @@ export default function Preview() {
               document.body.removeChild(a);
             } catch (err) {
               console.error('Download failed:', err);
-              alert(err.message || t('downloadError') || 'Erreur de téléchargement');
+              showToast(err.message || t('downloadError') || 'Erreur de téléchargement', 'error');
             }
           }}
           style={{
@@ -489,7 +491,7 @@ export default function Preview() {
                   document.body.removeChild(a);
                 } catch (err) {
                   console.error('Download failed:', err);
-                  alert(err.message || t('downloadError') || 'Erreur de téléchargement');
+                  showToast(err.message || t('downloadError') || 'Erreur de téléchargement', 'error');
                 }
               }}
               style={{
@@ -1185,7 +1187,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
       alert('✅ Fichier sauvegardé avec succès !');
     } catch (err) {
       console.error('Failed to save:', err);
-      alert('❌ Erreur lors de la sauvegarde: ' + err.message);
+      showToast(t('saveError') || '❌ Erreur lors de la sauvegarde: ' + err.message, 'error');
     } finally {
       setIsSaving(false);
     }

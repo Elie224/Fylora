@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { activityService } from '../services/activityService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../components/Toast';
 
 export default function Activity() {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

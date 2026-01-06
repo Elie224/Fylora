@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { fileService, folderService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../components/Toast';
 
 export default function Trash() {
   const { t, language } = useLanguage(); // Inclure language pour forcer le re-render
   const { theme } = useTheme();
+  const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [files, setFiles] = useState([]);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +79,7 @@ export default function Trash() {
       }, 300);
     } catch (err) {
       console.error('Failed to restore file:', err);
-      alert(t('restoreError'));
+      showToast(t('restoreError'), 'error');
       // Recharger en cas d'erreur pour récupérer l'état correct
       await loadTrash(true);
     }
@@ -98,7 +101,7 @@ export default function Trash() {
       }, 300);
     } catch (err) {
       console.error('Failed to restore folder:', err);
-      alert(t('restoreError'));
+      showToast(t('restoreError'), 'error');
       // Recharger en cas d'erreur pour récupérer l'état correct
       await loadTrash(true);
     }
@@ -106,7 +109,8 @@ export default function Trash() {
 
   const permanentDeleteFile = async (fileId) => {
     const confirmMessage = t('permanentDeleteConfirm') || 'Êtes-vous sûr de vouloir supprimer définitivement ce fichier ? Cette action est irréversible.';
-    if (!confirm(confirmMessage)) {
+    const confirmed = await confirm(confirmMessage, t('confirmAction'));
+    if (!confirmed) {
       return;
     }
     try {
@@ -115,7 +119,7 @@ export default function Trash() {
       setFiles(prevFiles => prevFiles.filter(file => (file.id || file._id) !== fileId));
       // Recharger la liste (forcer le rechargement)
       await loadTrash(true);
-      alert(t('permanentDeleteSuccess') || 'Fichier supprimé définitivement');
+      showToast(t('permanentDeleteSuccess') || 'Fichier supprimé définitivement', 'success');
     } catch (err) {
       console.error('Failed to permanently delete file:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || (t('permanentDeleteError') || 'Erreur lors de la suppression définitive');
@@ -127,7 +131,8 @@ export default function Trash() {
 
   const permanentDeleteFolder = async (folderId) => {
     const confirmMessage = t('permanentDeleteFolderConfirm') || 'Êtes-vous sûr de vouloir supprimer définitivement ce dossier et tous ses fichiers ? Cette action est irréversible.';
-    if (!confirm(confirmMessage)) {
+    const confirmed = await confirm(confirmMessage, t('confirmAction'));
+    if (!confirmed) {
       return;
     }
     try {
@@ -136,7 +141,7 @@ export default function Trash() {
       setFolders(prevFolders => prevFolders.filter(folder => (folder.id || folder._id) !== folderId));
       // Recharger la liste (forcer le rechargement)
       await loadTrash(true);
-      alert(t('permanentDeleteSuccess') || 'Dossier supprimé définitivement');
+      showToast(t('permanentDeleteSuccess') || 'Dossier supprimé définitivement', 'success');
     } catch (err) {
       console.error('Failed to permanently delete folder:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || (t('permanentDeleteError') || 'Erreur lors de la suppression définitive');

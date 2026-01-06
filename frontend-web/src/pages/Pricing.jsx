@@ -9,10 +9,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuthStore } from '../services/authStore';
 import { API_URL } from '../config';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Toast';
 
 export default function Pricing() {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const isAuthenticated = !!(user && accessToken);
@@ -115,7 +119,7 @@ export default function Pricing() {
           window.location.href = data.data.approvalUrl;
         } else {
           const error = await response.json();
-          alert(error.error?.message || 'PayPal payment failed');
+          showToast(error.error?.message || t('paypalPaymentFailed') || 'PayPal payment failed', 'error');
         }
       } else {
         // Upgrade direct (pour tests ou plans gratuits)
@@ -133,16 +137,16 @@ export default function Pricing() {
 
         if (response.ok) {
           const data = await response.json();
-          alert(t('planUpgraded') || 'Plan upgraded successfully!');
+          showToast(t('planUpgraded') || 'Plan upgraded successfully!', 'success');
           loadCurrentPlan();
         } else {
           const error = await response.json();
-          alert(error.error?.message || 'Upgrade failed');
+          showToast(error.error?.message || t('upgradeFailed') || 'Upgrade failed', 'error');
         }
       }
     } catch (error) {
       console.error('Error upgrading plan:', error);
-      alert('An error occurred');
+      showToast(t('errorOccurred') || 'An error occurred', 'error');
     }
   };
 
@@ -519,6 +523,7 @@ export default function Pricing() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

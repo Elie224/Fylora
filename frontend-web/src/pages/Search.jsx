@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDebounce } from '../utils/debounce';
+import { useToast } from '../components/Toast';
 
 export default function Search() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [query, setQuery] = useState('');
   
   // Couleurs dynamiques selon le thème - Thème clair amélioré
@@ -399,7 +401,7 @@ export default function Search() {
                                 || err.message 
                                 || t('downloadError') 
                                 || 'Erreur lors du téléchargement';
-                              alert(errorMessage);
+                              showToast(errorMessage, 'error');
                             }
                           }}
                           style={{

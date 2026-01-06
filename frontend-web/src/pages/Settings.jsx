@@ -13,6 +13,8 @@ export default function Settings() {
   const { user, logout, setUser } = useAuthStore();
   const { t, setLanguage, language, supportedLanguages } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -225,7 +227,9 @@ export default function Settings() {
   const shadowHover = 'rgba(0, 0, 0, 0.6)';
 
   return (
-    <div style={{ 
+    <>
+      <ConfirmDialog />
+      <div style={{ 
       padding: 24, 
       maxWidth: 900, 
       margin: '0 auto',
@@ -695,15 +699,19 @@ export default function Settings() {
         <button
           onClick={async () => {
             const confirmText = t('deleteAccountConfirm') || 'SUPPRIMER';
-            const userInput = prompt(
+            const userInput = await confirm(
               t('deleteAccountPrompt') || 
-              `⚠️ ATTENTION : Cette action est définitive et irréversible.\n\nTapez "${confirmText}" pour confirmer la suppression de votre compte :`
+              `⚠️ ATTENTION : Cette action est définitive et irréversible.\n\nTapez "${confirmText}" pour confirmer la suppression de votre compte :`,
+              t('confirmAction'),
+              true,
+              confirmText
             );
             
             if (userInput === confirmText) {
-              const finalConfirm = window.confirm(
+              const finalConfirm = await confirm(
                 t('deleteAccountFinalConfirm') || 
-                'Êtes-vous ABSOLUMENT certain(e) de vouloir supprimer définitivement votre compte ? Cette action ne peut pas être annulée.'
+                'Êtes-vous ABSOLUMENT certain(e) de vouloir supprimer définitivement votre compte ? Cette action ne peut pas être annulée.',
+                t('confirmAction')
               );
               
               if (finalConfirm) {
@@ -736,7 +744,7 @@ export default function Settings() {
                   setSaving(false);
                 }
               }
-            } else if (userInput !== null) {
+            } else if (userInput !== false && userInput !== null) {
               showToast(t('deleteAccountCancelled') || 'Suppression annulée. Le texte saisi ne correspond pas.', 'warning');
             }
           }}

@@ -3,11 +3,13 @@ import { useParams } from 'react-router-dom';
 import { shareService } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../components/Toast';
 
 export default function Share() {
   const { token } = useParams();
   const { t, formatFileSize } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [share, setShare] = useState(null);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function Share() {
 
   const verifyPassword = async () => {
     if (!password) {
-      alert(t('enterPassword'));
+      showToast(t('enterPassword'), 'warning');
       return;
     }
     
@@ -133,11 +135,11 @@ export default function Share() {
         setPasswordRequired(false);
       } else {
         const error = await response.json();
-        alert(error.error?.message || t('incorrectPassword'));
+        showToast(error.error?.message || t('incorrectPassword'), 'error');
       }
     } catch (err) {
       console.error('Password verification error:', err);
-      alert(t('errorVerifyingPassword'));
+      showToast(t('errorVerifyingPassword'), 'error');
     } finally {
       setLoading(false);
     }

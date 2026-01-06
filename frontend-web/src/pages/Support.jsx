@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 export default function Support() {
   const { t } = useLanguage();
   const { theme } = useTheme();
+  const { showToast } = useToast();
 
   const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
@@ -26,12 +27,12 @@ export default function Support() {
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(supportEmail);
-    alert(t('emailCopied') || 'Email copié dans le presse-papiers !');
+    showToast(t('emailCopied') || 'Email copié dans le presse-papiers !', 'success');
   };
 
   const handleCopyPhone = () => {
     navigator.clipboard.writeText(supportPhone);
-    alert(t('phoneCopied') || 'Numéro de téléphone copié dans le presse-papiers !');
+    showToast(t('phoneCopied') || 'Numéro de téléphone copié dans le presse-papiers !', 'success');
   };
 
   return (
