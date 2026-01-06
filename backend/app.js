@@ -30,9 +30,35 @@ require('./utils/queue'); // Charge et initialise automatiquement les queues
 // Initialize Cloudinary service (si configuré)
 const cloudinaryService = require('./services/cloudinaryService');
 if (cloudinaryService.isCloudinaryConfigured()) {
-  console.log('✅ Cloudinary storage service initialized');
+  logger.logInfo('✅ Cloudinary storage service initialized');
 } else {
-  console.log('⚠️ Cloudinary not configured, using local storage');
+  logger.logWarn('Cloudinary not configured, using local storage');
+}
+
+// Initialize Event Bus
+const eventBus = require('./services/eventBus');
+eventBus.init().then(connected => {
+  if (connected) {
+    logger.logInfo('✅ Event Bus initialized (Redis Streams)');
+  } else {
+    logger.logWarn('Event Bus: Using in-memory events (Redis not available)');
+  }
+}).catch(err => {
+  logger.logError(err, { context: 'event_bus_init' });
+});
+
+// Initialize ElasticSearch (if configured)
+const searchService = require('./services/searchService');
+if (process.env.ELASTICSEARCH_URL) {
+  searchService.init().then(connected => {
+    if (connected) {
+      logger.logInfo('✅ ElasticSearch search service initialized');
+    } else {
+      logger.logWarn('ElasticSearch not available, using MongoDB fallback');
+    }
+  }).catch(err => {
+    logger.logError(err, { context: 'search_service_init' });
+  });
 }
 
 // Créer le répertoire d'upload au démarrage
