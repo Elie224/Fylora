@@ -143,10 +143,14 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Compression HTTP optimisée pour améliorer les performances (DOIT être avant les routes)
-const { optimizedCompression, cacheHeaders, optimizeJsonResponse } = require('./middlewares/performanceOptimized');
+const { optimizedCompression, optimizeJsonResponse } = require('./middlewares/performanceOptimized');
+const { timeoutMiddleware } = require('./middlewares/timeoutMiddleware');
+const { cacheHeaders, metadataCacheHeaders, staticFileCacheHeaders } = require('./middlewares/cacheHeaders');
 app.use(optimizedCompression);
-app.use(cacheHeaders);
 app.use(optimizeJsonResponse);
+
+// Timeout strict pour toutes les requêtes API (sauf uploads/downloads)
+app.use('/api', timeoutMiddleware(2000)); // 2 secondes max pour API
 
 // Initialiser Redis cache au démarrage
 const redisCache = require('./utils/redisCache');
@@ -518,8 +522,10 @@ app.use('/api', dbCheckMiddleware);
 
 // API Routes avec rate limiting spécifique et cache
 app.use('/api/auth', authLimiter, require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
+app.use('/api/users', metadataCacheHeaders(), require('./routes/users'));
 app.use('/api/files', require('./routes/files'));
+// Routes Pre-signed URLs (pour décharger le backend)
+app.use('/api/presigned', require('./routes/presigned'));
 app.use('/api/files', require('./routes/fileVersions'));
 // Routes de stockage Object (S3) - Architecture de niveau industrie
 app.use('/api/storage', require('./routes/storage'));
@@ -538,7 +544,7 @@ app.use('/api/folders', validateName, require('./routes/folders'));
 app.use('/api/share', shareLimiter, require('./routes/share'));
 app.use('/api/search', require('./routes/search'));
 // Dashboard (cache géré dans la route)
-app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/dashboard', metadataCacheHeaders(), require('./routes/dashboard'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/activity', require('./routes/activity'));
 app.use('/api/tags', require('./routes/tags'));
