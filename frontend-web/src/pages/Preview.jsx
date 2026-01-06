@@ -726,13 +726,36 @@ function ImagePreview({ url, token }) {
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          redirect: 'follow' // Suivre les redirections Cloudinary
         });
         
         if (!response.ok) {
+          // Si c'est une redirection (301/302), utiliser l'URL de redirection directement
+          if (response.redirected && response.url) {
+            setImageUrl(response.url);
+            return;
+          }
           throw new Error(t('cannotLoadImage') || 'Impossible de charger l\'image');
         }
         
+        // Vérifier si c'est une réponse JSON avec URL Cloudinary
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.url) {
+            setImageUrl(data.url);
+            return;
+          }
+        }
+        
+        // Si c'est une redirection, utiliser l'URL de redirection
+        if (response.redirected && response.url) {
+          setImageUrl(response.url);
+          return;
+        }
+        
+        // Sinon, charger le blob normalement
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
         setImageUrl(objectUrl);
@@ -745,7 +768,7 @@ function ImagePreview({ url, token }) {
     loadImage();
     
     return () => {
-      if (imageUrl) {
+      if (imageUrl && imageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(imageUrl);
       }
     };
@@ -779,13 +802,36 @@ function PdfPreview({ url, token }) {
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          redirect: 'follow' // Suivre les redirections Cloudinary
         });
         
         if (!response.ok) {
+          // Si c'est une redirection (301/302), utiliser l'URL de redirection directement
+          if (response.redirected && response.url) {
+            setPdfUrl(response.url);
+            return;
+          }
           throw new Error(t('cannotLoadPDF') || 'Impossible de charger le PDF');
         }
         
+        // Vérifier si c'est une réponse JSON avec URL Cloudinary
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.url) {
+            setPdfUrl(data.url);
+            return;
+          }
+        }
+        
+        // Si c'est une redirection, utiliser l'URL de redirection
+        if (response.redirected && response.url) {
+          setPdfUrl(response.url);
+          return;
+        }
+        
+        // Sinon, charger le blob normalement
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
         setPdfUrl(objectUrl);
@@ -798,7 +844,7 @@ function PdfPreview({ url, token }) {
     loadPdf();
     
     return () => {
-      if (pdfUrl) {
+      if (pdfUrl && pdfUrl.startsWith('blob:')) {
         URL.revokeObjectURL(pdfUrl);
       }
     };
