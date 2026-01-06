@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useToast } from './components/Toast';
+import { ToastProvider } from './components/ToastProvider';
 import './styles.css';
 
 // Lazy loading des pages pour améliorer les performances
