@@ -4,7 +4,7 @@
 
 const securityCenterService = require('../services/securityCenterService');
 const logger = require('../utils/logger');
-const { AppError } = require('../utils/errors');
+const { AppError } = require('../middlewares/errorHandler');
 
 /**
  * Obtenir l'historique des connexions
