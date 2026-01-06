@@ -70,7 +70,7 @@ class MultipartUploader {
       const response = await apiClient.post(`/multipart/chunk/${this.uploadId}`, {
         chunkIndex,
         chunkHash,
-        chunk: chunkBase64,
+        chunk: chunkBase64, // Le backend attend 'chunk' en base64
       });
 
       this.uploadedChunks.push({
