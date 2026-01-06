@@ -1,0 +1,43 @@
+# Variables d'Environnement pour Render - Stockage S3
+
+## Option 1 : AWS S3 (Recommandé)
+
+Ajoutez ces variables dans Render Dashboard → Backend Service → Environment :
+
+S3_ACCESS_KEY_ID=votre_access_key_id_aws
+S3_SECRET_ACCESS_KEY=votre_secret_access_key_aws
+S3_REGION=eu-west-3
+S3_BUCKET=fylora-files
+
+⚠️ NE PAS définir S3_ENDPOINT pour AWS S3 (seulement pour MinIO)
+
+---
+
+## Option 2 : MinIO (Self-Hosted)
+
+S3_ACCESS_KEY_ID=minioadmin
+S3_SECRET_ACCESS_KEY=votre_mot_de_passe_securise
+S3_ENDPOINT=http://votre-minio-service.onrender.com:9000
+S3_BUCKET=fylora-files
+S3_REGION=us-east-1
+
+---
+
+## Option 3 : Cloudinary
+
+CLOUDINARY_CLOUD_NAME=votre_cloud_name
+CLOUDINARY_API_KEY=votre_api_key
+CLOUDINARY_API_SECRET=votre_api_secret
+
+---
+
+## Instructions
+
+1. Copiez les variables ci-dessus
+2. Allez dans Render Dashboard → Backend Service → Environment
+3. Ajoutez chaque variable (une par une)
+4. Redémarrez le service backend
+5. Vérifiez les logs pour confirmer "Storage service initialized"
+
+⚠️ IMPORTANT : Ne commitez JAMAIS ce fichier avec vos vraies clés dans Git !
+
