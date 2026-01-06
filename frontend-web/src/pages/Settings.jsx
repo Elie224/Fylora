@@ -397,22 +397,40 @@ export default function Settings() {
           <p style={{ marginBottom: 20, color: textSecondary }}>
             Protégez votre compte avec l'authentification à deux facteurs (MFA)
           </p>
-          <button
-            onClick={() => navigate('/mfa')}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '1em',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            Configurer MFA
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              onClick={() => navigate('/settings/mfa')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '1em',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              Configurer MFA
+            </button>
+            <button
+              onClick={() => navigate('/settings/security')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '1em',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              Centre de sécurité
+            </button>
+          </div>
           </div>
         </div>
         </div>

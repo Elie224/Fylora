@@ -1018,7 +1018,37 @@ const translations = {
     deleting: 'Deleting...',
     
     // Plan upgrade
-    planUpgraded: 'Plan upgraded successfully!'
+    planUpgraded: 'Plan upgraded successfully!',
+    
+    // Security Center
+    securityCenter: 'Security Center',
+    securityStatistics: 'Security Statistics',
+    totalLogins: 'Total Logins',
+    successfulLogins: 'Successful Logins',
+    failedLogins: 'Failed Logins',
+    activeSessions: 'Active Sessions',
+    uniqueIPs: 'Unique IPs',
+    lastLogin: 'Last Login',
+    loginHistory: 'Login History',
+    revoke: 'Revoke',
+    revokeAllOtherSessions: 'Revoke All Other Sessions',
+    confirmRevokeSession: 'Are you sure you want to revoke this session?',
+    confirmRevokeAllSessions: 'Are you sure you want to revoke all other sessions?',
+    sessionRevoked: 'Session revoked successfully',
+    allOtherSessionsRevoked: 'All other sessions have been revoked',
+    errorRevokingSession: 'Error revoking session',
+    errorRevokingSessions: 'Error revoking sessions',
+    noActiveSessions: 'No active sessions',
+    noLoginHistory: 'No login history',
+    date: 'Date',
+    ipAddress: 'IP Address',
+    location: 'Location',
+    status: 'Status',
+    success: 'Success',
+    failed: 'Failed',
+    lastActivity: 'Last Activity',
+    unknown: 'Unknown',
+    errorLoadingData: 'Error loading data'
   }
 };
 
