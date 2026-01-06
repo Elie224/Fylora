@@ -388,6 +388,7 @@ export default function Settings() {
               </button>
             </div>
           </div>
+          </div>
         </div>
         
         {/* Dates de création et dernière connexion */}
