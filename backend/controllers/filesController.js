@@ -979,25 +979,26 @@ async function downloadFile(req, res, next) {
       return res.status(403).json({ error: { message: 'Access denied' } });
     }
 
-    // Vérifier que le fichier existe physiquement
-    // Si le fichier n'existe pas, retourner 404 mais permettre le téléchargement si c'est un fichier orphelin
-    let fileExists = false;
-    try {
-      await fs.access(file.file_path);
-      fileExists = true;
-    } catch (accessErr) {
-      // Fichier orphelin - log mais permettre quand même le téléchargement si l'utilisateur a accès
-      logger.logWarn('File not found on disk (orphan file)', {
-        fileId: id,
-        fileName: file.name,
-        filePath: file.file_path,
-        userId: userId,
-        error: accessErr.message
-      });
-      // Ne pas bloquer - le fichier pourrait être restauré ou ré-uploadé
-      // Retourner 404 seulement si c'est vraiment un problème
-      if (!file.file_path) {
-        return res.status(404).json({ error: { message: 'File path not found' } });
+    // Vérifier que le fichier existe physiquement (uniquement pour stockage local)
+    if (storageType === 'local') {
+      let fileExists = false;
+      try {
+        await fs.access(file.file_path);
+        fileExists = true;
+      } catch (accessErr) {
+        // Fichier orphelin - log mais permettre quand même le téléchargement si l'utilisateur a accès
+        logger.logWarn('File not found on disk (orphan file)', {
+          fileId: id,
+          fileName: file.name,
+          filePath: file.file_path,
+          userId: userId,
+          error: accessErr.message
+        });
+        // Ne pas bloquer - le fichier pourrait être restauré ou ré-uploadé
+        // Retourner 404 seulement si c'est vraiment un problème
+        if (!file.file_path) {
+          return res.status(404).json({ error: { message: 'File path not found' } });
+        }
       }
     }
 
@@ -1039,7 +1040,13 @@ async function downloadFile(req, res, next) {
       await limitationsService.addBandwidthUsage(userId, file.size).catch(() => {});
     }
 
-    res.sendFile(path.resolve(file.file_path));
+    // Pour stockage local, envoyer le fichier
+    if (storageType === 'local') {
+      res.sendFile(path.resolve(file.file_path));
+    } else {
+      // Ne devrait pas arriver ici car on a déjà redirigé vers Cloudinary plus haut
+      return res.status(500).json({ error: { message: 'Storage type not supported' } });
+    }
   } catch (err) {
     next(err);
   }
