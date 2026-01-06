@@ -817,6 +817,7 @@ export default function Settings() {
           {t('logout')}
         </button>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
