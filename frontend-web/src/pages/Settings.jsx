@@ -229,13 +229,13 @@ export default function Settings() {
   return (
     <>
       <ConfirmDialog />
-      <div style={{ 
-      padding: 24, 
-      maxWidth: 900, 
-      margin: '0 auto',
-      backgroundColor: bgColor,
-      minHeight: '100vh'
-    }}>
+      <div style={{
+        padding: 24,
+        maxWidth: 900,
+        margin: '0 auto',
+        backgroundColor: bgColor,
+        minHeight: '100vh'
+      }}>
       <h1 style={{ marginBottom: 32, fontSize: '2em', color: textColor }}>⚙️ {t('settings')}</h1>
 
       {message.text && (
