@@ -246,6 +246,7 @@ class EventBus {
     FILE_DELETED: 'file.deleted',
     FILE_RESTORED: 'file.restored',
     FILE_SHARED: 'file.shared',
+    FILE_COLD_STORAGE: 'file.cold_storage',
     
     // Utilisateurs
     USER_CREATED: 'user.created',

@@ -41,7 +41,8 @@ class LifecycleService {
 
       // Publier événement
       const eventBus = require('./eventBus');
-      eventBus.publish(eventBus.Events.FILE_COLD_STORAGE, {
+      const { Events } = require('./eventBus');
+      eventBus.publish(Events.FILE_COLD_STORAGE, {
         fileId,
         fileName: file.name,
         userId,

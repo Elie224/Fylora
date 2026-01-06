@@ -92,7 +92,8 @@ router.post('/ocr/:fileId', checkOCR, async (req, res, next) => {
 
     // Publier événement
     const eventBus = require('../services/eventBus');
-    eventBus.publish(eventBus.Events.OCR_COMPLETED, {
+    const { Events } = require('../services/eventBus');
+    eventBus.publish(Events.OCR_COMPLETED, {
       fileId,
       fileName: file.name,
       textLength: result.text.length,
