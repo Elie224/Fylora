@@ -1825,9 +1825,17 @@ async function generatePublicPreviewUrl(req, res, next) {
       expiresAt: expiresAt
     });
 
-    // Générer l'URL publique
-    const apiUrl = process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:5001';
-    const publicUrl = `${apiUrl}/api/files/public/${token}`;
+    // Générer l'URL publique en utilisant l'URL de la requête
+    // Cela garantit que l'URL est accessible depuis les viewers externes
+    const protocol = req.protocol || 'https';
+    const host = req.get('host') || process.env.API_URL || process.env.VITE_API_URL || 'localhost:5001';
+    
+    // En production, forcer HTTPS si nécessaire
+    const baseUrl = process.env.NODE_ENV === 'production' && !host.includes('localhost')
+      ? `https://${host.replace(/^https?:\/\//, '')}`
+      : `${protocol}://${host.replace(/^https?:\/\//, '')}`;
+    
+    const publicUrl = `${baseUrl}/api/files/public/${token}`;
 
     return res.json({
       publicUrl: publicUrl,
