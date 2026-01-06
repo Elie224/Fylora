@@ -712,8 +712,13 @@ async function uploadFile(req, res, next) {
         fileName: req.file.originalname,
         folderId
       });
-      // Nettoyer le fichier physique si la création en base échoue
-      await fs.unlink(finalFilePath).catch(() => {});
+      // Nettoyer le fichier physique si la création en base échoue (uniquement pour stockage local)
+      if (storageType === 'local' && finalFilePath) {
+        await fs.unlink(finalFilePath).catch(() => {});
+      } else if (storageType === 'cloudinary' && storagePath) {
+        // Supprimer de Cloudinary si la création en base échoue
+        await cloudinaryService.deleteFile(storagePath).catch(() => {});
+      }
       return res.status(500).json({ 
         error: { 
           message: 'Failed to create file record in database',
