@@ -168,12 +168,14 @@ export default function Pricing() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: bgColor,
-      padding: '40px 20px',
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <>
+      <ConfirmDialog />
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: bgColor,
+        padding: '40px 20px',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '60px' }}>
           <h1 style={{
@@ -379,7 +381,7 @@ export default function Pricing() {
 
                 {/* CTA Button */}
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (isFree) {
                       if (!isAuthenticated) {
                         navigate('/signup');

@@ -389,6 +389,18 @@ export default function Settings() {
             </div>
           </div>
         </div>
+        
+        {/* Dates de création et dernière connexion */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 24 }}>
+          <div>
+            <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('accountCreated')}</strong>
+            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{accountCreated || 'N/A'}</p>
+          </div>
+          <div>
+            <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('lastLogin')}</strong>
+            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{lastLogin}</p>
+          </div>
+        </div>
       </section>
         
       {/* Section Sécurité - MFA */}
@@ -437,27 +449,6 @@ export default function Settings() {
           >
             Centre de sécurité
           </button>
-        </div>
-      </section>
-        
-      {/* Informations du compte */}
-      <section style={{ 
-        marginBottom: 32, 
-        padding: 24, 
-        backgroundColor: cardBg, 
-        borderRadius: 12, 
-        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
-        border: `1px solid ${borderColor}`
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-          <div>
-            <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('accountCreated')}</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{accountCreated || 'N/A'}</p>
-          </div>
-          <div>
-            <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('lastLogin')}</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{lastLogin}</p>
-          </div>
         </div>
       </section>
 
