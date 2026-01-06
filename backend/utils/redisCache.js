@@ -50,7 +50,10 @@ async function initRedis() {
     });
 
     redisClient.on('error', (err) => {
-      logger.logError(err, { context: 'redis_error' });
+      // Ne logger que les erreurs non-timeout pour éviter le spam
+      if (!err.message || (!err.message.includes('timeout') && !err.message.includes('Connection timeout'))) {
+        logger.logError(err, { context: 'redis_error' });
+      }
       isConnected = false;
     });
 

@@ -31,11 +31,21 @@ class EventBus {
         url: redisUrl,
         socket: {
           connectTimeout: 5000,
+          reconnectStrategy: (retries) => {
+            if (retries > 5) {
+              logger.logWarn('Event Bus: Max Redis reconnection attempts reached, using in-memory fallback');
+              return false; // Stop reconnecting
+            }
+            return Math.min(retries * 100, 3000);
+          }
         },
       });
 
       this.client.on('error', (err) => {
-        logger.logError(err, { context: 'event_bus_error' });
+        // Ne logger que les erreurs non-timeout pour éviter le spam
+        if (!err.message.includes('timeout') && !err.message.includes('Connection timeout')) {
+          logger.logError(err, { context: 'event_bus_error' });
+        }
         this.isConnected = false;
       });
 
@@ -44,10 +54,21 @@ class EventBus {
         this.isConnected = true;
       });
 
-      await this.client.connect();
+      await this.client.connect().catch((connectErr) => {
+        // Si c'est un timeout, utiliser le fallback silencieusement
+        if (connectErr.message && connectErr.message.includes('timeout')) {
+          logger.logWarn('Event Bus: Redis connection timeout, using in-memory events');
+        } else {
+          logger.logError(connectErr, { context: 'event_bus_init' });
+        }
+        throw connectErr;
+      });
       return true;
     } catch (err) {
-      logger.logError(err, { context: 'event_bus_init' });
+      // Ne logger que si ce n'est pas un timeout attendu
+      if (!err.message || (!err.message.includes('timeout') && !err.message.includes('Connection timeout'))) {
+        logger.logError(err, { context: 'event_bus_init' });
+      }
       return false;
     }
   }
