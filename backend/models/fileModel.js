@@ -8,6 +8,7 @@ const FileSchema = new Schema({
   folder_id: { type: Schema.Types.ObjectId, ref: 'Folder', required: true },
   owner_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   file_path: { type: String, required: true, unique: true },
+  storage_type: { type: String, enum: ['local', 'cloudinary', 's3'], default: 'local' },
   is_deleted: { type: Boolean, default: false },
   deleted_at: Date,
   // Champs pour les limitations
@@ -32,7 +33,7 @@ FileSchema.index({ owner_id: 1, cold_storage: 1 }); // Pour cold storage queries
 const File = mongoose.models.File || mongoose.model('File', FileSchema);
 
 const FileModel = {
-  async create({ name, mimeType, size, folderId, ownerId, filePath }) {
+  async create({ name, mimeType, size, folderId, ownerId, filePath, storageType = 'local' }) {
     const file = new File({
       name,
       mime_type: mimeType,
@@ -40,6 +41,7 @@ const FileModel = {
       folder_id: folderId,
       owner_id: ownerId,
       file_path: filePath,
+      storage_type: storageType,
     });
     const saved = await file.save();
     return this.toDTO(saved);
