@@ -21,7 +21,7 @@ services:
 
   # Frontend Static Site
   - type: web
-    name: fylor-frontend
+    name: fylora-frontend
     env: static
     region: frankfurt
     plan: free
