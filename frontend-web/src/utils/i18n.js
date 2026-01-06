@@ -782,7 +782,13 @@ const translations = {
     fileSize: 'File size',
     createdAt: 'Created at',
     updatedAt: 'Updated at',
+    modifiedAt: 'Modified at',
+    folderId: 'Folder ID',
     edit: 'Edit',
+    officeFilePreview: 'This Office file can be viewed online or downloaded',
+    viewOnline: 'View online',
+    openingInViewer: 'Opening in viewer...',
+    viewerError: 'Error opening viewer',
     
     // Gallery
     gallery: 'Gallery',
