@@ -29,6 +29,7 @@ const SetAdmin = lazy(() => import('./pages/SetAdmin'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Support = lazy(() => import('./pages/Support'));
+const MFASettings = lazy(() => import('./pages/MFASettings'));
 
 // Composant de chargement
 const LoadingFallback = () => (

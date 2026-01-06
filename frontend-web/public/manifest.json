@@ -1,0 +1,43 @@
+{
+  "name": "Fylora - Cloud Storage Intelligent",
+  "short_name": "Fylora",
+  "description": "Plateforme de données personnelles souveraines, intelligentes et sécurisées",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#2196F3",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Mes Fichiers",
+      "short_name": "Fichiers",
+      "description": "Accéder à mes fichiers",
+      "url": "/files",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Galerie",
+      "short_name": "Galerie",
+      "description": "Voir mes photos et vidéos",
+      "url": "/gallery",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+
