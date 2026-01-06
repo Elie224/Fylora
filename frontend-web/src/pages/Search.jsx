@@ -79,7 +79,7 @@ export default function Search() {
       console.error('Error details:', err.response?.data || err.message);
       setResults([]);
       // Afficher un message d'erreur à l'utilisateur
-      alert('Erreur lors de la recherche: ' + (err.response?.data?.error?.message || err.message || 'Erreur inconnue'));
+      showToast(t('searchError') || 'Erreur lors de la recherche: ' + (err.response?.data?.error?.message || err.message || 'Erreur inconnue'), 'error');
     } finally {
       setLoading(false);
     }
@@ -361,7 +361,7 @@ export default function Search() {
                             try {
                               const itemId = item.id || item._id;
                               if (!itemId) {
-                                alert(t('errorNoItemId') || 'Erreur: l\'élément n\'a pas d\'identifiant');
+                                showToast(t('errorNoItemId') || 'Erreur: l\'élément n\'a pas d\'identifiant', 'error');
                                 return;
                               }
                               

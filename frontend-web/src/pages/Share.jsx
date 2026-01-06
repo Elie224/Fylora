@@ -113,7 +113,7 @@ export default function Share() {
       }
     } catch (err) {
       console.error('Download error:', err);
-      alert(err.message || 'Erreur lors du téléchargement');
+      showToast(err.message || t('downloadError') || 'Erreur lors du téléchargement', 'error');
     }
   };
 

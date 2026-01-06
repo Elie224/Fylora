@@ -283,7 +283,7 @@ export default function Preview() {
               const token = localStorage.getItem('access_token');
               
               if (!token) {
-                alert(t('mustBeConnected') || 'Vous devez être connecté');
+                showToast(t('mustBeConnected') || 'Vous devez être connecté', 'warning');
                 return;
               }
               
@@ -465,7 +465,7 @@ export default function Preview() {
                   const token = localStorage.getItem('access_token');
                   
                   if (!token) {
-                    alert(t('mustBeConnected') || 'Vous devez être connecté');
+                    showToast(t('mustBeConnected') || 'Vous devez être connecté', 'warning');
                     return;
                   }
                   
@@ -1184,7 +1184,7 @@ function TextEditor({ url, token, fileId, fileName, mimeType }) {
 
       setOriginalContent(content);
       setHasChanges(false);
-      alert('✅ Fichier sauvegardé avec succès !');
+      showToast(t('fileSavedSuccessfully') || '✅ Fichier sauvegardé avec succès !', 'success');
     } catch (err) {
       console.error('Failed to save:', err);
       showToast(t('saveError') || '❌ Erreur lors de la sauvegarde: ' + err.message, 'error');

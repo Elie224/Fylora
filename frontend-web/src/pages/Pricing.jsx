@@ -97,7 +97,7 @@ export default function Pricing() {
           window.location.href = data.data.url;
         } else {
           const error = await response.json();
-          alert(error.error?.message || 'Stripe checkout failed');
+          showToast(error.error?.message || t('stripeCheckoutFailed') || 'Stripe checkout failed', 'error');
         }
       } else if (paymentMethod === 'paypal') {
         // Créer un paiement PayPal
@@ -386,7 +386,10 @@ export default function Pricing() {
                       }
                     } else {
                       // Pour les plans payants, demander la méthode de paiement
-                      const useStripe = window.confirm('Use Stripe for payment? (Cancel for PayPal)');
+                      const useStripe = await confirm(
+                        t('useStripeForPayment') || 'Use Stripe for payment? (Cancel for PayPal)',
+                        t('paymentMethod')
+                      );
                       handleUpgrade(plan.id, useStripe ? 'stripe' : 'paypal');
                     }
                   }}

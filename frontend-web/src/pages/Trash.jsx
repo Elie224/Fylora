@@ -57,7 +57,7 @@ export default function Trash() {
       console.error('Failed to load trash:', err);
       console.error('Error response:', err.response?.data);
       const errorMsg = err.response?.data?.error?.message || err.message || t('loadError');
-      alert(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export default function Trash() {
     } catch (err) {
       console.error('Failed to permanently delete file:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || (t('permanentDeleteError') || 'Erreur lors de la suppression définitive');
-      alert(errorMsg);
+      showToast(errorMsg, 'error');
       // Recharger en cas d'erreur pour récupérer l'état correct
       await loadTrash();
     }
@@ -145,7 +145,7 @@ export default function Trash() {
     } catch (err) {
       console.error('Failed to permanently delete folder:', err);
       const errorMsg = err.response?.data?.error?.message || err.message || (t('permanentDeleteError') || 'Erreur lors de la suppression définitive');
-      alert(errorMsg);
+      showToast(errorMsg, 'error');
       // Recharger en cas d'erreur pour récupérer l'état correct
       await loadTrash();
     }
@@ -189,7 +189,9 @@ export default function Trash() {
   });
 
   return (
-    <div style={{ 
+    <>
+      <ConfirmDialog />
+      <div style={{ 
       padding: '24px', 
       maxWidth: '1400px', 
       margin: '0 auto',
@@ -383,6 +385,7 @@ export default function Trash() {
         </>
       )}
     </div>
+    </>
   );
 }
 

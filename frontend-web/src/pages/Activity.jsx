@@ -59,7 +59,7 @@ export default function Activity() {
       document.body.removeChild(a);
     } catch (err) {
       console.error('Failed to export activities:', err);
-      alert(t('errorExportingActivities'));
+      showToast(t('errorExportingActivities'), 'error');
     }
   };
 
