@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Toast';
 
 const SecurityCenter = () => {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const { showToast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const [loginHistory, setLoginHistory] = useState([]);
@@ -13,6 +15,21 @@ const SecurityCenter = () => {
   const [securityStats, setSecurityStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Couleurs dynamiques selon le thème
+  const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+  const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+  const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+  const secondaryBg = theme === 'dark' ? '#2d2d2d' : '#f7fafc';
+  const hoverBg = theme === 'dark' ? '#2d2d2d' : '#f0f4f8';
+  const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+  const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
+  const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
+  const errorBg = theme === 'dark' ? '#3d1f1f' : '#fef2f2';
+  const errorText = theme === 'dark' ? '#ff6b6b' : '#dc2626';
+  const successBg = theme === 'dark' ? '#1a3d1a' : '#f0fdf4';
+  const successText = theme === 'dark' ? '#4ade80' : '#16a34a';
+  const primaryColor = '#2196F3';
 
   useEffect(() => {
     loadData();
@@ -90,8 +107,8 @@ const SecurityCenter = () => {
     return (
       <>
         <ConfirmDialog />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
+        <div style={{ padding: '32px 16px', backgroundColor: bgColor, minHeight: '100vh' }}>
+          <div style={{ textAlign: 'center', color: textColor }}>
             <p>{t('loading')}...</p>
           </div>
         </div>
@@ -103,8 +120,14 @@ const SecurityCenter = () => {
     return (
       <>
         <ConfirmDialog />
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div style={{ padding: '32px 16px', backgroundColor: bgColor, minHeight: '100vh' }}>
+          <div style={{
+            backgroundColor: errorBg,
+            border: `1px solid ${errorText}`,
+            color: errorText,
+            padding: '12px 16px',
+            borderRadius: '8px'
+          }}>
             <p>{error}</p>
           </div>
         </div>
@@ -113,39 +136,96 @@ const SecurityCenter = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">{t('securityCenter')}</h1>
+    <div style={{ 
+      maxWidth: '1200px', 
+      margin: '0 auto', 
+      padding: '32px 16px', 
+      backgroundColor: bgColor, 
+      minHeight: '100vh' 
+    }}>
+      <h1 style={{ 
+        fontSize: '28px', 
+        fontWeight: 'bold', 
+        marginBottom: '24px', 
+        color: textColor 
+      }}>
+        {t('securityCenter')}
+      </h1>
 
       {/* Statistiques */}
       {securityStats && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">{t('securityStatistics')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div style={{
+          backgroundColor: cardBg,
+          borderRadius: '12px',
+          boxShadow: `0 2px 8px ${shadowColor}`,
+          padding: '24px',
+          marginBottom: '24px',
+          border: `1px solid ${borderColor}`
+        }}>
+          <h2 style={{ 
+            fontSize: '20px', 
+            fontWeight: '600', 
+            marginBottom: '20px', 
+            color: textColor 
+          }}>
+            {t('securityStatistics')}
+          </h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px'
+          }}>
             <div>
-              <p className="text-sm text-gray-600">{t('totalLogins')}</p>
-              <p className="text-2xl font-bold">{securityStats.totalLogins}</p>
+              <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>
+                {t('totalLogins')}
+              </p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: textColor }}>
+                {securityStats.totalLogins || 0}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('successfulLogins')}</p>
-              <p className="text-2xl font-bold text-green-600">{securityStats.successfulLogins}</p>
+              <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>
+                {t('successfulLogins')}
+              </p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: successText }}>
+                {securityStats.successfulLogins || 0}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('failedLogins')}</p>
-              <p className="text-2xl font-bold text-red-600">{securityStats.failedLogins}</p>
+              <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>
+                {t('failedLogins')}
+              </p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: errorText }}>
+                {securityStats.failedLogins || 0}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('activeSessions')}</p>
-              <p className="text-2xl font-bold">{securityStats.activeSessions}</p>
+              <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>
+                {t('activeSessions')}
+              </p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: textColor }}>
+                {securityStats.activeSessions || 0}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('uniqueIPs')}</p>
-              <p className="text-2xl font-bold">{securityStats.uniqueIPs}</p>
+              <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>
+                {t('uniqueIPs')}
+              </p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: textColor }}>
+                {securityStats.uniqueIPs || 0}
+              </p>
             </div>
             {securityStats.lastLogin && (
               <div>
-                <p className="text-sm text-gray-600">{t('lastLogin')}</p>
-                <p className="text-sm">{formatDate(securityStats.lastLogin.date)}</p>
-                <p className="text-xs text-gray-500">{securityStats.lastLogin.ip}</p>
+                <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '8px' }}>
+                  {t('lastLogin')}
+                </p>
+                <p style={{ fontSize: '14px', color: textColor, marginBottom: '4px' }}>
+                  {formatDate(securityStats.lastLogin.date)}
+                </p>
+                <p style={{ fontSize: '12px', color: textSecondary }}>
+                  {securityStats.lastLogin.ip}
+                </p>
               </div>
             )}
           </div>
@@ -153,38 +233,90 @@ const SecurityCenter = () => {
       )}
 
       {/* Sessions actives */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">{t('activeSessions')}</h2>
+      <div style={{
+        backgroundColor: cardBg,
+        borderRadius: '12px',
+        boxShadow: `0 2px 8px ${shadowColor}`,
+        padding: '24px',
+        marginBottom: '24px',
+        border: `1px solid ${borderColor}`
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px'
+        }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: textColor }}>
+            {t('activeSessions')}
+          </h2>
           {activeSessions.length > 1 && (
             <button
               onClick={handleRevokeAllOtherSessions}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+              style={{
+                backgroundColor: errorText,
+                color: '#ffffff',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#ef4444'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = errorText}
             >
               {t('revokeAllOtherSessions')}
             </button>
           )}
         </div>
         {activeSessions.length === 0 ? (
-          <p className="text-gray-500">{t('noActiveSessions')}</p>
+          <p style={{ color: textSecondary }}>{t('noActiveSessions')}</p>
         ) : (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeSessions.map((session) => (
               <div
                 key={session._id || session.id}
-                className="border rounded-lg p-4 flex justify-between items-center"
+                style={{
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '8px',
+                  padding: '16px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: secondaryBg
+                }}
               >
                 <div>
-                  <p className="font-semibold">{getLocationDisplay(session.location)}</p>
-                  <p className="text-sm text-gray-600">{session.ip_address}</p>
-                  <p className="text-xs text-gray-500">{session.user_agent}</p>
-                  <p className="text-xs text-gray-400">
+                  <p style={{ fontWeight: '600', color: textColor, marginBottom: '4px' }}>
+                    {getLocationDisplay(session.location)}
+                  </p>
+                  <p style={{ fontSize: '14px', color: textSecondary, marginBottom: '4px' }}>
+                    {session.ip_address || 'Inconnu'}
+                  </p>
+                  <p style={{ fontSize: '12px', color: textSecondary, marginBottom: '4px' }}>
+                    {session.user_agent || 'Inconnu'}
+                  </p>
+                  <p style={{ fontSize: '12px', color: textSecondary }}>
                     {t('lastActivity')}: {formatDate(session.last_activity)}
                   </p>
                 </div>
                 <button
                   onClick={() => handleRevokeSession(session._id || session.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                  style={{
+                    backgroundColor: errorText,
+                    color: '#ffffff',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#ef4444'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = errorText}
                 >
                   {t('revoke')}
                 </button>
@@ -195,48 +327,112 @@ const SecurityCenter = () => {
       </div>
 
       {/* Historique des connexions */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">{t('loginHistory')}</h2>
+      <div style={{
+        backgroundColor: cardBg,
+        borderRadius: '12px',
+        boxShadow: `0 2px 8px ${shadowColor}`,
+        padding: '24px',
+        border: `1px solid ${borderColor}`
+      }}>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: textColor }}>
+          {t('loginHistory')}
+        </h2>
         {loginHistory.length === 0 ? (
-          <p className="text-gray-500">{t('noLoginHistory')}</p>
+          <p style={{ color: textSecondary }}>{t('noLoginHistory')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ backgroundColor: secondaryBg }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th style={{
+                    padding: '12px 24px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: textSecondary,
+                    textTransform: 'uppercase',
+                    borderBottom: `1px solid ${borderColor}`
+                  }}>
                     {t('date')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th style={{
+                    padding: '12px 24px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: textSecondary,
+                    textTransform: 'uppercase',
+                    borderBottom: `1px solid ${borderColor}`
+                  }}>
                     {t('ipAddress')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th style={{
+                    padding: '12px 24px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: textSecondary,
+                    textTransform: 'uppercase',
+                    borderBottom: `1px solid ${borderColor}`
+                  }}>
                     {t('location')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th style={{
+                    padding: '12px 24px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: textSecondary,
+                    textTransform: 'uppercase',
+                    borderBottom: `1px solid ${borderColor}`
+                  }}>
                     {t('status')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {loginHistory.map((entry) => (
-                  <tr key={entry._id || entry.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+              <tbody>
+                {loginHistory.map((entry, index) => (
+                  <tr 
+                    key={entry._id || entry.id}
+                    style={{
+                      borderBottom: `1px solid ${borderColor}`,
+                      backgroundColor: index % 2 === 0 ? cardBg : secondaryBg
+                    }}
+                  >
+                    <td style={{
+                      padding: '16px 24px',
+                      whiteSpace: 'nowrap',
+                      fontSize: '14px',
+                      color: textColor
+                    }}>
                       {formatDate(entry.created_at || entry.date)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td style={{
+                      padding: '16px 24px',
+                      whiteSpace: 'nowrap',
+                      fontSize: '14px',
+                      color: textColor
+                    }}>
                       {entry.ip_address || entry.ip || 'Inconnu'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td style={{
+                      padding: '16px 24px',
+                      whiteSpace: 'nowrap',
+                      fontSize: '14px',
+                      color: textColor
+                    }}>
                       {getLocationDisplay(entry.location)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td style={{ padding: '16px 24px', whiteSpace: 'nowrap' }}>
                       <span
-                        className={`px-2 py-1 text-xs rounded ${
-                          entry.success !== false
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          borderRadius: '4px',
+                          backgroundColor: entry.success !== false ? successBg : errorBg,
+                          color: entry.success !== false ? successText : errorText,
+                          fontWeight: '500'
+                        }}
                       >
                         {entry.success !== false ? t('success') : t('failed')}
                       </span>
