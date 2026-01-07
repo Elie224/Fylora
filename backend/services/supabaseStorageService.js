@@ -185,16 +185,23 @@ async function fileExists(fileKey) {
   const bucket = process.env.SUPABASE_BUCKET || 'fylora-files';
 
   try {
+    // Utiliser list pour vérifier l'existence
+    const pathParts = fileKey.split('/');
+    const folderPath = pathParts.slice(0, -1).join('/');
+    const fileName = pathParts[pathParts.length - 1];
+    
     const { data, error } = await supabaseClient.storage
       .from(bucket)
-      .list(fileKey.split('/').slice(0, -1).join('/'));
+      .list(folderPath || '', {
+        limit: 1000,
+        search: fileName
+      });
 
     if (error) {
       return false;
     }
 
-    const fileName = fileKey.split('/').pop();
-    return data.some(file => file.name === fileName);
+    return data && data.some(file => file.name === fileName);
   } catch (error) {
     logger.logError(error, {
       context: 'supabase_file_exists',
