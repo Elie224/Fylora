@@ -1042,10 +1042,11 @@ async function downloadFile(req, res, next) {
     }
 
     // Pour stockage local, envoyer le fichier
+    // Note: Si on arrive ici, c'est que le fichier est en stockage local
     if (storageType === 'local') {
       res.sendFile(path.resolve(file.file_path));
     } else {
-      // Ne devrait pas arriver ici car on a déjà redirigé vers Cloudinary plus haut
+      // Ne devrait pas arriver ici car on a déjà géré S3 et Cloudinary plus haut
       return res.status(500).json({ error: { message: 'Storage type not supported' } });
     }
   } catch (err) {
@@ -1499,14 +1500,36 @@ async function deleteFile(req, res, next) {
 
     // Récupérer la taille du fichier avant suppression
     const fileSize = file.size || 0;
-    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    // Vérifier le type de stockage
     const storageType = file.storage_type || 'local';
+    
+    // Si le fichier est marqué comme Cloudinary, on ne peut pas le supprimer physiquement
     if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
-      // Pour les fichiers Cloudinary, on ne peut pas les supprimer physiquement
       logger.logWarn('File is on Cloudinary (no longer supported), soft delete only', {
         fileId: id,
         fileName: file.name
       });
+    } else if (storageType === 's3' || storageType === 'minio') {
+      // Supprimer de S3
+      const storageService = require('../services/storageService');
+      if (storageService.isStorageConfigured() && file.file_path) {
+        try {
+          await storageService.deleteFile(file.file_path);
+          logger.logInfo('File deleted from S3', {
+            fileId: id,
+            s3Key: file.file_path,
+            userId
+          });
+        } catch (s3Err) {
+          logger.logError(s3Err, {
+            context: 's3_delete',
+            fileId: id,
+            s3Key: file.file_path,
+            userId
+          });
+          // Continuer même si la suppression S3 échoue (soft delete en base)
+        }
+      }
     } else if (storageType === 'local' && file.file_path) {
       // Supprimer le fichier local (optionnel - soft delete garde le fichier)
       // On ne supprime pas physiquement pour permettre la restauration
