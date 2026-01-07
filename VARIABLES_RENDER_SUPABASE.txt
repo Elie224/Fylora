@@ -1,0 +1,39 @@
+Variables d'environnement à configurer sur Render pour Supabase Storage :
+
+==========================================
+SUPABASE_URL
+==========================================
+https://vajplmdfwwczsksfngrs.supabase.co
+
+==========================================
+SUPABASE_SERVICE_ROLE_KEY
+==========================================
+Vous devez utiliser la clé "service_role" (legacy) ou la clé "Secret key" (nouvelle).
+
+Option 1 - Si vous avez les clés Legacy :
+- Allez dans Settings → API
+- Sous "Legacy anon, service_role API keys"
+- Copiez la clé "service_role" (pas "anon")
+- Elle commence par eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+Option 2 - Si vous avez les nouvelles clés :
+- Utilisez la "Secret key" : sb_secret_OStqo1O8NLUNvRrdKy3BNg_3P2YdqhK
+
+==========================================
+SUPABASE_BUCKET
+==========================================
+fylora-files
+
+==========================================
+INSTRUCTIONS
+==========================================
+1. Allez dans votre service Render
+2. Environment → Add Environment Variable
+3. Ajoutez les 3 variables ci-dessus
+4. Redémarrez le service
+
+IMPORTANT : 
+- La clé "anon" ou "publishable" ne fonctionnera PAS
+- Vous DEVEZ utiliser "service_role" (legacy) ou "Secret key" (nouvelle)
+- La clé service_role a tous les droits nécessaires pour gérer les fichiers
+

@@ -21,7 +21,10 @@ let isConfigured = false;
  */
 function initSupabase() {
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  // Essayer service_role (legacy) ou secret key (nouvelle), mais PAS anon
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                      process.env.SUPABASE_SECRET_KEY || 
+                      process.env.SUPABASE_KEY;
   const bucketName = process.env.SUPABASE_BUCKET || 'fylora-files';
 
   if (!supabaseUrl || !supabaseKey) {

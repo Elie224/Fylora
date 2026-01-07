@@ -39,6 +39,12 @@ Supabase Storage est **beaucoup plus simple** à configurer que AWS S3 :
 3. Copiez :
    - **Project URL** (ex: `https://xxxxx.supabase.co`)
    - **service_role key** (clé secrète, commence par `eyJ...`)
+   
+   **⚠️ Important** : Vous devez utiliser la clé **service_role** (pas `anon`). 
+   - Si vous voyez "Legacy anon, service_role API keys", utilisez la clé **service_role**
+   - Si vous voyez "Publishable and secret API keys", utilisez la clé **Secret key** (sb_secret_...)
+   
+   La clé `anon` ou `publishable` ne fonctionnera pas car elle n'a pas les permissions nécessaires pour gérer les fichiers.
 
 ### Étape 4 : Configurer sur Render
 
