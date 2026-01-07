@@ -875,12 +875,25 @@ async function downloadFile(req, res, next) {
     const { token, password } = req.query;
     
     // IMPORTANT: Si pas de token de partage ET pas d'utilisateur authentifié, exiger l'authentification
-    if (!token && !req.user) {
+    // Vérifier si l'Authorization header est présent même si req.user n'est pas défini
+    const hasAuthHeader = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
+    if (!token && !req.user && !hasAuthHeader) {
       logger.logWarn('Download request without authentication or share token', {
         fileId: id,
-        hasAuthHeader: !!req.headers.authorization
+        hasAuthHeader: !!req.headers.authorization,
+        authHeaderValue: req.headers.authorization ? 'present' : 'missing'
       });
       return res.status(401).json({ error: { message: 'Authentication required or share token required' } });
+    }
+    
+    // Si l'Authorization header est présent mais req.user n'est pas défini, 
+    // c'est que le token est invalide ou expiré
+    if (hasAuthHeader && !req.user && !token) {
+      logger.logWarn('Download request with invalid or expired token', {
+        fileId: id,
+        hasAuthHeader: true
+      });
+      return res.status(401).json({ error: { message: 'Invalid or expired authentication token' } });
     }
     
     // Logger pour déboguer (toujours logger en production pour diagnostiquer)

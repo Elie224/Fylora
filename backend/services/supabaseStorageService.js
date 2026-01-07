@@ -34,12 +34,25 @@ function initSupabase() {
 
   // Nettoyer la clé (enlever les espaces, retours à la ligne, etc.)
   supabaseKey = supabaseKey.trim().replace(/\n/g, '').replace(/\r/g, '');
+  
+  // Vérifier que la clé ne contient pas de texte supplémentaire (comme "Variable 3")
+  if (supabaseKey.includes('\n') || supabaseKey.length < 100) {
+    logger.logWarn('Supabase key may be invalid', {
+      keyLength: supabaseKey.length,
+      keyPreview: supabaseKey.substring(0, 20) + '...'
+    });
+  }
 
   try {
     supabaseClient = createClient(supabaseUrl, supabaseKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      global: {
+        headers: {
+          'apikey': supabaseKey
+        }
       }
     });
     isConfigured = true;
