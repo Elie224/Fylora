@@ -32,6 +32,10 @@ const UserSchema = new Schema({
   oauth_id: String, // ID unique fourni par le provider OAuth
   
   // Informations de profil
+  first_name: String, // Prénom
+  last_name: String, // Nom
+  phone: String, // Numéro de téléphone
+  country: String, // Pays
   display_name: String, // Nom d'affichage (peut être différent de l'email)
   avatar_url: String, // URL de l'avatar de l'utilisateur
   

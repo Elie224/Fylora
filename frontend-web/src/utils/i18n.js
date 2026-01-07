@@ -19,6 +19,10 @@ const translations = {
     // Auth
     login: 'Connexion',
     signup: 'Créer un compte',
+    firstName: 'Prénom',
+    lastName: 'Nom',
+    phone: 'Numéro de téléphone',
+    country: 'Pays',
     email: 'E-mail',
     password: 'Mot de passe',
     confirmPassword: 'Confirmer le mot de passe',
@@ -548,6 +552,10 @@ const translations = {
     // Auth
     login: 'Login',
     signup: 'Create account',
+    firstName: 'First name',
+    lastName: 'Last name',
+    phone: 'Phone number',
+    country: 'Country',
     email: 'Email',
     password: 'Password',
     confirmPassword: 'Confirm password',

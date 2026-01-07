@@ -5,7 +5,11 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function Signup() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [country, setCountry] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -56,7 +60,7 @@ export default function Signup() {
     setError('');
 
     // Validation
-    if (!email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !phone || !email || !country || !password || !confirmPassword) {
       setError(t('fillAllFields'));
       return;
     }
@@ -74,7 +78,7 @@ export default function Signup() {
 
     setLoading(true);
 
-    const result = await signup(email, password);
+    const result = await signup(email, password, firstName, lastName, phone, country);
     
     if (result.success) {
       navigate('/dashboard');
@@ -144,6 +148,106 @@ export default function Signup() {
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
+              {t('firstName')}
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              autoComplete="given-name"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '16px',
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
+              {t('lastName')}
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              autoComplete="family-name"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '16px',
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
+              {t('phone')}
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
+              placeholder="+33 6 12 34 56 78"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '16px',
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('email')}
             </label>
             <input
@@ -151,6 +255,40 @@ export default function Signup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '16px',
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
+              {t('country')}
+            </label>
+            <input
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              autoComplete="country-name"
+              placeholder="France"
               style={{
                 width: '100%',
                 padding: '12px',

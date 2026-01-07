@@ -168,6 +168,34 @@ const loginSchema = [
 const signupSchema = [
   commonValidations.email('email'),
   commonValidations.password('password'),
+  body('firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('firstName is required')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('firstName must be between 1 and 50 characters')
+    .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/)
+    .withMessage('firstName can only contain letters, spaces, hyphens, and apostrophes'),
+  body('lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('lastName is required')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('lastName must be between 1 and 50 characters')
+    .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/)
+    .withMessage('lastName can only contain letters, spaces, hyphens, and apostrophes'),
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('phone is required')
+    .matches(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/)
+    .withMessage('phone must be a valid phone number'),
+  body('country')
+    .trim()
+    .notEmpty()
+    .withMessage('country is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('country must be between 2 and 100 characters'),
   body('username')
     .optional()
     .trim()

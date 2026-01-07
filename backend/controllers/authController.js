@@ -43,7 +43,7 @@ async function signup(req, res, next) {
     }
 
     const body = req.validatedBody || req.body;
-    const { email, password } = body;
+    const { email, password, firstName, lastName, phone, country } = body;
 
     // Vérifier si un utilisateur avec cet email existe déjà
     let utilisateurExistant;
@@ -82,10 +82,15 @@ async function signup(req, res, next) {
       nouvelUtilisateur = await User.create({ 
         email, 
         passwordHash: motDePasseHache,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        country: country,
+        display_name: `${firstName} ${lastName}`.trim(),
         plan: 'free',
         quota_limit: freeQuota
       });
-      logger.logInfo(`Nouvel utilisateur créé: ${email}`, { userId: nouvelUtilisateur.id, plan: 'free' });
+      logger.logInfo(`Nouvel utilisateur créé: ${email}`, { userId: nouvelUtilisateur.id, plan: 'free', firstName, lastName });
     } catch (erreur) {
       logger.logError(erreur, { contexte: 'création_utilisateur', email });
       if (erreur.message && erreur.message.includes('MongoDB')) {

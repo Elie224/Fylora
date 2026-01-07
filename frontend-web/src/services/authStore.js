@@ -12,10 +12,10 @@ const useAuthStore = create(
       error: null,
 
       // Inscription
-      signup: async (email, password) => {
+      signup: async (email, password, firstName, lastName, phone, country) => {
         set({ loading: true, error: null });
         try {
-          const response = await authService.signup(email, password);
+          const response = await authService.signup(email, password, firstName, lastName, phone, country);
           const { user, access_token, refresh_token } = response.data.data;
           
           set({

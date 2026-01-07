@@ -147,8 +147,8 @@ apiClient.interceptors.response.use(
 
 // Services d'authentification
 export const authService = {
-  signup: (email, password) =>
-    apiClient.post('/auth/signup', { email, password }),
+  signup: (email, password, firstName, lastName, phone, country) =>
+    apiClient.post('/auth/signup', { email, password, firstName, lastName, phone, country }),
   login: (email, password) =>
     apiClient.post('/auth/login', { email, password }),
   refresh: (refreshToken) =>
