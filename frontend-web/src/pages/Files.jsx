@@ -1084,25 +1084,37 @@ export default function Files() {
       )}
 
       {showShareModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'white', padding: 24, borderRadius: 8, maxWidth: 500, width: '90%', maxHeight: '90vh', overflow: 'auto' }}>
-            <h2>{t('shareModal')} {showShareModal.name}</h2>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: cardBg, padding: 24, borderRadius: 12, maxWidth: 500, width: '90%', maxHeight: '90vh', overflow: 'auto', border: `1px solid ${borderColor}`, boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ color: textColor, marginTop: 0, marginBottom: 20 }}>{t('shareModal')} {showShareModal.name}</h2>
             {!shareLink ? (
               <>
                 {/* Type de partage */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8 }}>{t('shareType')}</label>
+                  <label style={{ display: 'block', marginBottom: 8, color: textColor, fontWeight: '600' }}>{t('shareType')}</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={() => { setShareType('public'); setSelectedShareUser(null); setShareUserSearch(''); }}
                       style={{
                         padding: '8px 16px',
-                        backgroundColor: shareType === 'public' ? '#2196F3' : '#f0f0f0',
-                        color: shareType === 'public' ? 'white' : '#333',
-                        border: 'none',
-                        borderRadius: 4,
+                        backgroundColor: shareType === 'public' ? '#2196F3' : (theme === 'dark' ? '#2d2d2d' : '#f0f0f0'),
+                        color: shareType === 'public' ? 'white' : textColor,
+                        border: `1px solid ${shareType === 'public' ? '#2196F3' : borderColor}`,
+                        borderRadius: 8,
                         cursor: 'pointer',
-                        flex: 1
+                        flex: 1,
+                        transition: 'all 0.2s',
+                        fontWeight: '600'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (shareType !== 'public') {
+                          e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#e0e0e0';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (shareType !== 'public') {
+                          e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#f0f0f0';
+                        }
                       }}
                     >
                       {t('publicLink')}
@@ -1111,12 +1123,24 @@ export default function Files() {
                       onClick={() => { setShareType('internal'); setSharePassword(''); setShareExpiresAt(''); }}
                       style={{
                         padding: '8px 16px',
-                        backgroundColor: shareType === 'internal' ? '#2196F3' : '#f0f0f0',
-                        color: shareType === 'internal' ? 'white' : '#333',
-                        border: 'none',
-                        borderRadius: 4,
+                        backgroundColor: shareType === 'internal' ? '#2196F3' : (theme === 'dark' ? '#2d2d2d' : '#f0f0f0'),
+                        color: shareType === 'internal' ? 'white' : textColor,
+                        border: `1px solid ${shareType === 'internal' ? '#2196F3' : borderColor}`,
+                        borderRadius: 8,
                         cursor: 'pointer',
-                        flex: 1
+                        flex: 1,
+                        transition: 'all 0.2s',
+                        fontWeight: '600'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (shareType !== 'internal') {
+                          e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#e0e0e0';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (shareType !== 'internal') {
+                          e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#f0f0f0';
+                        }
                       }}
                     >
                       {t('shareWithUser')}
@@ -1128,24 +1152,40 @@ export default function Files() {
                 {shareType === 'public' && (
                   <>
                     <div style={{ marginBottom: 16 }}>
-                      <label style={{ display: 'block', marginBottom: 4 }}>{t('sharePassword')}</label>
+                      <label style={{ display: 'block', marginBottom: 4, color: textColor, fontWeight: '600' }}>{t('sharePassword')}</label>
                       <input
                         type="password"
                         value={sharePassword}
                         onChange={(e) => setSharePassword(e.target.value)}
-                        style={{ padding: 8, width: '100%' }}
+                        style={{ 
+                          padding: 10, 
+                          width: '100%', 
+                          backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                          color: textColor,
+                          border: `1px solid ${borderColor}`,
+                          borderRadius: 8,
+                          fontSize: '14px'
+                        }}
                         placeholder={t('leaveEmptyForPublic')}
                       />
-                      <small style={{ color: '#666', fontSize: '12px' }}>{t('passwordMinLength')}</small>
+                      <small style={{ color: textSecondary, fontSize: '12px', marginTop: 4, display: 'block' }}>{t('passwordMinLength')}</small>
                     </div>
                     <div style={{ marginBottom: 16 }}>
-                      <label style={{ display: 'block', marginBottom: 4 }}>{t('shareExpiresAt')}</label>
+                      <label style={{ display: 'block', marginBottom: 4, color: textColor, fontWeight: '600' }}>{t('shareExpiresAt')}</label>
                       <input
                         type="datetime-local"
                         lang={language === 'en' ? 'en-US' : 'fr-FR'}
                         value={shareExpiresAt}
                         onChange={(e) => setShareExpiresAt(e.target.value)}
-                        style={{ padding: 8, width: '100%' }}
+                        style={{ 
+                          padding: 10, 
+                          width: '100%',
+                          backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                          color: textColor,
+                          border: `1px solid ${borderColor}`,
+                          borderRadius: 8,
+                          fontSize: '14px'
+                        }}
                       />
                     </div>
                   </>
@@ -1154,16 +1194,24 @@ export default function Files() {
                 {/* Partage interne */}
                 {shareType === 'internal' && (
                   <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', marginBottom: 4 }}>{t('searchUser')}</label>
+                    <label style={{ display: 'block', marginBottom: 4, color: textColor, fontWeight: '600' }}>{t('searchUser')}</label>
                     <input
                       type="text"
                       value={shareUserSearch}
                       onChange={(e) => setShareUserSearch(e.target.value)}
-                      style={{ padding: 8, width: '100%' }}
+                      style={{ 
+                        padding: 10, 
+                        width: '100%',
+                        backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                        color: textColor,
+                        border: `1px solid ${borderColor}`,
+                        borderRadius: 8,
+                        fontSize: '14px'
+                      }}
                       placeholder={t('typeEmailOrName')}
                     />
                     {shareUsers.length > 0 && (
-                      <div style={{ marginTop: 8, border: '1px solid #ddd', borderRadius: 4, maxHeight: 200, overflow: 'auto' }}>
+                      <div style={{ marginTop: 8, border: `1px solid ${borderColor}`, borderRadius: 8, maxHeight: 200, overflow: 'auto', backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff' }}>
                         {shareUsers.map(user => (
                           <div
                             key={user.id}
@@ -1171,28 +1219,58 @@ export default function Files() {
                             style={{
                               padding: 12,
                               cursor: 'pointer',
-                              backgroundColor: selectedShareUser?.id === user.id ? '#e3f2fd' : 'white',
-                              borderBottom: '1px solid #eee'
+                              backgroundColor: selectedShareUser?.id === user.id ? (theme === 'dark' ? '#1a237e' : '#e3f2fd') : (theme === 'dark' ? '#2d2d2d' : '#ffffff'),
+                              borderBottom: `1px solid ${borderColor}`,
+                              transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedShareUser?.id !== user.id) {
+                                e.currentTarget.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedShareUser?.id !== user.id) {
+                                e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+                              }
                             }}
                           >
-                            <div style={{ fontWeight: 'bold' }}>{user.display_name || user.email}</div>
-                            {user.display_name && <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>}
+                            <div style={{ fontWeight: 'bold', color: textColor }}>{user.display_name || user.email}</div>
+                            {user.display_name && <div style={{ fontSize: '12px', color: textSecondary }}>{user.email}</div>}
                           </div>
                         ))}
                       </div>
                     )}
                     {selectedShareUser && (
-                      <div style={{ marginTop: 8, padding: 8, backgroundColor: '#e8f5e9', borderRadius: 4 }}>
-                        {t('shareWith')}: {selectedShareUser.display_name || selectedShareUser.email}
+                      <div style={{ marginTop: 8, padding: 12, backgroundColor: theme === 'dark' ? '#1b5e20' : '#e8f5e9', borderRadius: 8, border: `1px solid ${theme === 'dark' ? '#2e7d32' : '#c8e6c9'}` }}>
+                        <div style={{ color: theme === 'dark' ? '#a5d6a7' : '#2e7d32', fontWeight: '600' }}>{t('shareWith')}: {selectedShareUser.display_name || selectedShareUser.email}</div>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button 
                     onClick={shareItem} 
-                    style={{ padding: '8px 16px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                    style={{ 
+                      padding: '10px 20px', 
+                      backgroundColor: '#2196F3', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: 8, 
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#1976D2';
+                      e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#2196F3';
+                      e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+                    }}
                   >
                     {shareType === 'public' ? t('generateLink') : t('share')}
                   </button>
@@ -1206,7 +1284,23 @@ export default function Files() {
                       setSelectedShareUser(null);
                       setShareUserSearch('');
                     }} 
-                    style={{ padding: '8px 16px', border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
+                    style={{ 
+                      padding: '10px 20px', 
+                      border: `1px solid ${borderColor}`, 
+                      borderRadius: 8, 
+                      cursor: 'pointer',
+                      backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                      color: textColor,
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+                    }}
                   >
                     {t('cancel')}
                   </button>
@@ -1214,13 +1308,21 @@ export default function Files() {
               </>
             ) : (
               <>
-                <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-                  <label style={{ display: 'block', marginBottom: 4 }}>{t('shareLinkLabel')}</label>
+                <div style={{ marginBottom: 16, padding: 16, backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f5f5f5', borderRadius: 8, border: `1px solid ${borderColor}` }}>
+                  <label style={{ display: 'block', marginBottom: 8, color: textColor, fontWeight: '600' }}>{t('shareLinkLabel')}</label>
                   <input
                     type="text"
                     value={shareLink}
                     readOnly
-                    style={{ padding: 8, width: '100%', backgroundColor: 'white' }}
+                    style={{ 
+                      padding: 10, 
+                      width: '100%', 
+                      backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                      color: textColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 8,
+                      fontSize: '14px'
+                    }}
                     onClick={(e) => e.target.select()}
                   />
                   <button
@@ -1228,17 +1330,52 @@ export default function Files() {
                       navigator.clipboard.writeText(shareLink);
                       showToast(t('linkCopied'), 'success');
                     }}
-                    style={{ marginTop: 8, padding: '4px 8px', fontSize: '12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                    style={{ 
+                      marginTop: 12, 
+                      padding: '8px 16px', 
+                      fontSize: '14px', 
+                      backgroundColor: '#4CAF50', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: 8, 
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#45a049';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#4CAF50';
+                    }}
                   >
                     {t('copyLink')}
                   </button>
                 </div>
-                <button 
-                  onClick={() => { setShowShareModal(null); setShareLink(''); setSharePassword(''); setShareExpiresAt(''); }} 
-                  style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                >
-                  {t('close')}
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    onClick={() => { setShowShareModal(null); setShareLink(''); setSharePassword(''); setShareExpiresAt(''); }} 
+                    style={{ 
+                      padding: '10px 20px', 
+                      backgroundColor: '#4CAF50', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: 8, 
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#45a049';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#4CAF50';
+                    }}
+                  >
+                    {t('close')}
+                  </button>
+                </div>
               </>
             )}
           </div>
