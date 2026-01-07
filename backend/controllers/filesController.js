@@ -548,7 +548,8 @@ async function uploadFile(req, res, next) {
       // On continue avec le fichier tel quel pour répondre rapidement
     }
 
-    // Utiliser S3 si configuré, sinon stockage local
+    // Utiliser Supabase en priorité (plus simple), puis S3, sinon stockage local
+    const supabaseStorage = require('../services/supabaseStorageService');
     const storageService = require('../services/storageService');
     let storagePath = finalFilePath;
     let storageType = 'local';
@@ -570,8 +571,56 @@ async function uploadFile(req, res, next) {
       });
     }
     
-    // Si S3 est configuré, uploader vers S3
-    if (storageService.isStorageConfigured()) {
+    // Si Supabase est configuré, uploader vers Supabase (plus simple que S3)
+    if (supabaseStorage.isSupabaseConfigured()) {
+      try {
+        const fileBuffer = await fs.readFile(finalFilePath);
+        
+        const uploadResult = await supabaseStorage.uploadFile(
+          fileBuffer,
+          userId,
+          req.file.originalname,
+          req.file.mimetype
+        );
+        
+        // Utiliser la clé Supabase comme chemin
+        storagePath = uploadResult.fileKey;
+        storageType = 'supabase';
+        
+        // Supprimer le fichier local après upload Supabase réussi
+        await fs.unlink(finalFilePath).catch(() => {});
+        
+        logger.logInfo('File uploaded to Supabase', {
+          fileName: req.file.originalname,
+          supabaseKey: uploadResult.fileKey,
+          size: fileSize,
+          userId
+        });
+      } catch (supabaseErr) {
+        logger.logError(supabaseErr, {
+          context: 'supabase_upload_fallback',
+          fileName: req.file.originalname,
+          userId
+        });
+        // Fallback vers S3 ou local si Supabase échoue
+        logger.logWarn('Falling back to S3 or local storage', {
+          fileName: req.file.originalname
+        });
+        // Vérifier que le fichier local existe toujours
+        try {
+          await fs.access(finalFilePath);
+        } catch (accessErr) {
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(500).json({ 
+            error: { 
+              message: 'File was not saved correctly. Please try again.',
+            } 
+          });
+        }
+      }
+    }
+    // Si S3 est configuré (et Supabase ne l'est pas), uploader vers S3
+    else if (storageService.isStorageConfigured()) {
       try {
         const AWS = require('aws-sdk');
         const fileBuffer = await fs.readFile(finalFilePath);
@@ -949,8 +998,37 @@ async function downloadFile(req, res, next) {
       });
     }
     
+    // Si c'est un fichier Supabase, générer une URL signée pour le téléchargement
+    if (storageType === 'supabase') {
+      const supabaseStorage = require('../services/supabaseStorageService');
+      if (supabaseStorage.isSupabaseConfigured()) {
+        try {
+          const downloadUrl = await supabaseStorage.generateDownloadUrl(
+            file.file_path,
+            15 * 60 // 15 minutes
+          );
+          
+          // Servir le fichier avec les bons headers
+          res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+          res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.name)}"`);
+          res.setHeader('Content-Length', file.size);
+          
+          // Rediriger vers l'URL signée Supabase
+          return res.redirect(downloadUrl);
+        } catch (supabaseErr) {
+          logger.logError(supabaseErr, {
+            context: 'supabase_download',
+            fileId: id,
+            supabaseKey: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to generate download URL' } 
+          });
+        }
+      }
+    }
     // Si c'est un fichier S3, générer une URL signée pour le téléchargement
-    if (storageType === 's3' || storageType === 'minio') {
+    else if (storageType === 's3' || storageType === 'minio') {
       const storageService = require('../services/storageService');
       if (storageService.isStorageConfigured()) {
         try {
@@ -1509,6 +1587,27 @@ async function deleteFile(req, res, next) {
         fileId: id,
         fileName: file.name
       });
+    } else if (storageType === 'supabase') {
+      // Supprimer de Supabase
+      const supabaseStorage = require('../services/supabaseStorageService');
+      if (supabaseStorage.isSupabaseConfigured() && file.file_path) {
+        try {
+          await supabaseStorage.deleteFile(file.file_path);
+          logger.logInfo('File deleted from Supabase', {
+            fileId: id,
+            supabaseKey: file.file_path,
+            userId
+          });
+        } catch (supabaseErr) {
+          logger.logError(supabaseErr, {
+            context: 'supabase_delete',
+            fileId: id,
+            supabaseKey: file.file_path,
+            userId
+          });
+          // Continuer même si la suppression Supabase échoue (soft delete en base)
+        }
+      }
     } else if (storageType === 's3' || storageType === 'minio') {
       // Supprimer de S3
       const storageService = require('../services/storageService');
@@ -1878,8 +1977,29 @@ async function servePublicPreview(req, res, next) {
       });
     }
     
+    // Si c'est un fichier Supabase, générer une URL pour la prévisualisation publique
+    if (storageType === 'supabase') {
+      const supabaseStorage = require('../services/supabaseStorageService');
+      if (supabaseStorage.isSupabaseConfigured()) {
+        try {
+          const previewUrl = supabaseStorage.generatePreviewUrl(file.file_path);
+          
+          // Rediriger vers l'URL Supabase
+          return res.redirect(previewUrl);
+        } catch (supabaseErr) {
+          logger.logError(supabaseErr, {
+            context: 'supabase_public_preview',
+            fileId: tokenData.fileId,
+            supabaseKey: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to generate preview URL' } 
+          });
+        }
+      }
+    }
     // Si c'est un fichier S3, générer une URL signée pour la prévisualisation publique
-    if (storageType === 's3' || storageType === 'minio') {
+    else if (storageType === 's3' || storageType === 'minio') {
       const storageService = require('../services/storageService');
       if (storageService.isStorageConfigured()) {
         try {
