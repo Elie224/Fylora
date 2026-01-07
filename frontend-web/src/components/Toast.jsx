@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * Composant Toast pour afficher des notifications
@@ -102,6 +103,14 @@ export const useConfirm = () => {
   };
 
   const ConfirmDialog = () => {
+    const { theme } = useTheme();
+    
+    // Couleurs dynamiques selon le thème
+    const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+    const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
+    const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
+    const textSecondary = theme === 'dark' ? '#b0b0b0' : '#4a5568';
+    
     if (!confirmState) return null;
 
     const handleConfirm = () => {
@@ -115,20 +124,88 @@ export const useConfirm = () => {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-          <h3 className="text-lg font-semibold mb-4">{confirmState.title}</h3>
-          <p className="mb-6">{confirmState.message}</p>
-          <div className="flex gap-4 justify-end">
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          backgroundColor: cardBg,
+          borderRadius: 12,
+          boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)',
+          padding: 24,
+          maxWidth: 500,
+          width: '90%',
+          border: `1px solid ${borderColor}`
+        }}>
+          <h3 style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            marginBottom: 16,
+            color: textColor
+          }}>
+            {confirmState.title}
+          </h3>
+          <p style={{
+            marginBottom: 24,
+            color: textColor,
+            fontSize: '15px',
+            lineHeight: '1.5'
+          }}>
+            {confirmState.message}
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
             <button
               onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              style={{
+                padding: '10px 20px',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor,
+                border: `1px solid ${borderColor}`,
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+              }}
             >
               {t('cancel')}
             </button>
             <button
               onClick={handleConfirm}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(244, 67, 54, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#d32f2f';
+                e.target.style.boxShadow = '0 4px 8px rgba(244, 67, 54, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#f44336';
+                e.target.style.boxShadow = '0 2px 4px rgba(244, 67, 54, 0.3)';
+              }}
             >
               {t('confirm')}
             </button>
