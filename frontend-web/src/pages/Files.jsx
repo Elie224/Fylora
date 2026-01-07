@@ -2449,38 +2449,48 @@ export default function Files() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000
         }}>
           <div style={{
-            backgroundColor: 'white',
+            backgroundColor: cardBg,
             padding: 24,
             borderRadius: 12,
             maxWidth: 500,
             width: '90%',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)',
+            border: `1px solid ${borderColor}`
           }}>
-            <h2 style={{ marginTop: 0, marginBottom: 16 }}>
+            <h2 style={{ marginTop: 0, marginBottom: 20, color: textColor }}>
               📦 {t('move')} "{itemToMove.name}"
             </h2>
             
             {loadingFolders ? (
-              <div>{t('loading')}</div>
+              <div style={{ color: textColor }}>{t('loading')}</div>
             ) : (
               <>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8 }}>{t('selectDestination')}</label>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', marginBottom: 8, color: textColor, fontWeight: '600' }}>{t('selectDestination')}</label>
                   <select
                     value={selectedDestinationFolder || ''}
                     onChange={(e) => setSelectedDestinationFolder(e.target.value || null)}
-                    style={{ padding: 8, width: '100%', fontSize: 14 }}
+                    style={{ 
+                      padding: 10, 
+                      width: '100%', 
+                      fontSize: 14,
+                      backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                      color: textColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 8,
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="">{t('root')}</option>
                     {availableFolders.map(folder => (
-                      <option key={folder.id} value={folder.id}>
+                      <option key={folder.id} value={folder.id} style={{ backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff', color: textColor }}>
                         {folder.name}
                       </option>
                     ))}
@@ -2494,12 +2504,21 @@ export default function Files() {
                       setSelectedDestinationFolder(null);
                     }}
                     style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#ccc',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: 4,
-                      cursor: 'pointer'
+                      padding: '10px 20px',
+                      backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                      color: textColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
                     }}
                   >
                     {t('cancel')}
@@ -2507,12 +2526,24 @@ export default function Files() {
                   <button
                     onClick={confirmMove}
                     style={{
-                      padding: '8px 16px',
+                      padding: '10px 20px',
                       backgroundColor: '#2196F3',
                       color: 'white',
                       border: 'none',
-                      borderRadius: 4,
-                      cursor: 'pointer'
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#1976D2';
+                      e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#2196F3';
+                      e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
                     }}
                   >
                     {t('move')}
@@ -2532,27 +2563,28 @@ export default function Files() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000
         }}>
           <div style={{
-            backgroundColor: 'white',
+            backgroundColor: cardBg,
             padding: 24,
             borderRadius: 12,
             maxWidth: 500,
             width: '90%',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)',
+            border: `1px solid ${borderColor}`
           }}>
-            <h2 style={{ marginTop: 0, marginBottom: 16, color: '#333' }}>
+            <h2 style={{ marginTop: 0, marginBottom: 16, color: textColor }}>
               ⚠️ {t('deleteConfirm')}
             </h2>
-            <p style={{ marginBottom: 24, color: '#666', fontSize: '1.1em' }}>
-              {t('deleteConfirm')} <strong>"{itemToDelete.name}"</strong> ?
+            <p style={{ marginBottom: 24, color: textColor, fontSize: '1.1em' }}>
+              {t('deleteConfirm')} <strong style={{ color: textColor }}>"{itemToDelete.name}"</strong> ?
             </p>
-            <p style={{ marginBottom: 24, color: '#999', fontSize: '0.9em' }}>
+            <p style={{ marginBottom: 24, color: textSecondary, fontSize: '0.9em' }}>
               {t('deleteConfirmDetails')} {itemToDelete.type === 'folder' ? t('folder') : t('file')}.
               {t('language') === 'en' ? ' You can restore it later if needed.' : ' Vous pourrez le restaurer plus tard si nécessaire.'}
             </p>
@@ -2564,13 +2596,20 @@ export default function Files() {
                 }}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: '#e0e0e0',
-                  color: '#333',
-                  border: 'none',
-                  borderRadius: 6,
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                  color: textColor,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 8,
                   cursor: 'pointer',
-                  fontSize: '1em',
-                  fontWeight: 'bold'
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
                 }}
               >
                 {t('cancel')}
@@ -2582,10 +2621,20 @@ export default function Files() {
                   backgroundColor: '#f44336',
                   color: 'white',
                   border: 'none',
-                  borderRadius: 6,
+                  borderRadius: 8,
                   cursor: 'pointer',
-                  fontSize: '1em',
-                  fontWeight: 'bold'
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 4px rgba(244, 67, 54, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#d32f2f';
+                  e.target.style.boxShadow = '0 4px 8px rgba(244, 67, 54, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#f44336';
+                  e.target.style.boxShadow = '0 2px 4px rgba(244, 67, 54, 0.3)';
                 }}
               >
                 🗑️ {t('delete')}
