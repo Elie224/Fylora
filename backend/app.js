@@ -27,12 +27,26 @@ configurePassport(); // Configurer les stratégies OAuth
 // Initialize Queue Manager (initialisation automatique dans le constructeur)
 require('./utils/queue'); // Charge et initialise automatiquement les queues
 
-// Initialize Cloudinary service (si configuré)
-const cloudinaryService = require('./services/cloudinaryService');
-if (cloudinaryService.isCloudinaryConfigured()) {
-  logger.logInfo('✅ Cloudinary storage service initialized');
+// Initialize Supabase Storage service (si configuré)
+const supabaseStorage = require('./services/supabaseStorageService');
+if (supabaseStorage.isSupabaseConfigured()) {
+  logger.logInfo('✅ Supabase storage service initialized', {
+    url: process.env.SUPABASE_URL,
+    bucket: process.env.SUPABASE_BUCKET || 'fylora-files'
+  });
 } else {
-  logger.logWarn('Cloudinary not configured, using local storage');
+  logger.logWarn('Supabase not configured, checking S3...');
+  
+  // Fallback vers S3 si Supabase n'est pas configuré
+  const storageService = require('./services/storageService');
+  if (storageService.isStorageConfigured()) {
+    logger.logInfo('✅ S3 storage service initialized', {
+      type: storageService.getStorageType(),
+      bucket: process.env.S3_BUCKET || process.env.MINIO_BUCKET
+    });
+  } else {
+    logger.logWarn('S3 not configured, using local storage (not recommended for production)');
+  }
 }
 
 // Initialize Event Bus
