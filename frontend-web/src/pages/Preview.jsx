@@ -358,7 +358,6 @@ export default function Preview() {
   }
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-  const downloadUrl = `${apiUrl}/api/files/${id}/download`;
   const token = localStorage.getItem('access_token');
 
   return (
@@ -471,9 +470,6 @@ export default function Preview() {
             <p style={{ fontSize: '16px', color: textColor }}>
               {t('downloadOnly') || 'This file type cannot be previewed'}
             </p>
-          </div>
-        )}
-            <p>{t('cannotPreviewFileType')}</p>
           </div>
         )}
       </div>
