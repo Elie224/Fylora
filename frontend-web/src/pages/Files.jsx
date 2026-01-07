@@ -1751,28 +1751,18 @@ export default function Files() {
                     itemType = 'file';
                   }
                   
-                  // DEBUG: Log pour vérifier les données de l'élément
-                  const shouldShowDownload = (item.type !== 'folder' || itemType !== 'folder' || (item.size !== undefined && item.size !== null && item.size > 0));
-                  if (item.size && item.size > 0) {
-                    console.log('📄 Fichier détecté:', {
-                      name: item.name,
-                      size: item.size,
-                      type: item.type,
-                      itemType: itemType,
-                      shouldShowDownload: shouldShowDownload,
-                      condition1: item.type !== 'folder',
-                      condition2: itemType !== 'folder',
-                      condition3: (item.size !== undefined && item.size !== null && item.size > 0)
-                    });
-                  } else if (item.type === 'file' || itemType === 'file') {
-                    console.log('📄 Fichier (sans taille):', {
-                      name: item.name,
-                      size: item.size,
-                      type: item.type,
-                      itemType: itemType,
-                      shouldShowDownload: shouldShowDownload
-                    });
-                  }
+                  // DEBUG: Log pour TOUS les items pour comprendre pourquoi le bouton ne s'affiche pas
+                  const hasSize = item.size !== undefined && item.size !== null && item.size > 0;
+                  const willShowDownload = hasSize;
+                  console.log('🔍 Item analysé:', {
+                    name: item.name,
+                    size: item.size,
+                    type: item.type,
+                    itemType: itemType,
+                    hasSize: hasSize,
+                    willShowDownload: willShowDownload,
+                    allItemKeys: Object.keys(item)
+                  });
                   
                   // S'assurer que l'ID est toujours une string, même si c'est un objet
                   const rawId = item.id || item._id;
@@ -1860,8 +1850,14 @@ export default function Files() {
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {/* Bouton de téléchargement pour les fichiers */}
-                      {/* CONDITION FINALE SIMPLE : Afficher si l'élément a une taille > 0 (c'est un fichier) */}
-                      {(item.size !== undefined && item.size !== null && item.size > 0) && (
+                      {/* CONDITION ULTRA-SIMPLE : Afficher si l'élément a une taille > 0 (c'est un fichier) */}
+                      {(() => {
+                        const hasSize = item.size !== undefined && item.size !== null && item.size > 0;
+                        if (hasSize) {
+                          console.log('✅ Afficher bouton télécharger pour:', item.name, 'taille:', item.size);
+                        }
+                        return hasSize;
+                      })() && (
                         <button
                           onClick={async (e) => {
                             e.preventDefault();
