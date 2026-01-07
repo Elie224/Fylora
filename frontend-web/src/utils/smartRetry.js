@@ -7,7 +7,7 @@ export class SmartRetry {
     this.maxRetries = options.maxRetries || 3;
     this.baseDelay = options.baseDelay || 1000;
     this.maxDelay = options.maxDelay || 10000;
-    this.retryableStatuses = options.retryableStatuses || [408, 429, 500, 502, 503, 504];
+    this.retryableStatuses = options.retryableStatuses || [408, 500, 502, 503, 504]; // 429 retiré car ne doit pas être retry
   }
 
   /**
