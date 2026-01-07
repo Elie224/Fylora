@@ -548,7 +548,8 @@ async function uploadFile(req, res, next) {
       // On continue avec le fichier tel quel pour répondre rapidement
     }
 
-    // Stockage local uniquement
+    // Utiliser S3 si configuré, sinon stockage local
+    const storageService = require('../services/storageService');
     let storagePath = finalFilePath;
     let storageType = 'local';
     
@@ -567,6 +568,85 @@ async function uploadFile(req, res, next) {
           message: 'File was not saved correctly. Please try again.',
         } 
       });
+    }
+    
+    // Si S3 est configuré, uploader vers S3
+    if (storageService.isStorageConfigured()) {
+      try {
+        const AWS = require('aws-sdk');
+        const fileBuffer = await fs.readFile(finalFilePath);
+        
+        // Générer une clé unique pour S3
+        const { v4: uuidv4 } = require('uuid');
+        const fileExtension = req.file.originalname.split('.').pop() || '';
+        const fileKey = `users/${userId}/${uuidv4()}.${fileExtension}`;
+        
+        // Uploader vers S3
+        const s3Config = {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
+          region: process.env.S3_REGION || process.env.AWS_REGION || 'us-east-1',
+          signatureVersion: 'v4',
+        };
+        
+        const endpoint = process.env.S3_ENDPOINT || process.env.MINIO_ENDPOINT;
+        if (endpoint) {
+          s3Config.endpoint = endpoint;
+          s3Config.s3ForcePathStyle = endpoint.includes('minio') || endpoint.includes('localhost');
+        }
+        
+        const s3 = new AWS.S3(s3Config);
+        const bucketName = process.env.S3_BUCKET || process.env.MINIO_BUCKET || 'fylora-files';
+        
+        const uploadResult = await s3.putObject({
+          Bucket: bucketName,
+          Key: fileKey,
+          Body: fileBuffer,
+          ContentType: req.file.mimetype,
+          Metadata: {
+            'original-name': encodeURIComponent(req.file.originalname),
+            'user-id': userId,
+            'file-size': fileSize.toString(),
+          },
+          ServerSideEncryption: 'AES256',
+        }).promise();
+        
+        // Utiliser la clé S3 comme chemin
+        storagePath = fileKey;
+        storageType = storageService.getStorageType() || 's3';
+        
+        // Supprimer le fichier local après upload S3 réussi
+        await fs.unlink(finalFilePath).catch(() => {});
+        
+        logger.logInfo('File uploaded to S3', {
+          fileName: req.file.originalname,
+          s3Key: fileKey,
+          size: fileSize,
+          userId,
+          etag: uploadResult.ETag
+        });
+      } catch (s3Err) {
+        logger.logError(s3Err, {
+          context: 's3_upload_fallback',
+          fileName: req.file.originalname,
+          userId
+        });
+        // Fallback vers stockage local si S3 échoue
+        logger.logWarn('Falling back to local storage', {
+          fileName: req.file.originalname
+        });
+        // Vérifier que le fichier local existe toujours
+        try {
+          await fs.access(finalFilePath);
+        } catch (accessErr) {
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(500).json({ 
+            error: { 
+              message: 'File was not saved correctly. Please try again.',
+            } 
+          });
+        }
+      }
     }
 
     // Créer l'entrée en base de données
@@ -614,8 +694,11 @@ async function uploadFile(req, res, next) {
         folderId
       });
       // Nettoyer le fichier physique si la création en base échoue
-      if (finalFilePath) {
+      if (storageType === 'local' && finalFilePath) {
         await fs.unlink(finalFilePath).catch(() => {});
+      } else if (storageType !== 'local' && storagePath) {
+        // Supprimer de S3 si la création en base échoue
+        await storageService.deleteFile(storagePath).catch(() => {});
       }
       return res.status(500).json({ 
         error: { 
@@ -852,9 +935,10 @@ async function downloadFile(req, res, next) {
       return res.status(403).json({ error: { message: 'Access denied' } });
     }
 
-    // Vérifier que le fichier existe physiquement (stockage local uniquement)
-    // Si le fichier est marqué comme Cloudinary, retourner une erreur car Cloudinary n'est plus utilisé
+    // Vérifier le type de stockage
     const storageType = file.storage_type || 'local';
+    
+    // Si le fichier est marqué comme Cloudinary, retourner une erreur car Cloudinary n'est plus utilisé
     if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
       return res.status(410).json({ 
         error: { 
@@ -865,6 +949,38 @@ async function downloadFile(req, res, next) {
       });
     }
     
+    // Si c'est un fichier S3, générer une URL signée pour le téléchargement
+    if (storageType === 's3' || storageType === 'minio') {
+      const storageService = require('../services/storageService');
+      if (storageService.isStorageConfigured()) {
+        try {
+          const downloadData = await storageService.generateDownloadUrl(
+            file.file_path,
+            file.name,
+            15 // 15 minutes
+          );
+          
+          // Servir le fichier avec les bons headers
+          res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+          res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.name)}"`);
+          res.setHeader('Content-Length', file.size);
+          
+          // Rediriger vers l'URL signée S3
+          return res.redirect(downloadData.downloadUrl);
+        } catch (s3Err) {
+          logger.logError(s3Err, {
+            context: 's3_download',
+            fileId: id,
+            s3Key: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to generate download URL' } 
+          });
+        }
+      }
+    }
+    
+    // Pour stockage local, vérifier que le fichier existe physiquement
     if (storageType === 'local') {
       let fileExists = false;
       try {
