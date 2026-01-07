@@ -725,6 +725,7 @@ const translations = {
     no: 'No',
     mustBeConnected: 'You must be logged in to download',
     downloadError: 'Error during download',
+    downloadStarted: 'Download started',
     renameError: 'Error during rename',
     createFolderError: 'Error creating folder',
     loadError: 'Error loading',
