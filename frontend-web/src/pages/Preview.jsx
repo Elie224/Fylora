@@ -111,7 +111,7 @@ export default function Preview() {
       let responseContentType = '';
       
       try {
-        const response = await fetch(`${apiUrl}/api/files/${id}/preview`, {
+        previewGetResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
