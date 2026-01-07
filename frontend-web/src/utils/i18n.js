@@ -512,6 +512,8 @@ const translations = {
     // Security Center
     securityCenter: 'Centre de sécurité',
     securityStatistics: 'Statistiques de sécurité',
+    configureMFA: 'Configurer MFA',
+    protectAccountMFA: 'Protégez votre compte avec l'authentification à deux facteurs (MFA)',
     totalLogins: 'Total connexions',
     successfulLogins: 'Connexions réussies',
     failedLogins: 'Connexions échouées',
@@ -1036,6 +1038,8 @@ const translations = {
     // Security Center
     securityCenter: 'Security Center',
     securityStatistics: 'Security Statistics',
+    configureMFA: 'Configure MFA',
+    protectAccountMFA: 'Protect your account with two-factor authentication (MFA)',
     totalLogins: 'Total Logins',
     successfulLogins: 'Successful Logins',
     failedLogins: 'Failed Logins',

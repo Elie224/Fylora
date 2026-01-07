@@ -447,13 +447,13 @@ export default function Settings() {
         boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
         border: `1px solid ${borderColor}`
       }}>
-        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🔐 Sécurité</h2>
+        <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>🔐 {t('security')}</h2>
         <p style={{ marginBottom: 20, color: textSecondary }}>
-          Protégez votre compte avec l'authentification à deux facteurs (MFA)
+          {t('protectAccountMFA')}
         </p>
         <div style={{ display: 'flex', gap: 12 }}>
           <button
-            onClick={() => navigate('/settings/mfa')}
+            onClick={() => navigate('/mfa')}
             style={{
               padding: isMobile ? '10px 16px' : '12px 24px',
               minHeight: isMobile ? '44px' : 'auto',
@@ -467,11 +467,21 @@ export default function Settings() {
               fontWeight: '600',
               transition: 'all 0.2s'
             }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#1976D2';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#2196F3';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
           >
-            Configurer MFA
+            {t('configureMFA') || 'Configurer MFA'}
           </button>
           <button
-            onClick={() => navigate('/settings/security')}
+            onClick={() => navigate('/security')}
             style={{
               padding: isMobile ? '10px 16px' : '12px 24px',
               minHeight: isMobile ? '44px' : 'auto',
@@ -485,8 +495,18 @@ export default function Settings() {
               fontWeight: '600',
               transition: 'all 0.2s'
             }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#45a049';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(76, 175, 80, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#4CAF50';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
           >
-            Centre de sécurité
+            {t('securityCenter') || 'Centre de sécurité'}
           </button>
         </div>
       </section>
