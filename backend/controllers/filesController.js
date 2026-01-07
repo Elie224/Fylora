@@ -1640,7 +1640,7 @@ async function permanentDeleteFile(req, res, next) {
     // Récupérer la taille du fichier avant suppression définitive
     const fileSize = file.size || 0;
     
-    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    // Vérifier le type de stockage
     const storageType = file.storage_type || 'local';
     
     // Supprimer le fichier selon son type de stockage
@@ -1652,6 +1652,27 @@ async function permanentDeleteFile(req, res, next) {
           fileName: file.name
         });
         // Continuer avec la suppression en base seulement
+      } else if (storageType === 's3' || storageType === 'minio') {
+        // Supprimer de S3
+        const storageService = require('../services/storageService');
+        if (storageService.isStorageConfigured()) {
+          try {
+            await storageService.deleteFile(file.file_path);
+            logger.logInfo('File deleted from S3', {
+              fileId: id,
+              s3Key: file.file_path,
+              userId
+            });
+          } catch (s3Err) {
+            logger.logWarn('Could not delete file from S3', {
+              fileId: id,
+              s3Key: file.file_path,
+              error: s3Err.message,
+              userId
+            });
+            // Continuer même si la suppression S3 échoue
+          }
+        }
       } else if (storageType === 'local') {
         // Supprimer le fichier local
         const fs = require('fs').promises;
