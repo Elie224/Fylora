@@ -273,7 +273,7 @@ export default function Files() {
                     mimeType: file.type,
                     size: result.size || file.size,
                     folderId: currentFolder?.id || null,
-                    filePath: result.fileKey,
+                    filePath: result.filePath || result.fileKey || result.path,
                     storageType: 'local',
                   }),
                 })
