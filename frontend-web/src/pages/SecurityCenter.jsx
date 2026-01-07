@@ -323,7 +323,11 @@ const SecurityCenter = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => handleRevokeSession(session._id || session.id)}
+                  onClick={() => {
+                    const sessionId = session._id || session.id;
+                    console.log('Button clicked - Session ID:', sessionId, 'Full session:', session);
+                    handleRevokeSession(sessionId);
+                  }}
                   style={{
                     backgroundColor: errorText,
                     color: '#ffffff',

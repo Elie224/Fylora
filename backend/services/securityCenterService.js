@@ -93,10 +93,23 @@ class SecurityCenterService {
    */
   async detectSuspiciousActivity(userId, ipAddress) {
     try {
+      const mongoose = require('mongoose');
+      
+      // Convertir userId en ObjectId si c'est une string
+      let userIdObj;
+      if (typeof userId === 'string') {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+          return 0;
+        }
+        userIdObj = new mongoose.Types.ObjectId(userId);
+      } else {
+        userIdObj = userId;
+      }
+      
       // Compter les échecs récents (dernières 24h)
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const recentFailures = await LoginHistory.countDocuments({
-        user_id: userId,
+        user_id: userIdObj,
         ip_address: ipAddress,
         success: false,
         created_at: { $gte: oneDayAgo },
