@@ -36,12 +36,23 @@ router.get('/status', async (req, res, next) => {
  */
 router.post('/setup', async (req, res, next) => {
   try {
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User;
     const UserModel = require('../models/userModel');
-    const user = await UserModel.findById(req.user.id);
-
-    if (user.mfa_enabled) {
+    
+    // Vérifier d'abord le statut MFA
+    const userStatus = await UserModel.findById(req.user.id);
+    if (userStatus && userStatus.mfa_enabled) {
       return res.status(400).json({
         error: { message: 'MFA is already enabled' },
+      });
+    }
+
+    // Obtenir le document Mongoose pour pouvoir utiliser .save()
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'User not found' },
       });
     }
 
@@ -79,8 +90,16 @@ router.post('/verify', async (req, res, next) => {
       });
     }
 
-    const UserModel = require('../models/userModel');
-    const user = await UserModel.findById(req.user.id);
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User;
+    
+    // Obtenir le document Mongoose pour pouvoir utiliser .save()
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'User not found' },
+      });
+    }
 
     if (!user.mfa_secret_temp) {
       return res.status(400).json({

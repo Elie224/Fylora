@@ -43,9 +43,25 @@ export class SmartRetry {
       return true;
     }
 
-    // Status HTTP retryable
+    // Status HTTP retryable (mais pas pour les erreurs 500 dues à des bugs)
     if (error.response) {
-      return this.retryableStatuses.includes(error.response.status);
+      const status = error.response.status;
+      // Ne pas retry pour les erreurs 500 (souvent des bugs) sauf si c'est clairement un problème réseau
+      if (status === 500) {
+        // Vérifier si c'est une erreur de validation ou un bug (ne pas retry)
+        const errorMessage = error.response?.data?.error?.message || '';
+        // Si c'est une erreur de validation/bug (user.save is not a function, etc.), ne pas retry
+        if (errorMessage.includes('is not a function') || 
+            errorMessage.includes('Cannot read property') ||
+            errorMessage.includes('validation')) {
+          return false;
+        }
+      }
+      // Ne pas retry pour les erreurs 429 (rate limiting) - le serveur demande explicitement d'arrêter
+      if (status === 429) {
+        return false;
+      }
+      return this.retryableStatuses.includes(status);
     }
 
     return false;

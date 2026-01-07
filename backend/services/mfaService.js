@@ -54,7 +54,11 @@ class MFAService {
    * Activer MFA pour un utilisateur
    */
   async enableMFA(userId, secret, backupCodes) {
-    const user = await UserModel.findById(userId);
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User;
+    
+    // Obtenir le document Mongoose pour pouvoir utiliser .save()
+    const user = await User.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
@@ -80,10 +84,13 @@ class MFAService {
    * Désactiver MFA
    */
   async disableMFA(userId, password) {
-    // Vérifier le mot de passe avant de désactiver
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User;
+    
+    // Obtenir le document Mongoose pour pouvoir utiliser .save()
+    const user = await User.findById(userId);
+    if (!user || !user.password_hash) {
+      throw new Error('User not found or has no password set');
     }
 
     const bcrypt = require('bcryptjs');
@@ -105,7 +112,11 @@ class MFAService {
    * Vérifier MFA lors de la connexion
    */
   async verifyMFA(userId, token) {
-    const user = await UserModel.findById(userId);
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User;
+    
+    // Obtenir le document Mongoose pour pouvoir utiliser .save() si nécessaire
+    const user = await User.findById(userId);
     if (!user || !user.mfa_enabled) {
       return { valid: false, reason: 'MFA not enabled' };
     }

@@ -82,6 +82,7 @@ const UserSchema = new Schema({
   // MFA (Multi-Factor Authentication)
   mfa_enabled: { type: Boolean, default: false },
   mfa_secret: String, // Secret TOTP (chiffré)
+  mfa_secret_temp: String, // Secret temporaire pendant la configuration
   mfa_type: { type: String, enum: ['totp', 'email', 'sms'], default: null },
   mfa_backup_codes: [String], // Codes de backup (hashés)
 }, { 
