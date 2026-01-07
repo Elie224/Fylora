@@ -1246,66 +1246,6 @@ function OfficePreview({ fileId, fileName, mimeType, token, previewUrl }) {
     loadPublicUrl();
   }, [fileId, token, apiUrl, showToast, t]);
   
-  const handleDownload = async () => {
-    try {
-      if (!token) {
-        showToast(t('mustBeConnected') || 'You must be connected', 'warning');
-        return;
-      }
-      
-      // Utiliser l'endpoint download qui préserve le nom de fichier original
-      const downloadUrl = `${apiUrl}/api/files/${fileId}/download`;
-      
-      // Créer un lien de téléchargement qui fonctionne sur tous les appareils
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = fileName || 'download'; // Préserver le nom de fichier original avec extension
-      a.style.display = 'none';
-      
-      // Ajouter le token d'authentification dans l'en-tête via fetch puis créer un blob
-      // Cela garantit que le nom de fichier est préservé
-      const response = await fetch(downloadUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
-      
-      // Obtenir le nom de fichier depuis les headers Content-Disposition si disponible
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let finalFileName = fileName || 'download';
-      if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (fileNameMatch && fileNameMatch[1]) {
-          finalFileName = fileNameMatch[1].replace(/['"]/g, '');
-          // Décoder l'URL si nécessaire
-          try {
-            finalFileName = decodeURIComponent(finalFileName);
-          } catch (e) {
-            // Si le décodage échoue, utiliser le nom tel quel
-          }
-        }
-      }
-      
-      // Créer un blob et télécharger avec le nom de fichier original
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      a.href = url;
-      a.download = finalFileName; // Utiliser le nom de fichier original avec extension
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      showToast(t('downloadStarted') || 'Download started', 'success');
-    } catch (err) {
-      console.error('Download failed:', err);
-      showToast(err.message || t('downloadError') || 'Download error', 'error');
-    }
-  };
-  
   if (loading) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
@@ -1317,24 +1257,9 @@ function OfficePreview({ fileId, fileName, mimeType, token, previewUrl }) {
   if (error || !publicUrl) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <p style={{ marginBottom: 24, fontSize: '16px', color: textColor }}>
+        <p style={{ fontSize: '16px', color: textColor }}>
           {t('previewNotAvailable') || 'Preview not available for this file type'}
         </p>
-        <button
-          onClick={handleDownload}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: theme === 'dark' ? '#4CAF50' : '#45a049',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 500
-          }}
-        >
-          {t('download') || 'Download'}
-        </button>
       </div>
     );
   }
