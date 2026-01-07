@@ -77,7 +77,13 @@ export const LanguageProvider = ({ children }) => {
 
   const t = useCallback((key, params = null) => {
     // Utiliser la langue du contexte React (qui est toujours à jour)
-    return translate(key, params, language);
+    if (!key) return '';
+    try {
+      return translate(key, params, language);
+    } catch (error) {
+      console.error(`[i18n] Error translating key "${key}":`, error);
+      return key || '';
+    }
   }, [language, updateKey]); // Dépendre de language et updateKey pour forcer la mise à jour
 
   // Fonctions utilitaires de formatage

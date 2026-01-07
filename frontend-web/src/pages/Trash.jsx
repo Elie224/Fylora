@@ -169,7 +169,9 @@ export default function Trash() {
   const formatBytes = (bytes) => {
     if (!bytes) return '-';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = language === 'en' 
+      ? ['Bytes', 'KB', 'MB', 'GB', 'TB']
+      : ['Octets', 'Ko', 'Mo', 'Go', 'To'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };

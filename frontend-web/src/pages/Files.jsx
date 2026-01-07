@@ -226,7 +226,7 @@ export default function Files() {
         return;
       }
       
-      let userMessage = t('loadError') || 'Erreur lors du chargement des fichiers';
+      let userMessage = t('loadError');
       
       if (statusCode === 403) {
         userMessage = t('accessDenied');
@@ -851,7 +851,9 @@ export default function Files() {
   const formatBytes = (bytes) => {
     if (!bytes) return '-';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = language === 'en' 
+      ? ['Bytes', 'KB', 'MB', 'GB', 'TB']
+      : ['Octets', 'Ko', 'Mo', 'Go', 'To'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
@@ -2630,7 +2632,7 @@ export default function Files() {
             </p>
             <p style={{ marginBottom: 24, color: textSecondary, fontSize: '0.9em' }}>
               {t('deleteConfirmDetails')} {itemToDelete.type === 'folder' ? t('folder') : t('file')}.
-              {t('language') === 'en' ? ' You can restore it later if needed.' : ' Vous pourrez le restaurer plus tard si nécessaire.'}
+              {t('canRestoreLater')}
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
               <button

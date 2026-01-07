@@ -22,6 +22,8 @@ const translations = {
     firstName: 'Prénom',
     lastName: 'Nom',
     phone: 'Numéro de téléphone',
+    phoneFormat: 'Format',
+    invalidPhoneNumber: 'Numéro de téléphone invalide',
     country: 'Pays',
     email: 'E-mail',
     password: 'Mot de passe',
@@ -75,6 +77,8 @@ const translations = {
     renameItem: 'Renommer',
     deleteConfirm: 'Voulez-vous vraiment supprimer',
     deleteConfirmDetails: 'Cette action enverra dans la corbeille.',
+    canRestoreLater: 'Vous pourrez le restaurer plus tard si nécessaire.',
+    never: 'Jamais',
     deleteSuccess: 'a été supprimé et envoyé dans la corbeille.',
     deleteError: 'Erreur lors de la suppression',
     uploadError: 'Erreur lors de l\'upload',
@@ -555,6 +559,8 @@ const translations = {
     firstName: 'First name',
     lastName: 'Last name',
     phone: 'Phone number',
+    phoneFormat: 'Format',
+    invalidPhoneNumber: 'Invalid phone number',
     country: 'Country',
     email: 'Email',
     password: 'Password',
@@ -1106,9 +1112,13 @@ export const detectBrowserLanguage = () => {
 export const getCurrentLanguage = () => {
   if (typeof window === 'undefined') return 'fr';
   
-  const stored = localStorage.getItem('language');
-  if (stored && supportedLanguages[stored]) {
-    return stored;
+  try {
+    const stored = localStorage.getItem('language');
+    if (stored && supportedLanguages[stored]) {
+      return stored;
+    }
+  } catch (error) {
+    console.error('[i18n] Error getting language from localStorage:', error);
   }
   
   // Si aucune langue stockée, retourner 'fr' par défaut
@@ -1121,14 +1131,28 @@ export const setLanguage = (lang) => {
   if (typeof window === 'undefined') return;
   
   if (lang && supportedLanguages[lang]) {
-    localStorage.setItem('language', lang);
-    document.documentElement.setAttribute('lang', lang);
-    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr'); // Support futur RTL
+    try {
+      localStorage.setItem('language', lang);
+      document.documentElement.setAttribute('lang', lang);
+      // Support futur RTL
+      if (lang === 'ar' || lang === 'he') {
+        document.documentElement.setAttribute('dir', 'rtl');
+      } else {
+        document.documentElement.setAttribute('dir', 'ltr');
+      }
+    } catch (error) {
+      console.error('[i18n] Error setting language:', error);
+    }
   }
 };
 
 // Fonction de traduction améliorée avec support des clés imbriquées et des placeholders
 export const t = (key, params = null, lang = null) => {
+  // Si la clé est vide ou n'est pas une string, retourner la clé
+  if (!key || typeof key !== 'string') {
+    return key || '';
+  }
+  
   // Si le deuxième paramètre est une string, c'est probablement l'ancien format (key, lang)
   // On détecte cela et on ajuste
   let actualParams = params;
@@ -1142,31 +1166,51 @@ export const t = (key, params = null, lang = null) => {
   
   const currentLang = actualLang || getCurrentLanguage();
   const keys = key.split('.');
-  let value = translations[currentLang] || translations.fr;
   
-  // Parcourir les clés imbriquées
-  for (const k of keys) {
-    value = value?.[k];
-    if (value === undefined) {
-      // Fallback vers le français si la traduction n'existe pas
-      value = translations.fr;
-      for (const k2 of keys) {
-        value = value?.[k2];
-      }
-      break;
+  // Essayer d'abord avec la langue actuelle
+  let value = translations[currentLang];
+  if (value) {
+    for (const k of keys) {
+      value = value?.[k];
+      if (value === undefined) break;
     }
   }
   
-  // Si toujours undefined, essayer avec la clé complète comme fallback
+  // Si pas trouvé, fallback vers le français
   if (value === undefined) {
-    console.warn(`Translation missing for key: ${key} in language: ${currentLang}`);
-    return key;
+    value = translations.fr;
+    if (value) {
+      for (const k of keys) {
+        value = value?.[k];
+        if (value === undefined) break;
+      }
+    }
+  }
+  
+  // Si toujours undefined, essayer avec l'anglais comme dernier recours
+  if (value === undefined && currentLang !== 'en') {
+    value = translations.en;
+    if (value) {
+      for (const k of keys) {
+        value = value?.[k];
+        if (value === undefined) break;
+      }
+    }
+  }
+  
+  // Si toujours undefined, logger un avertissement et retourner la clé formatée
+  if (value === undefined) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[i18n] Translation missing for key: "${key}" in language: ${currentLang}`);
+    }
+    // Retourner la clé formatée de manière lisible
+    return key.split('.').pop().replace(/([A-Z])/g, ' $1').trim() || key;
   }
   
   // Remplacer les placeholders si des paramètres sont fournis
   if (actualParams && typeof value === 'string') {
     return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
-      return actualParams[paramKey] !== undefined ? actualParams[paramKey] : match;
+      return actualParams[paramKey] !== undefined ? String(actualParams[paramKey]) : match;
     });
   }
   

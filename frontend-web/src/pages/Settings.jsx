@@ -36,6 +36,10 @@ export default function Settings() {
   
   // Profil
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   
@@ -67,6 +71,10 @@ export default function Settings() {
       const stats = statsResponse.data.data;
       
       setEmail(userData.email || '');
+      setFirstName(userData.first_name || '');
+      setLastName(userData.last_name || '');
+      setPhone(userData.phone || '');
+      setCountry(userData.country || '');
       setDisplayName(userData.display_name || '');
       setAvatarUrl(userData.avatar_url || '');
       // Ne pas forcer la langue - utiliser celle de l'utilisateur
@@ -94,7 +102,7 @@ export default function Settings() {
           minute: '2-digit'
         }));
       } else {
-        setLastLogin('Jamais');
+        setLastLogin(t('never'));
       }
       
       // Mettre à jour le store
@@ -114,9 +122,11 @@ export default function Settings() {
   };
 
   const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return '0 ' + (language === 'en' ? 'B' : 'O');
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const sizes = language === 'en' 
+      ? ['B', 'KB', 'MB', 'GB', 'TB']
+      : ['O', 'Ko', 'Mo', 'Go', 'To'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
@@ -126,7 +136,14 @@ export default function Settings() {
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
-      const response = await userService.updateProfile({ email, display_name: displayName });
+      const response = await userService.updateProfile({ 
+        email, 
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        country: country,
+        display_name: displayName 
+      });
       showMessage('success', t('profileUpdatedSuccess'));
       if (setUser && response.data.data) {
         setUser({ ...user, ...response.data.data });
@@ -485,6 +502,44 @@ export default function Settings() {
       }}>
         <h2 style={{ marginBottom: 20, fontSize: '1.5em', color: textColor }}>👤 {t('profile')}</h2>
         <form onSubmit={handleUpdateProfile}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '16px', marginBottom: 20 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('firstName')}</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                style={{
+                  padding: 12,
+                  width: '100%',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 8,
+                  fontSize: '1em',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                  color: textColor
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('lastName')}</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                style={{
+                  padding: 12,
+                  width: '100%',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 8,
+                  fontSize: '1em',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                  color: textColor
+                }}
+                required
+              />
+            </div>
+          </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('email')}</label>
             <input
@@ -503,6 +558,44 @@ export default function Settings() {
               }}
               required
             />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '16px', marginBottom: 20 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('phone')}</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                style={{
+                  padding: 12,
+                  width: '100%',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 8,
+                  fontSize: '1em',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                  color: textColor
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('country')}</label>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                style={{
+                  padding: 12,
+                  width: '100%',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 8,
+                  fontSize: '1em',
+                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                  color: textColor
+                }}
+                required
+              />
+            </div>
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('displayName')}</label>

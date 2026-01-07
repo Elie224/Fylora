@@ -3,17 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { countries, getCountryByCode, formatPhoneNumber, validatePhoneNumber } from '../utils/countries';
 
 export default function Signup() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [country, setCountry] = useState('');
+  const [countryCode, setCountryCode] = useState('FR'); // France par défaut
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
   
   const { signup } = useAuthStore();
   const navigate = useNavigate();
@@ -60,8 +62,15 @@ export default function Signup() {
     setError('');
 
     // Validation
-    if (!firstName || !lastName || !phone || !email || !country || !password || !confirmPassword) {
+    if (!firstName || !lastName || !phone || !email || !countryCode || !password || !confirmPassword) {
       setError(t('fillAllFields'));
+      return;
+    }
+
+    // Valider le numéro de téléphone selon le pays
+    if (!validatePhoneNumber(phone, countryCode)) {
+      const country = getCountryByCode(countryCode);
+      setPhoneError(t('invalidPhoneNumber') + (country ? ` (${country.phoneFormat})` : ''));
       return;
     }
 
@@ -77,8 +86,14 @@ export default function Signup() {
     }
 
     setLoading(true);
+    setPhoneError('');
 
-    const result = await signup(email, password, firstName, lastName, phone, country);
+    // Formater le numéro de téléphone avec le code pays
+    const formattedPhone = formatPhoneNumber(phone, countryCode);
+    const country = getCountryByCode(countryCode);
+    const countryName = country ? country.name : countryCode;
+
+    const result = await signup(email, password, firstName, lastName, formattedPhone, countryName);
     
     if (result.success) {
       navigate('/dashboard');
@@ -214,14 +229,15 @@ export default function Signup() {
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
-              {t('phone')}
+              {t('country')}
             </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
-              placeholder="+33 6 12 34 56 78"
+            <select
+              value={countryCode}
+              onChange={(e) => {
+                setCountryCode(e.target.value);
+                setPhoneError('');
+                setPhone(''); // Réinitialiser le téléphone quand on change de pays
+              }}
               style={{
                 width: '100%',
                 padding: '12px',
@@ -231,7 +247,8 @@ export default function Signup() {
                 boxSizing: 'border-box',
                 backgroundColor: inputBg,
                 color: textColor,
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                cursor: 'pointer'
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = primaryColor;
@@ -243,7 +260,102 @@ export default function Signup() {
               }}
               required
               disabled={loading}
-            />
+            >
+              {countries.map(country => (
+                <option key={country.code} value={country.code}>
+                  {country.name} ({country.phoneCode})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
+              {t('phone')}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: textSecondary,
+                fontSize: '16px',
+                pointerEvents: 'none',
+                zIndex: 1
+              }}>
+                {getCountryByCode(countryCode)?.phoneCode || '+33'}
+              </div>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  // Nettoyer et valider en temps réel
+                  let value = e.target.value.replace(/\D/g, '');
+                  // Limiter selon le pays
+                  const country = getCountryByCode(countryCode);
+                  if (country) {
+                    // Limiter la longueur selon le format du pays
+                    const maxLength = country.phoneFormat.replace(/\D/g, '').length - country.phoneCode.replace(/\D/g, '').length;
+                    if (value.length > maxLength) {
+                      value = value.substring(0, maxLength);
+                    }
+                  }
+                  setPhone(value);
+                  setPhoneError('');
+                }}
+                onBlur={(e) => {
+                  // Valider à la perte de focus
+                  if (e.target.value && !validatePhoneNumber(e.target.value, countryCode)) {
+                    const country = getCountryByCode(countryCode);
+                    setPhoneError(t('invalidPhoneNumber') + (country ? ` (${country.phoneFormat})` : ''));
+                  } else {
+                    setPhoneError('');
+                  }
+                }}
+                autoComplete="tel"
+                placeholder={getCountryByCode(countryCode)?.phoneFormat.replace(/\+/g, '').replace(/X/g, 'X') || '6 12 34 56 78'}
+                style={{
+                  width: '100%',
+                  padding: '12px 12px 12px 60px',
+                  border: `1px solid ${phoneError ? errorText : borderColor}`,
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  boxSizing: 'border-box',
+                  backgroundColor: inputBg,
+                  color: textColor,
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = primaryColor;
+                  e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = phoneError ? errorText : borderColor;
+                  e.target.style.boxShadow = 'none';
+                }}
+                required
+                disabled={loading}
+              />
+            </div>
+            {phoneError && (
+              <div style={{
+                marginTop: '4px',
+                fontSize: '12px',
+                color: errorText
+              }}>
+                {phoneError}
+              </div>
+            )}
+            {!phoneError && getCountryByCode(countryCode) && (
+              <div style={{
+                marginTop: '4px',
+                fontSize: '12px',
+                color: textSecondary
+              }}>
+                {t('phoneFormat')}: {getCountryByCode(countryCode).phoneFormat}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
@@ -279,39 +391,6 @@ export default function Signup() {
             />
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
-              {t('country')}
-            </label>
-            <input
-              type="text"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              autoComplete="country-name"
-              placeholder="France"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: `1px solid ${borderColor}`,
-                borderRadius: '8px',
-                fontSize: '16px',
-                boxSizing: 'border-box',
-                backgroundColor: inputBg,
-                color: textColor,
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = primaryColor;
-                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = borderColor;
-                e.target.style.boxShadow = 'none';
-              }}
-              required
-              disabled={loading}
-            />
-          </div>
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>

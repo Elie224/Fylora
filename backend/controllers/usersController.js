@@ -77,6 +77,10 @@ async function getMe(req, res, next) {
     const safeUser = {
       id: user.id,
       email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone: user.phone,
+      country: user.country,
       display_name: user.display_name,
       avatar_url: user.avatar_url,
       quota_used: user.quota_used,
@@ -97,7 +101,7 @@ async function getMe(req, res, next) {
 async function updateProfile(req, res, next) {
   try {
     const userId = req.user.id;
-    const { email, display_name } = req.body;
+    const { email, display_name, first_name, last_name, phone, country } = req.body;
 
     const updates = {};
     if (email) {
@@ -111,6 +115,18 @@ async function updateProfile(req, res, next) {
     if (display_name !== undefined) {
       updates.display_name = display_name;
     }
+    if (first_name !== undefined) {
+      updates.first_name = first_name;
+    }
+    if (last_name !== undefined) {
+      updates.last_name = last_name;
+    }
+    if (phone !== undefined) {
+      updates.phone = phone;
+    }
+    if (country !== undefined) {
+      updates.country = country;
+    }
 
     // Mettre à jour dans MongoDB
     const mongoose = require('mongoose');
@@ -121,6 +137,10 @@ async function updateProfile(req, res, next) {
     const safeUser = {
       id: updated.id,
       email: updated.email,
+      first_name: updated.first_name,
+      last_name: updated.last_name,
+      phone: updated.phone,
+      country: updated.country,
       display_name: updated.display_name,
       avatar_url: updated.avatar_url,
       quota_used: updated.quota_used,
