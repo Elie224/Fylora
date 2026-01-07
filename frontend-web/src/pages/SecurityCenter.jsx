@@ -27,9 +27,9 @@ const SecurityCenter = () => {
         api.get('/security/stats'),
       ]);
 
-      setLoginHistory(historyRes.data.data || []);
-      setActiveSessions(sessionsRes.data.data || []);
-      setSecurityStats(statsRes.data.data || null);
+      setLoginHistory(historyRes.data.data || historyRes.data || []);
+      setActiveSessions(sessionsRes.data.data || sessionsRes.data || []);
+      setSecurityStats(statsRes.data.data || statsRes.data || null);
     } catch (err) {
       console.error('Failed to load security data:', err);
       setError(err.response?.data?.error?.message || t('errorLoadingData'));
