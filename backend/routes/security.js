@@ -21,6 +21,8 @@ router.delete('/sessions/:sessionId', securityCenterController.revokeSession);
 
 // Révoker toutes les autres sessions
 router.delete('/sessions', securityCenterController.revokeAllOtherSessions);
+// Alternative POST pour révoquer toutes les autres sessions (pour certains navigateurs qui ne supportent pas DELETE avec body)
+router.post('/sessions/revoke-all', securityCenterController.revokeAllOtherSessions);
 
 // Obtenir les statistiques de sécurité
 router.get('/stats', securityCenterController.getSecurityStats);

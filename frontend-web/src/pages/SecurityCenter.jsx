@@ -84,8 +84,8 @@ const SecurityCenter = () => {
         return;
       }
       
-      // Envoyer le refresh_token dans le body de la requête DELETE
-      await api.delete('/security/sessions', { data: { refresh_token: refreshToken } });
+      // Utiliser POST au lieu de DELETE pour éviter les problèmes avec le body
+      await api.post('/security/sessions/revoke-all', { refresh_token: refreshToken });
       await loadData();
       showToast(t('allOtherSessionsRevoked'), 'success');
     } catch (err) {
@@ -96,7 +96,19 @@ const SecurityCenter = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleString();
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      return date.toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (err) {
+      return '-';
+    }
   };
 
   const getLocationDisplay = (location) => {
