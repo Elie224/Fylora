@@ -13,6 +13,21 @@ export default function Trash() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  
   // Couleurs dynamiques selon le thème - Thème clair amélioré
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
@@ -192,30 +207,32 @@ export default function Trash() {
     <>
       <ConfirmDialog />
       <div style={{ 
-      padding: '24px', 
+      padding: isMobile ? '16px' : isTablet ? '20px' : '24px', 
       maxWidth: '1400px', 
       margin: '0 auto',
       backgroundColor: bgColor,
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <h1 style={{ 
-        fontSize: '28px',
-        marginBottom: '24px',
+        fontSize: isMobile ? '22px' : isTablet ? '26px' : '28px',
+        marginBottom: isMobile ? '16px' : '24px',
         fontWeight: '700',
         color: textColor
       }}>🗑️ {t('trash')}</h1>
       
       {allItems.length === 0 ? (
         <div style={{ 
-          padding: '48px 24px', 
+          padding: isMobile ? '32px 16px' : '48px 24px', 
           textAlign: 'center', 
           backgroundColor: cardBg,
           borderRadius: '12px',
           boxShadow: shadowColor,
           border: `1px solid ${borderColor}`
         }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🗑️</div>
-          <p style={{ fontSize: '18px', color: textSecondary, margin: 0 }}>{t('trashEmpty')}</p>
+          <div style={{ fontSize: isMobile ? '36px' : '48px', marginBottom: '16px' }}>🗑️</div>
+          <p style={{ fontSize: isMobile ? '16px' : '18px', color: textSecondary, margin: 0 }}>{t('trashEmpty')}</p>
         </div>
       ) : (
         <>

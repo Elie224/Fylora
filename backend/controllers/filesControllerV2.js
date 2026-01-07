@@ -8,7 +8,7 @@ const storageService = require('../services/storageService');
 const quotaService = require('../services/quotaService');
 const fileMetadataService = require('../services/fileMetadataService');
 const logger = require('../utils/logger');
-const { queues } = require('../utils/queue');
+const { queues, queueManager } = require('../utils/queue');
 const searchEngine = require('../services/searchEngine');
 
 /**
@@ -132,13 +132,18 @@ async function finalizeUpload(req, res, next) {
         logger.logError(err, { context: 'search_indexing' })
       ),
       // OCR si nécessaire
-      queues.fileProcessing.add({
+      queueManager.addJob('file-processing', {
         fileId: file.id,
         userId,
         fileKey,
         mimeType: pendingData.mimeType,
         fileSize: pendingData.fileSize,
-      }).catch(err => logger.logError(err, { context: 'file_processing_queue' })),
+      }).catch(err => {
+        // Logger l'erreur mais ne pas faire échouer l'upload
+        if (!err.message || !err.message.includes('Connection is closed')) {
+          logger.logError(err, { context: 'file_processing_queue' });
+        }
+      }),
     ]).catch(err => {
       logger.logError(err, { context: 'background_processing' });
     });
@@ -416,7 +421,7 @@ async function completeMultipartUpload(req, res, next) {
     // Traitement asynchrone
     Promise.all([
       searchEngine.indexFileAsync(file.id, userId, uploadData.fileKey, uploadData.mimeType).catch(() => {}),
-      queues.fileProcessing.add({
+      queueManager.addJob('file-processing', {
         fileId: file.id,
         userId,
         fileKey: uploadData.fileKey,

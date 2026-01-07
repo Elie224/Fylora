@@ -15,6 +15,20 @@ export default function Login() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+  
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
 
   // Couleurs dynamiques selon le thème - Thème clair amélioré
   const bgColor = theme === 'dark' ? '#0a0a0a' : '#fafbfc';
@@ -92,11 +106,12 @@ export default function Login() {
     }}>
       <div style={{
         backgroundColor: cardBg,
-        padding: '32px',
+        padding: isMobile ? '24px' : '32px',
               borderRadius: '12px',
               boxShadow: theme === 'dark' ? '0 4px 20px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)',
               width: '100%',
-        maxWidth: '400px',
+        maxWidth: isMobile ? '95%' : '400px',
+        margin: isMobile ? '16px' : '0',
         border: `1px solid ${borderColor}`,
         transition: 'all 0.3s ease'
       }}>

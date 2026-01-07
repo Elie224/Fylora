@@ -13,7 +13,7 @@ const { successResponse, errorResponse } = require('../utils/response');
 const { calculateRealQuotaUsed, updateQuotaAfterOperation } = require('../utils/quota');
 const { trackFileUsage } = require('../utils/fileUsageTracker');
 const fileDeduplication = require('../utils/fileDeduplication');
-const { queues } = require('../utils/queue');
+const { queues, queueManager } = require('../utils/queue');
 const searchEngine = require('../services/searchEngine');
 const smartCache = require('../utils/smartCache');
 
@@ -121,6 +121,9 @@ const rootFolderCache = new Map();
 // Cache simple en mémoire pour les listes de fichiers (fallback si Redis indisponible)
 const filesListCache = new Map();
 
+// Cache pour les URLs de prévisualisation (valides 15 minutes)
+const previewUrlCache = new Map();
+
 // Lister les fichiers d'un dossier
 // IMPORTANT: Même les admins ne peuvent voir que leurs propres fichiers
 // Le filtrage par owner_id garantit l'isolation des données entre utilisateurs
@@ -223,6 +226,9 @@ async function listFiles(req, res, next) {
     // OPTIMISATION: Ne jamais compter pour les petites requêtes (améliore drastiquement les performances)
     const needCount = false; // Désactiver le comptage pour améliorer les performances
     
+    // OPTIMISATION: Pour les petites requêtes (limit <= 10), utiliser un timeout plus court
+    const queryTimeout = limitNum <= 10 ? 1000 : limitNum <= 50 ? 1500 : 2000;
+    
     // Optimisation: findByOwner utilise déjà lean() en interne
     // Exécuter les requêtes en parallèle avec timeout
     // S'assurer que actualFolderId n'est pas null/undefined
@@ -236,8 +242,9 @@ async function listFiles(req, res, next) {
     }
     
     // OPTIMISATION: Limiter le nombre d'items récupérés pour améliorer les performances
-    // Si limit est trop grand, le réduire à 50 max pour éviter les requêtes lentes
-    const effectiveLimit = Math.min(limitNum, 50); // Maximum 50 items pour performance
+    // Pour la galerie qui demande beaucoup de fichiers, permettre jusqu'à 1000
+    // mais limiter à 50 pour les requêtes normales
+    const effectiveLimit = limitNum > 100 ? Math.min(limitNum, 1000) : Math.min(limitNum, 50);
     
     // Exécuter les requêtes en parallèle avec Promise.race pour timeout global
     const queryPromise = Promise.all([
@@ -261,9 +268,9 @@ async function listFiles(req, res, next) {
       }),
     ]);
     
-    // Timeout global de 2 secondes pour éviter les requêtes trop longues
+    // Timeout global dynamique selon la taille de la requête
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Query timeout')), 2000)
+      setTimeout(() => reject(new Error('Query timeout')), queryTimeout)
     );
     
     let files, folders;
@@ -868,7 +875,8 @@ async function uploadFile(req, res, next) {
       })() : Promise.resolve(),
       
       // Traitement asynchrone (OCR, métadonnées, empreinte)
-      queues.fileProcessing.add({
+      // Utiliser addJob qui gère automatiquement les erreurs Redis
+      queueManager.addJob('file-processing', {
         fileId: file.id,
         userId,
         filePath: finalFilePath,
@@ -876,7 +884,13 @@ async function uploadFile(req, res, next) {
         fileSize,
         storageType: storageType,
         storagePath: storagePath,
-      }).catch(err => logger.logError(err, { context: 'file_processing_queue' })),
+      }).catch(err => {
+        // Logger l'erreur mais ne pas faire échouer l'upload
+        // Le traitement en arrière-plan n'est pas critique
+        if (!err.message || !err.message.includes('Connection is closed')) {
+          logger.logError(err, { context: 'file_processing_queue' });
+        }
+      }),
       
       // Indexation async pour recherche
       searchEngine.indexFileAsync(file.id, userId, finalFilePath, req.file.mimetype).catch(err => 
@@ -1250,7 +1264,11 @@ async function previewFile(req, res, next) {
       return res.status(500).json({ error: { message: 'File model not available' } });
     }
     
-    const file = await File.findById(id).lean();
+    // OPTIMISATION: Utiliser une projection minimale pour améliorer les performances
+    const file = await File.findById(id)
+      .select('owner_id is_deleted file_path storage_type mime_type name')
+      .lean()
+      .maxTimeMS(1000); // Timeout de 1 seconde
     
     if (!file) {
       logger.logInfo('File not found in database', { fileId: id, userId });
@@ -1297,14 +1315,39 @@ async function previewFile(req, res, next) {
       const supabaseStorage = require('../services/supabaseStorageService');
       if (supabaseStorage.isSupabaseConfigured()) {
         try {
+          // OPTIMISATION: Vérifier le cache d'abord (URL valide 15 minutes)
+          const cacheKey = `preview:${id}:${file.file_path}`;
+          const cached = previewUrlCache.get(cacheKey);
+          if (cached && Date.now() - cached.timestamp < 14 * 60 * 1000) { // 14 minutes pour marge de sécurité
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('X-Cache', 'HIT');
+            return res.json({ 
+              url: cached.url, 
+              type: 'supabase',
+              mimeType: file.mime_type
+            });
+          }
+          
           // Générer une URL signée (fonctionne avec buckets privés)
           const previewUrl = await supabaseStorage.generatePreviewUrl(
             file.file_path,
             15 * 60 // 15 minutes
           );
           
+          // Mettre en cache
+          previewUrlCache.set(cacheKey, {
+            url: previewUrl,
+            timestamp: Date.now()
+          });
+          
+          // Nettoyer le cache après 15 minutes
+          setTimeout(() => {
+            previewUrlCache.delete(cacheKey);
+          }, 15 * 60 * 1000);
+          
           // Retourner l'URL Supabase dans une réponse JSON
           res.setHeader('Content-Type', 'application/json');
+          res.setHeader('X-Cache', 'MISS');
           return res.json({ 
             url: previewUrl, 
             type: 'supabase',

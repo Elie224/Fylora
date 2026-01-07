@@ -249,20 +249,6 @@ const translations = {
     openingInViewer: 'Ouverture dans le visualiseur...',
     viewerError: 'Erreur lors de l\'ouverture du visualiseur',
     
-    // Gallery
-    gallery: 'Galerie',
-    loadingGallery: 'Chargement de la galerie...',
-    allMedia: 'Tous les médias',
-    imagesOnly: 'Images uniquement',
-    videosOnly: 'Vidéos uniquement',
-    media: 'média',
-    medias: 'médias',
-    noMediaFound: 'Aucun média trouvé',
-    noPhotosOrVideos: 'Vous n\'avez pas encore de photos ou vidéos',
-    noImagesFound: 'Aucune image trouvée',
-    noVideosFound: 'Aucune vidéo trouvée',
-    grid: 'Grille',
-    timeline: 'Timeline',
     total: 'Total',
     
     // Admin
@@ -792,20 +778,6 @@ const translations = {
     openingInViewer: 'Opening in viewer...',
     viewerError: 'Error opening viewer',
     
-    // Gallery
-    gallery: 'Gallery',
-    loadingGallery: 'Loading gallery...',
-    allMedia: 'All media',
-    imagesOnly: 'Images only',
-    videosOnly: 'Videos only',
-    media: 'media',
-    medias: 'media',
-    noMediaFound: 'No media found',
-    noPhotosOrVideos: 'You don\'t have any photos or videos yet',
-    noImagesFound: 'No images found',
-    noVideosFound: 'No videos found',
-    grid: 'Grid',
-    timeline: 'Timeline',
     total: 'Total',
     
     // Admin

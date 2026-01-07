@@ -19,6 +19,21 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  
   // Profil
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -230,13 +245,15 @@ export default function Settings() {
     <>
       <ConfirmDialog />
       <div style={{
-        padding: 24,
+        padding: isMobile ? '16px' : isTablet ? '20px' : 24,
         maxWidth: 900,
         margin: '0 auto',
         backgroundColor: bgColor,
-        minHeight: '100vh'
+        minHeight: '100vh',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
-      <h1 style={{ marginBottom: 32, fontSize: '2em', color: textColor }}>⚙️ {t('settings')}</h1>
+      <h1 style={{ marginBottom: isMobile ? 20 : 32, fontSize: isMobile ? '1.5em' : isTablet ? '1.75em' : '2em', color: textColor }}>⚙️ {t('settings')}</h1>
 
       {message.text && (
         <div style={{
@@ -392,7 +409,7 @@ export default function Settings() {
         </div>
         
         {/* Dates de création et dernière connexion */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: isMobile ? 12 : 16, marginTop: isMobile ? 16 : 24 }}>
           <div>
             <strong style={{ color: textSecondary, fontSize: '0.9em' }}>{t('accountCreated')}</strong>
             <p style={{ margin: '4px 0 0 0', fontSize: '1.1em', color: textColor }}>{accountCreated || 'N/A'}</p>
@@ -421,7 +438,9 @@ export default function Settings() {
           <button
             onClick={() => navigate('/settings/mfa')}
             style={{
-              padding: '12px 24px',
+              padding: isMobile ? '10px 16px' : '12px 24px',
+              minHeight: isMobile ? '44px' : 'auto',
+              fontSize: isMobile ? '14px' : '16px',
               backgroundColor: '#2196F3',
               color: 'white',
               border: 'none',
@@ -437,7 +456,9 @@ export default function Settings() {
           <button
             onClick={() => navigate('/settings/security')}
             style={{
-              padding: '12px 24px',
+              padding: isMobile ? '10px 16px' : '12px 24px',
+              minHeight: isMobile ? '44px' : 'auto',
+              fontSize: isMobile ? '14px' : '16px',
               backgroundColor: '#4CAF50',
               color: 'white',
               border: 'none',
@@ -506,7 +527,9 @@ export default function Settings() {
             type="submit"
             disabled={saving}
             style={{
-              padding: '12px 24px',
+              padding: isMobile ? '10px 16px' : '12px 24px',
+              minHeight: isMobile ? '44px' : 'auto',
+              fontSize: isMobile ? '14px' : '16px',
               backgroundColor: '#2196F3',
               color: 'white',
               border: 'none',
@@ -597,7 +620,9 @@ export default function Settings() {
             type="submit"
             disabled={saving}
             style={{
-              padding: '12px 24px',
+              padding: isMobile ? '10px 16px' : '12px 24px',
+              minHeight: isMobile ? '44px' : 'auto',
+              fontSize: isMobile ? '14px' : '16px',
               backgroundColor: '#f44336',
               color: 'white',
               border: 'none',

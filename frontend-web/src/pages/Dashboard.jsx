@@ -16,6 +16,21 @@ export default function Dashboard() {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
   
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  
   // Couleurs dynamiques selon le thème - Thème clair amélioré
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
@@ -144,22 +159,24 @@ export default function Dashboard() {
 
   return (
     <div style={{ 
-      padding: '16px',
+      padding: isMobile ? '12px' : '16px',
       maxWidth: '1200px',
       margin: '0 auto',
       backgroundColor: theme === 'dark' ? '#121212' : 'transparent',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        marginBottom: '24px',
+        marginBottom: isMobile ? '16px' : '24px',
         flexWrap: 'wrap',
-        gap: '16px'
+        gap: isMobile ? '12px' : '16px'
       }}>
         <h1 style={{ 
-          fontSize: '28px', 
+          fontSize: isMobile ? '22px' : isTablet ? '26px' : '28px', 
           fontWeight: '600', 
           margin: 0,
           color: textColor
@@ -171,19 +188,20 @@ export default function Dashboard() {
             <button
               onClick={() => navigate('/admin')}
               style={{
-                padding: '12px 24px',
+                padding: isMobile ? '10px 16px' : '12px 24px',
                 backgroundColor: '#9C27B0',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                fontSize: '16px',
+                fontSize: isMobile ? '14px' : '16px',
                 fontWeight: '600',
                 boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)',
                 transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
+                minHeight: isMobile ? '44px' : 'auto'
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = '#7B1FA2';
@@ -201,19 +219,20 @@ export default function Dashboard() {
           <button
             onClick={() => navigate('/files')}
             style={{
-              padding: '12px 24px',
+              padding: isMobile ? '10px 16px' : '12px 24px',
               backgroundColor: '#2196F3',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '16px',
+              fontSize: isMobile ? '14px' : '16px',
               fontWeight: '600',
               boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
               transition: 'all 0.2s',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              minHeight: isMobile ? '44px' : 'auto'
             }}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = '#1976D2';
@@ -462,7 +481,8 @@ export default function Dashboard() {
             <div style={{ marginTop: '20px', position: 'relative', zIndex: 1 }}>
               <div style={{ 
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
+                gap: isMobile ? '12px' : '16px',
                 gap: '16px',
                 marginBottom: '16px'
               }}>
@@ -903,7 +923,8 @@ export default function Dashboard() {
             </div>
             <div style={{ 
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: isMobile ? '12px' : '16px',
               gap: '20px',
               position: 'relative',
               zIndex: 1

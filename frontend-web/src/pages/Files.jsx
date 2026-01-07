@@ -23,6 +23,30 @@ export default function Files() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [items, setItems] = useState([]);
   
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Variables responsive
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  const isDesktop = windowWidth >= 1024;
+  
+  const responsivePadding = isMobile ? '16px' : isTablet ? '20px' : '24px';
+  const responsiveGap = isMobile ? '12px' : '16px';
+  const responsiveFontSize = isMobile ? '14px' : '16px';
+  const responsiveButtonPadding = isMobile ? '10px 16px' : '8px 14px';
+  const responsiveButtonFontSize = isMobile ? '14px' : '13px';
+  const responsiveButtonMinHeight = isMobile ? '44px' : 'auto';
+  
   // Couleurs dynamiques selon le thème - Thème clair amélioré
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
@@ -362,13 +386,13 @@ export default function Files() {
         }
       }
       
-      // Recharger la liste des fichiers après tous les uploads (forcer le rechargement)
-      await loadFiles(true);
+      // Pas besoin de recharger - les fichiers ont déjà été ajoutés via la mise à jour optimiste
       setUploadProgress({});
+      showToast(t('uploadSuccess') || `${files.length} fichier(s) uploadé(s) avec succès`, 'success');
     } catch (err) {
       console.error('Upload failed:', err);
       showToast(t('uploadError') + ': ' + (err.response?.data?.error?.message || err.message), 'error');
-      // Recharger même en cas d'erreur pour avoir l'état correct
+      // En cas d'erreur globale, recharger pour avoir l'état correct
       await loadFiles(true);
     } finally {
       setUploading(false);
@@ -387,101 +411,109 @@ export default function Files() {
 
   const createFolder = async () => {
     if (!newFolderName.trim()) return;
-    try {
-      // S'assurer que parent_id est null ou une chaîne valide
-      const parentId = currentFolder?.id || currentFolder?._id || null;
-      
-      // Convertir en chaîne si c'est un ObjectId, sinon null
-      const normalizedParentId = parentId ? String(parentId) : null;
-      
-      console.log('Creating folder with:', { name: newFolderName.trim(), parent_id: normalizedParentId });
-      
-      // Mise à jour optimiste : ajouter le dossier immédiatement à la liste
-      const folderName = newFolderName.trim();
-      const tempFolder = {
-        id: `temp-${Date.now()}`,
-        name: folderName,
-        type: 'folder',
-        parent_id: normalizedParentId,
-        created_at: new Date().toISOString(),
-        isTemp: true // Marquer comme temporaire
-      };
-      setItems(prevItems => [...prevItems, tempFolder]);
-      setNewFolderName('');
-      setShowNewFolder(false);
-      
-      const response = await folderService.create(folderName, normalizedParentId);
-      
-      // Remplacer le dossier temporaire par le vrai dossier
-      if (response?.data?.data) {
-        const createdFolder = response.data.data;
-        setItems(prevItems => 
-          prevItems.map(item => 
-            item.id === tempFolder.id 
-              ? { ...createdFolder, type: 'folder' }
-              : item
-          )
-        );
-      }
-      
-      // Recharger la liste (forcer le rechargement) pour avoir les données complètes
-      await loadFiles(true);
-    } catch (err) {
-      console.error('Failed to create folder:', err);
-      console.error('Error response:', err.response?.data);
-      
-      // Retirer le dossier temporaire en cas d'erreur
-      setItems(prevItems => prevItems.filter(item => !item.isTemp));
-      
-      // Construire un message d'erreur détaillé
-      let errorMessage = t('unknownError');
-      if (err.response?.data?.error) {
-        if (err.response.data.error.details && Array.isArray(err.response.data.error.details)) {
-          errorMessage = err.response.data.error.details.map(d => d.message).join('\n');
-        } else if (err.response.data.error.message) {
-          errorMessage = err.response.data.error.message;
+    
+    // S'assurer que parent_id est null ou une chaîne valide
+    const parentId = currentFolder?.id || currentFolder?._id || null;
+    const normalizedParentId = parentId ? String(parentId) : null;
+    const folderName = newFolderName.trim();
+    
+    // Mise à jour optimiste IMMÉDIATE : ajouter le dossier à la liste AVANT l'appel API
+    const tempFolder = {
+      id: `temp-${Date.now()}`,
+      name: folderName,
+      type: 'folder',
+      parent_id: normalizedParentId,
+      created_at: new Date().toISOString(),
+      isTemp: true
+    };
+    
+    // Mettre à jour l'état IMMÉDIATEMENT
+    setItems(prevItems => [...prevItems, tempFolder]);
+    setNewFolderName('');
+    setShowNewFolder(false);
+    showToast(t('folderCreatedSuccessfully') || 'Dossier créé avec succès', 'success');
+    
+    // Appel API en arrière-plan (non bloquant)
+    folderService.create(folderName, normalizedParentId)
+      .then(response => {
+        // Remplacer le dossier temporaire par le vrai dossier quand la réponse arrive
+        if (response?.data?.data) {
+          const createdFolder = response.data.data;
+          setItems(prevItems => 
+            prevItems.map(item => 
+              item.id === tempFolder.id 
+                ? { ...createdFolder, type: 'folder' }
+                : item
+            )
+          );
         }
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      showToast(t('createFolderError') + ': ' + errorMessage, 'error');
-    }
+      })
+      .catch(err => {
+        console.error('Failed to create folder:', err);
+        // Retirer le dossier temporaire en cas d'erreur
+        setItems(prevItems => prevItems.filter(item => item.id !== tempFolder.id));
+        
+        let errorMessage = t('unknownError');
+        if (err.response?.data?.error) {
+          if (err.response.data.error.details && Array.isArray(err.response.data.error.details)) {
+            errorMessage = err.response.data.error.details.map(d => d.message).join('\n');
+          } else if (err.response.data.error.message) {
+            errorMessage = err.response.data.error.message;
+          }
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        showToast(t('createFolderError') + ': ' + errorMessage, 'error');
+      });
   };
 
   const renameItem = async () => {
     if (!editName.trim() || !editingItem) return;
-    try {
-      // Mise à jour optimiste : mettre à jour le nom immédiatement
-      const newName = editName.trim();
-      setItems(prevItems => 
-        prevItems.map(item => {
-          const itemId = item.id || item._id;
-          const editingId = editingItem.id || editingItem._id;
-          if (itemId === editingId) {
-            return { ...item, name: newName };
-          }
-          return item;
-        })
-      );
-      
-      if (editingItem.type === 'folder') {
-        await folderService.rename(editingItem.id, newName);
-      } else {
-        await fileService.rename(editingItem.id, newName);
-      }
-      
-      setEditingItem(null);
-      setEditName('');
-      
-      // Recharger immédiatement pour avoir les données complètes
-      await loadFiles(true);
-    } catch (err) {
-      console.error('Failed to rename:', err);
-      showToast(t('renameError'), 'error');
-      // Recharger en cas d'erreur pour récupérer l'état correct
-      await loadFiles(true);
-    }
+    
+    const newName = editName.trim();
+    const editingId = editingItem.id || editingItem._id;
+    const oldName = editingItem.name;
+    
+    // Mise à jour optimiste IMMÉDIATE : mettre à jour le nom AVANT l'appel API
+    setItems(prevItems => 
+      prevItems.map(item => {
+        const itemId = item.id || item._id;
+        if (itemId === editingId) {
+          return { ...item, name: newName };
+        }
+        return item;
+      })
+    );
+    
+    // Fermer le formulaire immédiatement
+    setEditingItem(null);
+    setEditName('');
+    showToast(t('renameSuccess') || 'Renommé avec succès', 'success');
+    
+    // Appel API en arrière-plan (non bloquant)
+    const renamePromise = editingItem.type === 'folder' 
+      ? folderService.rename(editingItem.id, newName)
+      : fileService.rename(editingItem.id, newName);
+    
+    renamePromise
+      .then(() => {
+        // Succès - la mise à jour optimiste est déjà faite
+      })
+      .catch(err => {
+        console.error('Failed to rename:', err);
+        // En cas d'erreur, restaurer l'ancien nom
+        setItems(prevItems => 
+          prevItems.map(item => {
+            const itemId = item.id || item._id;
+            if (itemId === editingId) {
+              return { ...item, name: oldName };
+            }
+            return item;
+          })
+        );
+        showToast(t('renameError'), 'error');
+      });
   };
 
   const deleteItem = (item) => {
@@ -522,70 +554,59 @@ export default function Files() {
     // Fermer la modal
     setItemToDelete(null);
     
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        throw new Error(t('mustBeConnectedToDelete'));
-      }
-      
-      const endpoint = itemType === 'folder' 
-        ? `${apiUrl}/api/folders/${itemId}`
-        : `${apiUrl}/api/files/${itemId}`;
-      
-      console.log('Making DELETE request to:', endpoint);
-      
-      const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    // Mise à jour optimiste IMMÉDIATE : supprimer l'élément AVANT l'appel API
+    const deletedItem = { ...item }; // Sauvegarder pour restauration en cas d'erreur
+    setItems(prevItems => {
+      const filtered = prevItems.filter(item => {
+        const itemIdToCheck = item.id || item._id;
+        return itemIdToCheck !== itemId;
       });
-      
-      console.log('Response status:', response.status);
-      
-      const responseData = await response.json().catch(() => ({ message: 'No JSON response' }));
-      console.log('Response data:', responseData);
-      
-      if (!response.ok) {
-        const errorMsg = responseData.error?.message || responseData.message || `Erreur ${response.status}`;
-        console.error('❌ Delete failed:', errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      console.log('✅ Deletion successful!');
-      
-      // Mise à jour optimiste : supprimer l'élément de la liste immédiatement
-      setItems(prevItems => {
-        const filtered = prevItems.filter(item => {
-          const itemIdToCheck = item.id || item._id;
-          return itemIdToCheck !== itemId;
-        });
-        return filtered;
-      });
-      
-      // Recharger la liste après suppression (forcer le rechargement sans cache) - IMMÉDIATEMENT
-      // Ne pas attendre, faire en parallèle
-      loadFiles(true).catch(err => {
-        console.error('Error reloading files after deletion:', err);
-      });
-      
-      showToast(t('deletedSuccessfully') || 'Fichier supprimé avec succès', 'success');
-      
-      // Ne pas afficher d'alert pour une meilleure UX - la suppression est visible immédiatement
-      // alert(`✅ "${itemName}" ${t('deletedSuccessfully')}`);
-    } catch (err) {
-      console.error('❌ Deletion error:', err);
-      console.error('Error details:', {
-        message: err.message,
-        stack: err.stack
-      });
-      
-      const errorMessage = err.message || 'Erreur lors de la suppression';
-      showToast(`${t('deleteError')}: ${errorMessage}`, 'error');
+      return filtered;
+    });
+    
+    showToast(t('deletedSuccessfully') || 'Fichier supprimé avec succès', 'success');
+    
+    // Appel API en arrière-plan (non bloquant)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const token = localStorage.getItem('access_token');
+    
+    if (!token) {
+      // Restaurer l'élément si pas de token
+      setItems(prevItems => [...prevItems, deletedItem]);
+      showToast(t('mustBeConnectedToDelete'), 'error');
+      return;
     }
+    
+    const endpoint = itemType === 'folder' 
+      ? `${apiUrl}/api/folders/${itemId}`
+      : `${apiUrl}/api/files/${itemId}`;
+    
+    fetch(endpoint, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.error?.message || data.message || `Erreur ${response.status}`);
+          });
+        }
+        return response.json();
+      })
+      .then(() => {
+        // Succès - la mise à jour optimiste est déjà faite
+        console.log('✅ Deletion successful!');
+      })
+      .catch(err => {
+        console.error('❌ Deletion error:', err);
+        // En cas d'erreur, restaurer l'élément
+        setItems(prevItems => [...prevItems, deletedItem]);
+        const errorMessage = err.message || 'Erreur lors de la suppression';
+        showToast(`${t('deleteError')}: ${errorMessage}`, 'error');
+      });
     
     console.log('=== CONFIRM DELETE END ===');
   };
@@ -643,12 +664,14 @@ export default function Files() {
         
         if (response.data) {
           showToast(`${t('share')} ${t('success')}: ${selectedShareUser.email || selectedShareUser.display_name}`, 'success');
+          // Fermer immédiatement la modal
           setShowShareModal(null);
           setSharePassword('');
           setShareExpiresAt('');
           setShareType('public');
           setSelectedShareUser(null);
           setShareUserSearch('');
+          setShareLink('');
         }
         return;
       }
@@ -696,6 +719,7 @@ export default function Files() {
         setShareLink(shareUrl);
         setSharePassword('');
         setShareExpiresAt('');
+        showToast(t('shareLinkCreated') || 'Lien de partage créé avec succès', 'success');
       } else {
         throw new Error(t('invalidServerResponse'));
       }
@@ -792,32 +816,36 @@ export default function Files() {
   const confirmMove = async () => {
     if (!itemToMove || selectedDestinationFolder === undefined) return;
     
-    try {
-      // Mise à jour optimiste : supprimer l'élément de la liste immédiatement
-      const itemId = itemToMove.id || itemToMove._id;
-      setItems(prevItems => prevItems.filter(item => {
-        const itemIdToCheck = item.id || item._id;
-        return itemIdToCheck !== itemId;
-      }));
-      
-      if (itemToMove.type === 'file') {
-        await fileService.move(itemToMove.id, selectedDestinationFolder);
-      } else {
-        await folderService.move(itemToMove.id, selectedDestinationFolder);
-      }
-      
-      setItemToMove(null);
-      setSelectedDestinationFolder(null);
-      
-      // Recharger immédiatement pour avoir l'état correct
-      await loadFiles(true);
-    } catch (err) {
-      console.error('Failed to move:', err);
-      const errorMsg = err.response?.data?.error?.message || err.message || t('moveError');
-      showToast(errorMsg, 'error');
-      // Recharger en cas d'erreur pour récupérer l'état correct
-      await loadFiles(true);
-    }
+    const itemId = itemToMove.id || itemToMove._id;
+    const movedItem = { ...itemToMove }; // Sauvegarder pour restauration en cas d'erreur
+    
+    // Mise à jour optimiste IMMÉDIATE : supprimer l'élément AVANT l'appel API
+    setItems(prevItems => prevItems.filter(item => {
+      const itemIdToCheck = item.id || item._id;
+      return itemIdToCheck !== itemId;
+    }));
+    
+    // Fermer la modal immédiatement
+    setItemToMove(null);
+    setSelectedDestinationFolder(null);
+    showToast(t('moveSuccess') || 'Déplacé avec succès', 'success');
+    
+    // Appel API en arrière-plan (non bloquant)
+    const movePromise = itemToMove.type === 'file'
+      ? fileService.move(itemToMove.id, selectedDestinationFolder)
+      : folderService.move(itemToMove.id, selectedDestinationFolder);
+    
+    movePromise
+      .then(() => {
+        // Succès - la mise à jour optimiste est déjà faite
+      })
+      .catch(err => {
+        console.error('Failed to move:', err);
+        // En cas d'erreur, restaurer l'élément
+        setItems(prevItems => [...prevItems, movedItem]);
+        const errorMsg = err.response?.data?.error?.message || err.message || t('moveError');
+        showToast(errorMsg, 'error');
+      });
   };
 
   const formatBytes = (bytes) => {
@@ -836,27 +864,29 @@ export default function Files() {
     <>
       <ConfirmDialog />
       <div style={{ 
-      padding: '24px', 
+      padding: responsivePadding, 
       maxWidth: '1400px', 
       margin: '0 auto',
       backgroundColor: bgColor,
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       {/* En-tête amélioré */}
       <div style={{ 
-        marginBottom: '24px',
-        padding: '20px',
+        marginBottom: isMobile ? '16px' : '24px',
+        padding: isMobile ? '16px' : '20px',
         backgroundColor: cardBg,
         borderRadius: '12px',
         boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
         border: `1px solid ${borderColor}`
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: responsiveGap }}>
           <div>
             <h1 style={{ 
               margin: 0, 
               marginBottom: '8px',
-              fontSize: '28px',
+              fontSize: isMobile ? '22px' : isTablet ? '26px' : '28px',
               fontWeight: '700',
               color: textColor
             }}>📁 {t('myFiles')}</h1>
@@ -990,7 +1020,7 @@ export default function Files() {
             <label 
               htmlFor="file-upload" 
               style={{ 
-                padding: '12px 24px', 
+                padding: isMobile ? '10px 16px' : '12px 24px', 
                 backgroundColor: '#2196F3', 
                 color: 'white', 
                 borderRadius: '10px', 
@@ -998,11 +1028,12 @@ export default function Files() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                fontSize: '16px',
+                fontSize: isMobile ? '14px' : '16px',
                 fontWeight: '700',
                 boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)',
                 transition: 'all 0.2s',
-                border: 'none'
+                border: 'none',
+                minHeight: responsiveButtonMinHeight
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = '#1976D2';
@@ -1022,19 +1053,20 @@ export default function Files() {
             <button
               onClick={() => setShowNewFolder(!showNewFolder)}
               style={{ 
-                padding: '10px 18px', 
+                padding: isMobile ? '10px 14px' : '10px 18px', 
                 backgroundColor: 'transparent', 
                 color: theme === 'dark' ? '#90caf9' : '#2196F3', 
                 border: `1.5px solid ${theme === 'dark' ? '#64b5f6' : '#2196F3'}`, 
                 borderRadius: '10px', 
                 cursor: 'pointer',
-                fontSize: '15px',
+                fontSize: isMobile ? '14px' : '15px',
                 fontWeight: '600',
                 boxShadow: 'none',
                 transition: 'all 0.2s',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                minHeight: responsiveButtonMinHeight
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#e3f2fd';
@@ -1209,7 +1241,7 @@ export default function Files() {
 
       {showShareModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: cardBg, padding: 24, borderRadius: 12, maxWidth: 500, width: '90%', maxHeight: '90vh', overflow: 'auto', border: `1px solid ${borderColor}`, boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)' }}>
+          <div style={{ backgroundColor: cardBg, padding: isMobile ? 16 : 24, borderRadius: 12, maxWidth: isMobile ? '95%' : 500, width: isMobile ? '95%' : '90%', maxHeight: '90vh', overflow: 'auto', border: `1px solid ${borderColor}`, boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)' }}>
             <h2 style={{ color: textColor, marginTop: 0, marginBottom: 20 }}>{t('shareModal')} {showShareModal.name}</h2>
             {!shareLink ? (
               <>
@@ -1958,7 +1990,7 @@ export default function Files() {
               width: '100%', 
               borderCollapse: 'separate',
               borderSpacing: 0,
-              minWidth: '600px'
+              minWidth: isMobile ? '100%' : '600px'
             }}>
               <thead>
                 <tr style={{ 
@@ -2133,7 +2165,7 @@ export default function Files() {
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{formatBytes(item.size || 0)}</td>
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td style={{ padding: '16px' }}>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: isMobile ? 4 : 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {/* Bouton de téléchargement pour les fichiers */}
                       {/* CONDITION ULTRA-SIMPLE : Afficher si l'élément a une taille > 0 (c'est un fichier) */}
                       {(() => {
@@ -2191,19 +2223,21 @@ export default function Files() {
                             }
                           }}
                           style={{
-                            padding: '8px 14px',
+                            padding: responsiveButtonPadding,
                             backgroundColor: '#2196F3',
                             color: 'white',
                             border: 'none',
                             borderRadius: '8px',
                             cursor: 'pointer',
-                            fontSize: '13px',
+                            fontSize: responsiveButtonFontSize,
                             fontWeight: '600',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 6,
                             transition: 'all 0.2s',
-                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)',
+                            minHeight: responsiveButtonMinHeight,
+                            minWidth: isMobile ? '44px' : 'auto'
                           }}
                           onMouseEnter={(e) => {
                             e.target.style.backgroundColor = '#1976D2';
@@ -2260,19 +2294,21 @@ export default function Files() {
                             }
                           }}
                           style={{
-                            padding: '8px 14px',
+                            padding: responsiveButtonPadding,
                             backgroundColor: '#2196F3',
                             color: 'white',
                             border: 'none',
                             borderRadius: '8px',
                             cursor: 'pointer',
-                            fontSize: '13px',
+                            fontSize: responsiveButtonFontSize,
                             fontWeight: '600',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 6,
                             transition: 'all 0.2s',
-                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)',
+                            minHeight: responsiveButtonMinHeight,
+                            minWidth: isMobile ? '44px' : 'auto'
                           }}
                           onMouseEnter={(e) => {
                             e.target.style.backgroundColor = '#1976D2';
@@ -2297,19 +2333,21 @@ export default function Files() {
                           setShareLink('');
                         }}
                         style={{
-                          padding: '8px 14px',
+                          padding: responsiveButtonPadding,
                           backgroundColor: '#4CAF50',
                           color: 'white',
                           border: 'none',
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '13px',
+                          fontSize: responsiveButtonFontSize,
                           fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
                           gap: 6,
                           transition: 'all 0.2s',
-                          boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
+                          boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)',
+                          minHeight: responsiveButtonMinHeight,
+                          minWidth: isMobile ? '44px' : 'auto'
                         }}
                         onMouseEnter={(e) => {
                           e.target.style.backgroundColor = '#45a049';
@@ -2333,19 +2371,21 @@ export default function Files() {
                           setEditName(item.name);
                         }}
                         style={{
-                          padding: '8px 14px',
+                          padding: responsiveButtonPadding,
                           backgroundColor: '#FF9800',
                           color: 'white',
                           border: 'none',
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '13px',
+                          fontSize: responsiveButtonFontSize,
                           fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
                           gap: 6,
                           transition: 'all 0.2s',
-                          boxShadow: '0 2px 4px rgba(255, 152, 0, 0.3)'
+                          boxShadow: '0 2px 4px rgba(255, 152, 0, 0.3)',
+                          minHeight: responsiveButtonMinHeight,
+                          minWidth: isMobile ? '44px' : 'auto'
                         }}
                         onMouseEnter={(e) => {
                           e.target.style.backgroundColor = '#f57c00';
@@ -2368,19 +2408,21 @@ export default function Files() {
                           openMoveModal({ ...item, type: itemType, id: itemId });
                         }}
                         style={{
-                          padding: '8px 14px',
+                          padding: responsiveButtonPadding,
                           backgroundColor: '#9C27B0',
                           color: 'white',
                           border: 'none',
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '13px',
+                          fontSize: responsiveButtonFontSize,
                           fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
                           gap: 6,
                           transition: 'all 0.2s',
-                          boxShadow: '0 2px 4px rgba(156, 39, 176, 0.3)'
+                          boxShadow: '0 2px 4px rgba(156, 39, 176, 0.3)',
+                          minHeight: responsiveButtonMinHeight,
+                          minWidth: isMobile ? '44px' : 'auto'
                         }}
                         onMouseEnter={(e) => {
                           e.target.style.backgroundColor = '#7b1fa2';
@@ -2403,19 +2445,21 @@ export default function Files() {
                           deleteItem({ ...item, type: itemType, id: itemId });
                         }}
                         style={{
-                          padding: '8px 14px',
+                          padding: responsiveButtonPadding,
                           backgroundColor: '#f44336',
                           color: 'white',
                           border: 'none',
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          fontSize: '13px',
+                          fontSize: responsiveButtonFontSize,
                           fontWeight: '600',
                           display: 'flex',
                           alignItems: 'center',
                           gap: 6,
                           transition: 'all 0.2s',
-                          boxShadow: '0 2px 4px rgba(244, 67, 54, 0.3)'
+                          boxShadow: '0 2px 4px rgba(244, 67, 54, 0.3)',
+                          minHeight: responsiveButtonMinHeight,
+                          minWidth: isMobile ? '44px' : 'auto'
                         }}
                         onMouseEnter={(e) => {
                           e.target.style.backgroundColor = '#d32f2f';
@@ -2457,14 +2501,14 @@ export default function Files() {
         }}>
           <div style={{
             backgroundColor: cardBg,
-            padding: 24,
+            padding: isMobile ? 16 : 24,
             borderRadius: 12,
-            maxWidth: 500,
-            width: '90%',
+            maxWidth: isMobile ? '95%' : 500,
+            width: isMobile ? '95%' : '90%',
             boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)',
             border: `1px solid ${borderColor}`
           }}>
-            <h2 style={{ marginTop: 0, marginBottom: 20, color: textColor }}>
+            <h2 style={{ marginTop: 0, marginBottom: 20, color: textColor, fontSize: isMobile ? '18px' : '20px' }}>
               📦 {t('move')} "{itemToMove.name}"
             </h2>
             
@@ -2571,14 +2615,14 @@ export default function Files() {
         }}>
           <div style={{
             backgroundColor: cardBg,
-            padding: 24,
+            padding: isMobile ? 16 : 24,
             borderRadius: 12,
-            maxWidth: 500,
-            width: '90%',
+            maxWidth: isMobile ? '95%' : 500,
+            width: isMobile ? '95%' : '90%',
             boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.2)',
             border: `1px solid ${borderColor}`
           }}>
-            <h2 style={{ marginTop: 0, marginBottom: 16, color: textColor }}>
+            <h2 style={{ marginTop: 0, marginBottom: 16, color: textColor, fontSize: isMobile ? '18px' : '20px' }}>
               ⚠️ {t('deleteConfirm')}
             </h2>
             <p style={{ marginBottom: 24, color: textColor, fontSize: '1.1em' }}>

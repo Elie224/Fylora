@@ -216,6 +216,8 @@ class QueueManager {
             try {
               const memoryQueue = new MemoryQueue(name);
               this.queues.set(name, memoryQueue);
+              // Émettre un événement pour que les workers puissent se reconnecter
+              memoryQueue.emit('ready');
             } catch (err) {
               // Ignorer silencieusement
             }
@@ -225,6 +227,17 @@ class QueueManager {
           if (!this.redisErrorLogged) {
             console.warn(`Redis queue error for ${name}:`, error.message);
             this.redisErrorLogged = true;
+          }
+        });
+        
+        // Gérer les erreurs lors de l'ajout de jobs
+        queue.on('stalled', () => {
+          // Jobs bloqués - basculer vers memory queue
+          if (!this.redisErrorLogged) {
+            console.warn(`Redis queue ${name} stalled, switching to memory queue`);
+            this.useRedis = false;
+            const memoryQueue = new MemoryQueue(name);
+            this.queues.set(name, memoryQueue);
           }
         });
         
@@ -254,8 +267,35 @@ class QueueManager {
   }
 
   async addJob(queueName, jobData, options = {}) {
-    const queue = this.getQueue(queueName);
-    return await queue.add(jobData, options);
+    try {
+      const queue = this.getQueue(queueName);
+      
+      // Si c'est une queue Bull, vérifier qu'elle est vraiment connectée
+      if (this.Bull && queue && queue.client && queue.client.status !== 'ready') {
+        // Redis n'est pas prêt, utiliser memory queue
+        console.warn(`Redis not ready for queue ${queueName}, using memory queue`);
+        this.useRedis = false;
+        const memoryQueue = new MemoryQueue(queueName);
+        this.queues.set(queueName, memoryQueue);
+        return await memoryQueue.add(jobData, options);
+      }
+      
+      return await queue.add(jobData, options);
+    } catch (error) {
+      // Si l'erreur est liée à Redis (connexion fermée, etc.), basculer vers memory queue
+      if (error.message && (error.message.includes('Connection is closed') ||
+                            error.message.includes('ECONNREFUSED') ||
+                            error.message.includes('Connection'))) {
+        console.warn(`Redis error for queue ${queueName}, switching to memory queue:`, error.message);
+        this.useRedis = false;
+        const memoryQueue = new MemoryQueue(queueName);
+        this.queues.set(queueName, memoryQueue);
+        // Réessayer avec la memory queue
+        return await memoryQueue.add(jobData, options);
+      }
+      // Pour les autres erreurs, les propager
+      throw error;
+    }
   }
 
   async processQueue(queueName, worker) {

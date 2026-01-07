@@ -97,12 +97,15 @@ const FileModel = {
       // OPTIMISATION: Construire la requête optimisée avec projection minimale
       // MongoDB utilisera automatiquement les index composés disponibles
       // Projection minimale pour réduire la taille des données transférées
+      // OPTIMISATION: Timeout dynamique selon la limite
+      const queryTimeout = limit <= 10 ? 1000 : limit <= 50 ? 1500 : 2000;
+      
       const files = await File.find(query)
         .select('name size mime_type folder_id owner_id is_deleted created_at updated_at _id')
         .sort(sortObj)
         .skip(skip)
-        .limit(Math.min(limit, 100)) // Limiter à 100 max pour performance
-        .maxTimeMS(2000) // Timeout réduit à 2 secondes pour réponse rapide
+        .limit(Math.min(limit, 1000)) // Permettre jusqu'à 1000 pour la galerie
+        .maxTimeMS(queryTimeout) // Timeout dynamique pour réponse rapide
         .hint({ owner_id: 1, folder_id: 1, is_deleted: 1 }) // Forcer l'utilisation de l'index composé
         .lean();
       return files.map(f => this.toDTO(f));

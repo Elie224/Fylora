@@ -17,6 +17,21 @@ export default function Preview() {
   const [error, setError] = useState(null);
   const [previewType, setPreviewType] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
 
   useEffect(() => {
     loadFile();
@@ -362,33 +377,36 @@ export default function Preview() {
 
   return (
     <div style={{ 
-      padding: 24,
+      padding: isMobile ? '16px' : isTablet ? '20px' : 24,
       backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
-        marginBottom: 16, 
+        marginBottom: isMobile ? 12 : 16, 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: 16
+        gap: isMobile ? 12 : 16
       }}>
         <div>
           <button
             onClick={() => navigate(-1)}
             style={{
-              padding: '8px 16px',
+              padding: isMobile ? '10px 14px' : '8px 16px',
               backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
               color: theme === 'dark' ? '#90caf9' : '#1a202c',
               border: `1px solid ${theme === 'dark' ? '#404040' : '#d1d5db'}`,
               borderRadius: 6,
               cursor: 'pointer',
               marginBottom: 8,
-              fontSize: '14px',
+              fontSize: isMobile ? '14px' : '14px',
               fontWeight: '500',
               transition: 'all 0.2s',
-              boxShadow: theme === 'dark' ? 'none' : '0 1px 2px rgba(0,0,0,0.05)'
+              boxShadow: theme === 'dark' ? 'none' : '0 1px 2px rgba(0,0,0,0.05)',
+              minHeight: isMobile ? '44px' : 'auto'
             }}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f3f4f6';
@@ -403,7 +421,7 @@ export default function Preview() {
           </button>
           <h1 style={{ 
             margin: 0,
-            fontSize: '28px',
+            fontSize: isMobile ? '22px' : isTablet ? '26px' : '28px',
             fontWeight: '700',
             color: textColor
           }}>
@@ -420,7 +438,7 @@ export default function Preview() {
         boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'
       }}>
         {previewType === 'image' && (
-          <div style={{ textAlign: 'center', padding: 24 }}>
+          <div style={{ textAlign: 'center', padding: isMobile ? 16 : 24 }}>
             <ImagePreview url={file.previewUrl} token={token} />
           </div>
         )}

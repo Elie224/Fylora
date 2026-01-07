@@ -26,7 +26,6 @@ const Share = lazy(() => import('./pages/Share'));
 const Search = lazy(() => import('./pages/Search'));
 const Trash = lazy(() => import('./pages/Trash'));
 const Activity = lazy(() => import('./pages/Activity'));
-const Gallery = lazy(() => import('./pages/Gallery'));
 const SetAdmin = lazy(() => import('./pages/SetAdmin'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -233,16 +232,6 @@ function App() {
             <Layout>
               <ProtectedRoute>
                 <Activity />
-              </ProtectedRoute>
-            </Layout>
-          }
-        />
-        <Route
-          path="/gallery"
-          element={
-            <Layout>
-              <ProtectedRoute>
-                <Gallery />
               </ProtectedRoute>
             </Layout>
           }
