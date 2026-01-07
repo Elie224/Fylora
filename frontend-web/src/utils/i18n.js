@@ -614,6 +614,7 @@ const translations = {
     renameItem: 'Rename',
     deleteConfirm: 'Do you really want to delete',
     deleteConfirmDetails: 'This action will send to trash.',
+    canRestoreLater: 'You can restore it later if needed.',
     deleteSuccess: 'has been deleted and sent to trash.',
     deleteError: 'Error during deletion',
     uploadError: 'Error during upload',
