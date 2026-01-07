@@ -513,7 +513,7 @@ const translations = {
     securityCenter: 'Centre de sécurité',
     securityStatistics: 'Statistiques de sécurité',
     configureMFA: 'Configurer MFA',
-    protectAccountMFA: 'Protégez votre compte avec l'authentification à deux facteurs (MFA)',
+    protectAccountMFA: 'Protégez votre compte avec l\\'authentification à deux facteurs (MFA)',
     totalLogins: 'Total connexions',
     successfulLogins: 'Connexions réussies',
     failedLogins: 'Connexions échouées',

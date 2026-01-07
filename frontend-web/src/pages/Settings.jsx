@@ -463,7 +463,6 @@ export default function Settings() {
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '1em',
               fontWeight: '600',
               transition: 'all 0.2s'
             }}
@@ -491,7 +490,6 @@ export default function Settings() {
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '1em',
               fontWeight: '600',
               transition: 'all 0.2s'
             }}
@@ -648,7 +646,6 @@ export default function Settings() {
               border: 'none',
               borderRadius: 8,
               cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '1em',
               fontWeight: 'bold',
               opacity: saving ? 0.6 : 1
             }}
@@ -741,7 +738,6 @@ export default function Settings() {
               border: 'none',
               borderRadius: 8,
               cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '1em',
               fontWeight: 'bold',
               opacity: saving ? 0.6 : 1
             }}

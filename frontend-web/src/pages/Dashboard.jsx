@@ -483,7 +483,6 @@ export default function Dashboard() {
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
                 gap: isMobile ? '12px' : '16px',
-                gap: '16px',
                 marginBottom: '16px'
               }}>
                 <div style={{
@@ -924,8 +923,7 @@ export default function Dashboard() {
             <div style={{ 
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: isMobile ? '12px' : '16px',
-              gap: '20px',
+              gap: isMobile ? '12px' : '20px',
               position: 'relative',
               zIndex: 1
             }}>

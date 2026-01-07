@@ -304,15 +304,6 @@ export default function Signup() {
                   setPhone(value);
                   setPhoneError('');
                 }}
-                onBlur={(e) => {
-                  // Valider à la perte de focus
-                  if (e.target.value && !validatePhoneNumber(e.target.value, countryCode)) {
-                    const country = getCountryByCode(countryCode);
-                    setPhoneError(t('invalidPhoneNumber') + (country ? ` (${country.phoneFormat})` : ''));
-                  } else {
-                    setPhoneError('');
-                  }
-                }}
                 autoComplete="tel"
                 placeholder={getCountryByCode(countryCode)?.phoneFormat.replace(/\+/g, '').replace(/X/g, 'X') || '6 12 34 56 78'}
                 style={{
@@ -331,7 +322,19 @@ export default function Signup() {
                   e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = phoneError ? errorText : borderColor;
+                  // Valider à la perte de focus
+                  let hasError = false;
+                  if (e.target.value && !validatePhoneNumber(e.target.value, countryCode)) {
+                    const country = getCountryByCode(countryCode);
+                    const errorMsg = t('invalidPhoneNumber') + (country ? ` (${country.phoneFormat})` : '');
+                    setPhoneError(errorMsg);
+                    hasError = true;
+                  } else {
+                    setPhoneError('');
+                    hasError = false;
+                  }
+                  // Restaurer le style de la bordure
+                  e.target.style.borderColor = hasError ? errorText : borderColor;
                   e.target.style.boxShadow = 'none';
                 }}
                 required
