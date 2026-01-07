@@ -468,72 +468,9 @@ export default function Preview() {
 
         {previewType === 'download' && (
           <div style={{ padding: 48, textAlign: 'center' }}>
-            <p style={{ marginBottom: 24, fontSize: '16px', color: textColor }}>
-              {t('downloadOnly') || 'This file type can only be downloaded'}
+            <p style={{ fontSize: '16px', color: textColor }}>
+              {t('downloadOnly') || 'This file type cannot be previewed'}
             </p>
-            <button
-                onClick={async () => {
-                  try {
-                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                    const token = localStorage.getItem('access_token');
-                    
-                    if (!token) {
-                      showToast(t('mustBeConnected') || 'You must be connected', 'warning');
-                      return;
-                    }
-                    
-                    // Utiliser l'URL de prévisualisation
-                    let fileUrl = previewUrl;
-                    
-                    // Pour les fichiers Office, générer une URL publique temporaire
-                    let finalUrl = null;
-                    
-                    // Fichier local : générer une URL publique temporaire
-                      try {
-                        const publicUrlResponse = await fetch(`${apiUrl}/api/files/${id}/public-preview-url`, {
-                          headers: {
-                            'Authorization': `Bearer ${token}`
-                          }
-                        });
-                        
-                        if (publicUrlResponse.ok) {
-                          const publicUrlData = await publicUrlResponse.json();
-                          finalUrl = publicUrlData.publicUrl;
-                        } else {
-                          throw new Error('Failed to generate public preview URL');
-                        }
-                      } catch (publicUrlErr) {
-                        console.error('Failed to generate public URL:', publicUrlErr);
-                        throw publicUrlErr;
-                      }
-                    }
-                    
-                    // Utiliser Google Docs Viewer avec l'URL appropriée
-                    if (finalUrl) {
-                      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(finalUrl)}&embedded=true`;
-                      window.open(viewerUrl, '_blank');
-                      showToast(t('openingInViewer') || 'Opening in viewer...', 'info');
-                    } else {
-                      throw new Error('No preview URL available');
-                    }
-                  } catch (err) {
-                    console.error('Failed to open in viewer:', err);
-                    showToast(t('viewerError') || 'Error opening viewer', 'error');
-                  }
-                }}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: theme === 'dark' ? '#2196F3' : '#1976D2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}
-              >
-                {t('viewOnline') || 'View online'}
-              </button>
           </div>
         )}
             <p>{t('cannotPreviewFileType')}</p>
