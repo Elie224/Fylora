@@ -1318,7 +1318,23 @@ export default function Files() {
             border: `1px solid ${borderColor}`
           }}>
             {items.map((item, index) => {
-              const itemType = item.type || (item.folder_id === null && item.parent_id === null ? 'folder' : 'file');
+              // S'assurer que le type est bien défini - amélioration de la logique
+              let itemType = item.type;
+              if (!itemType) {
+                // Si pas de type explicite, déterminer par les propriétés
+                if (item.folder_id === undefined && item.parent_id === undefined) {
+                  // Si ni folder_id ni parent_id, c'est probablement un dossier racine
+                  itemType = 'folder';
+                } else if (item.folder_id !== null || item.parent_id !== null) {
+                  // Si folder_id ou parent_id existe, c'est un fichier
+                  itemType = 'file';
+                } else {
+                  // Par défaut, considérer comme fichier si on ne peut pas déterminer
+                  itemType = 'file';
+                }
+              }
+              // Normaliser le type
+              itemType = itemType === 'folder' ? 'folder' : 'file';
               const rawId = item.id || item._id;
               let itemId;
               if (typeof rawId === 'object' && rawId !== null) {
@@ -1463,7 +1479,7 @@ export default function Files() {
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {itemType === 'file' && (
+                    {itemType !== 'folder' && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -1703,8 +1719,23 @@ export default function Files() {
               </thead>
               <tbody>
                 {items.map((item, index) => {
-                  // S'assurer que le type est bien défini
-                  const itemType = item.type || (item.folder_id === null && item.parent_id === null ? 'folder' : 'file');
+                  // S'assurer que le type est bien défini - amélioration de la logique
+                  let itemType = item.type;
+                  if (!itemType) {
+                    // Si pas de type explicite, déterminer par les propriétés
+                    if (item.folder_id === undefined && item.parent_id === undefined) {
+                      // Si ni folder_id ni parent_id, c'est probablement un dossier racine
+                      itemType = 'folder';
+                    } else if (item.folder_id !== null || item.parent_id !== null) {
+                      // Si folder_id ou parent_id existe, c'est un fichier
+                      itemType = 'file';
+                    } else {
+                      // Par défaut, considérer comme fichier si on ne peut pas déterminer
+                      itemType = 'file';
+                    }
+                  }
+                  // Normaliser le type
+                  itemType = itemType === 'folder' ? 'folder' : 'file';
                   // S'assurer que l'ID est toujours une string, même si c'est un objet
                   const rawId = item.id || item._id;
                   let itemId;
@@ -1790,7 +1821,7 @@ export default function Files() {
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {itemType === 'file' && (
+                      {itemType !== 'folder' && (
                         <button
                           onClick={async (e) => {
                             e.preventDefault();
