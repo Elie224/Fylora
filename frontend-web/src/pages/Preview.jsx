@@ -142,7 +142,18 @@ export default function Preview() {
           isOrphanFile = true;
           try {
             const errorData = await previewGetResponse.json().catch(() => ({}));
-            previewError = errorData.error?.message || 'File not found on disk';
+            // Utiliser les détails du backend si disponibles
+            if (errorData.error?.details) {
+              previewError = errorData.error.details;
+            } else if (errorData.error?.message) {
+              previewError = errorData.error.message;
+            } else {
+              previewError = 'File not found on disk';
+            }
+            // Stocker les informations supplémentaires pour l'affichage
+            if (errorData.error?.isOrphan) {
+              // Le fichier est orphelin, on peut afficher un message plus détaillé
+            }
           } catch (e) {
             previewError = 'File not found on disk';
           }
@@ -172,7 +183,12 @@ export default function Preview() {
       
       // Si le fichier n'existe pas physiquement, afficher un message d'erreur clair
       if (isOrphanFile || (previewError && (previewError.includes('not found') || previewError.includes('missing') || previewError.includes('Cloudinary')))) {
-        setError(previewError || t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
+        // Construire un message d'erreur détaillé
+        let errorMessage = previewError;
+        if (!errorMessage || errorMessage === 'File not found on disk') {
+          errorMessage = t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré. Vous pouvez supprimer cette entrée de votre liste de fichiers.';
+        }
+        setError(errorMessage);
         setLoading(false);
         return;
       }
