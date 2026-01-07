@@ -1719,30 +1719,37 @@ export default function Files() {
               </thead>
               <tbody>
                 {items.map((item, index) => {
-                  // S'assurer que le type est bien défini - logique améliorée avec priorité à la taille
+                  // S'assurer que le type est bien défini - logique simplifiée et robuste
+                  // Le backend retourne type: 'file' ou type: 'folder' directement
                   let itemType = item.type;
                   
-                  // Si l'élément a une taille définie et > 0, c'est définitivement un fichier
-                  const hasSize = item.size !== undefined && item.size !== null && item.size > 0;
-                  const hasMimeType = item.mimeType !== undefined && item.mimeType !== null && item.mimeType !== '';
-                  
-                  // Priorité 1 : Si taille ou mimeType existe, c'est un fichier
-                  if (hasSize || hasMimeType) {
-                    itemType = 'file';
-                  }
-                  // Priorité 2 : Si type explicite et valide, l'utiliser
-                  else if (itemType === 'folder' || itemType === 'file') {
-                    // Garder le type tel quel
-                  }
-                  // Priorité 3 : Sinon, déterminer par les propriétés
-                  else {
-                    // Un dossier racine a généralement folder_id === null ET parent_id === null
-                    // Mais c'est peu fiable, donc par défaut considérer comme fichier si on ne peut pas déterminer
-                    itemType = 'file';
+                  // Si pas de type explicite, déterminer par les propriétés
+                  if (!itemType || (itemType !== 'folder' && itemType !== 'file')) {
+                    // Vérifier la taille (le backend retourne 'size')
+                    const hasSize = item.size !== undefined && item.size !== null && item.size > 0;
+                    // Vérifier mime_type (le backend retourne 'mime_type' avec underscore)
+                    const hasMimeType = (item.mime_type || item.mimeType) !== undefined && 
+                                       (item.mime_type || item.mimeType) !== null && 
+                                       (item.mime_type || item.mimeType) !== '';
+                    
+                    // Si l'élément a une taille ou un mimeType, c'est un fichier
+                    if (hasSize || hasMimeType) {
+                      itemType = 'file';
+                    } else {
+                      // Sinon, c'est probablement un dossier
+                      itemType = 'folder';
+                    }
                   }
                   
                   // Normaliser le type pour être sûr
                   itemType = (itemType === 'folder') ? 'folder' : 'file';
+                  
+                  // DEBUG: Forcer le type à 'file' si l'élément a une taille (indicateur fiable de fichier)
+                  if (item.size && item.size > 0 && itemType === 'folder') {
+                    console.warn('⚠️ Correction: Item avec taille détecté comme dossier, forcer à fichier:', item.name);
+                    itemType = 'file';
+                  }
+                  
                   // S'assurer que l'ID est toujours une string, même si c'est un objet
                   const rawId = item.id || item._id;
                   let itemId;
@@ -1829,7 +1836,7 @@ export default function Files() {
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {/* Bouton de téléchargement pour les fichiers */}
-                      {/* Afficher si ce n'est pas un dossier OU si l'élément a une taille (indicateur de fichier) */}
+                      {/* Afficher si ce n'est pas un dossier - le backend retourne type: 'file' pour les fichiers */}
                       {itemType !== 'folder' && (
                         <button
                           onClick={async (e) => {
