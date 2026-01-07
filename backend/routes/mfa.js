@@ -20,6 +20,12 @@ router.get('/status', async (req, res, next) => {
     const UserModel = require('../models/userModel');
     const user = await UserModel.findById(req.user.id);
 
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'User not found' },
+      });
+    }
+
     res.json({
       enabled: user.mfa_enabled || false,
       type: user.mfa_type || null,
