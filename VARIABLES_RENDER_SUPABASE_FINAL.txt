@@ -1,0 +1,54 @@
+==========================================
+VARIABLES D'ENVIRONNEMENT POUR RENDER
+==========================================
+
+Copiez-collez ces variables dans Render :
+
+------------------------------------------
+1. SUPABASE_URL
+------------------------------------------
+https://vajplmdfwwczsksfngrs.supabase.co
+
+------------------------------------------
+2. SUPABASE_SERVICE_ROLE_KEY
+------------------------------------------
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhanBsbWRmd3djenNrc2ZuZ3JzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc3NTM0NCwiZXhwIjoyMDgzMzUxMzQ0fQ.0d-TPrrSeVo0l0X401ItgesD2CmW9SKyW6nYQ62AI28
+
+⚠️ IMPORTANT : C'est la clé "service_role" (secret), PAS la clé "anon"
+
+------------------------------------------
+3. SUPABASE_BUCKET
+------------------------------------------
+fylora-files
+
+==========================================
+INSTRUCTIONS
+==========================================
+
+1. Allez dans votre service Render (backend)
+2. Cliquez sur "Environment" dans le menu de gauche
+3. Cliquez sur "Add Environment Variable"
+4. Ajoutez les 3 variables ci-dessus (une par une)
+5. Redémarrez le service Render
+
+==========================================
+VÉRIFICATION
+==========================================
+
+Après redémarrage, vérifiez les logs. Vous devriez voir :
+
+✅ Supabase storage service initialized
+  url: https://vajplmdfwwczsksfngrs.supabase.co
+  bucket: fylora-files
+
+Si vous voyez ce message, c'est que Supabase est bien configuré !
+
+==========================================
+IMPORTANT
+==========================================
+
+❌ NE PAS utiliser la clé "anon" (public)
+✅ Utiliser UNIQUEMENT la clé "service_role" (secret)
+
+La clé anon n'a pas les permissions nécessaires pour gérer les fichiers.
+
