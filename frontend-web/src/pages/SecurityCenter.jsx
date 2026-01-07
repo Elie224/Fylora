@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Toast';
 
 const SecurityCenter = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { theme } = useTheme();
   const { showToast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
