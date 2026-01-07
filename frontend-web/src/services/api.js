@@ -295,4 +295,5 @@ export { scheduledBackupsService } from './scheduledBackupsService';
 export { pluginsService } from './pluginsService';
 export { offlineSyncService } from './offlineSyncService';
 
+export { apiClient };
 export default apiClient;
