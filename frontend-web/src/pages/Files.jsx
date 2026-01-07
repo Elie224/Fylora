@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { fileService, folderService, shareService, userService } from '../services/api';
+import { fileService, folderService, shareService, userService, apiClient } from '../services/api';
 import { tagsService } from '../services/tagsService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuthStore } from '../services/authStore';
@@ -1673,24 +1673,13 @@ export default function Files() {
                             e.preventDefault();
                             e.stopPropagation();
                             try {
-                              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                              const token = localStorage.getItem('access_token');
-                              
-                              if (!token) {
-                                showToast(t('mustBeConnected'), 'warning');
-                                return;
-                              }
-                              
-                              // Utiliser l'endpoint download qui préserve le nom de fichier original
-                              const response = await fetch(`${apiUrl}/api/files/${itemId}/download`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
+                              // Utiliser apiClient qui gère automatiquement le refresh token
+                              const response = await apiClient.get(`/files/${itemId}/download`, {
+                                responseType: 'blob', // Important pour les fichiers binaires
                               });
                               
-                              if (!response.ok) {
-                                const error = await response.json().catch(() => ({ error: { message: t('downloadError') } }));
-                                throw new Error(error.error?.message || `${t('error')} ${response.status}`);
+                              if (!response || !response.data) {
+                                throw new Error(t('downloadError') || 'Download error');
                               }
                               
                               // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
