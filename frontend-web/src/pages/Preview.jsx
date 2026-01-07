@@ -104,13 +104,14 @@ export default function Preview() {
       }
       
       // Récupérer le Content-Type depuis l'endpoint preview pour déterminer le type
-      // Utiliser GET directement pour gérer les réponses JSON Cloudinary
       let contentType = '';
       let previewError = null;
       let isOrphanFile = false;
+      let previewGetResponse = null;
+      let responseContentType = '';
       
       try {
-        const previewGetResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
+        previewGetResponse = await fetch(`${apiUrl}/api/files/${id}/preview`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -120,7 +121,7 @@ export default function Preview() {
         
         if (previewGetResponse.ok) {
           // Vérifier si c'est une réponse JSON
-          const responseContentType = previewGetResponse.headers.get('content-type') || '';
+          responseContentType = previewGetResponse.headers.get('content-type') || '';
           if (responseContentType.includes('application/json')) {
             const data = await previewGetResponse.json();
             if (data.url) {
@@ -145,6 +146,15 @@ export default function Preview() {
           } catch (e) {
             previewError = 'File not found on disk';
           }
+        } else if (previewGetResponse.status === 410) {
+          // Fichier sur Cloudinary (non supporté)
+          isOrphanFile = true;
+          try {
+            const errorData = await previewGetResponse.json().catch(() => ({}));
+            previewError = errorData.error?.message || 'This file is stored on Cloudinary which is no longer supported. Please re-upload the file.';
+          } catch (e) {
+            previewError = 'This file is stored on Cloudinary which is no longer supported. Please re-upload the file.';
+          }
         } else {
           // Autre erreur
           const errorData = await previewGetResponse.json().catch(() => ({}));
@@ -161,13 +171,13 @@ export default function Preview() {
       }
       
       // Si le fichier n'existe pas physiquement, afficher un message d'erreur clair
-      if (isOrphanFile || (previewError && (previewError.includes('not found') || previewError.includes('missing')))) {
-        setError(t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
+      if (isOrphanFile || (previewError && (previewError.includes('not found') || previewError.includes('missing') || previewError.includes('Cloudinary')))) {
+        setError(previewError || t('fileNotFoundOnDisk') || 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le serveur a été redémarré (limitation du stockage gratuit sur Render).');
         setLoading(false);
         return;
       }
       
-      // Si erreur autre que 404
+      // Si erreur autre que 404/410
       if (previewError && !isOrphanFile) {
         setError(previewError);
         setLoading(false);
@@ -175,7 +185,20 @@ export default function Preview() {
       }
       
       // Construire les métadonnées du fichier
-      const mimeType = fileInfo?.mime_type || (previewGetResponse && responseContentType.includes('application/json') ? (await previewGetResponse.json().catch(() => ({}))).mimeType : null) || contentType || 'application/octet-stream';
+      let mimeType = fileInfo?.mime_type || contentType || 'application/octet-stream';
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        // Essayer d'obtenir le mimeType depuis la réponse JSON si disponible
+        if (previewGetResponse && responseContentType.includes('application/json')) {
+          try {
+            const data = await previewGetResponse.clone().json().catch(() => ({}));
+            if (data.mimeType) {
+              mimeType = data.mimeType;
+            }
+          } catch (e) {
+            // Ignorer l'erreur
+          }
+        }
+      }
       let finalPreviewUrl = `${apiUrl}/api/files/${id}/preview`;
       
       // Si on a reçu une URL dans la réponse JSON, l'utiliser
