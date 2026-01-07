@@ -1479,7 +1479,8 @@ export default function Files() {
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {itemType !== 'folder' && (
+                    {/* FORCER l'affichage : afficher si l'élément a une taille (indicateur fiable de fichier) OU si le type n'est pas 'folder' */}
+                    {((item.size !== undefined && item.size !== null && item.size > 0) || itemType !== 'folder') && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -1836,8 +1837,9 @@ export default function Files() {
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {/* Bouton de téléchargement pour les fichiers */}
-                      {/* Afficher si ce n'est pas un dossier - le backend retourne type: 'file' pour les fichiers */}
-                      {itemType !== 'folder' && (
+                      {/* FORCER l'affichage : afficher si l'élément a une taille (indicateur fiable de fichier) */}
+                      {/* OU si le type n'est pas 'folder' (fallback si pas de taille) */}
+                      {((item.size !== undefined && item.size !== null && item.size > 0) || itemType !== 'folder') && (
                         <button
                           onClick={async (e) => {
                             e.preventDefault();
