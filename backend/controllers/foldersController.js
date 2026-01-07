@@ -50,6 +50,29 @@ async function createFolder(req, res, next) {
   }
 }
 
+// Lister les dossiers
+async function listFolders(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { parent_id } = req.query;
+    
+    // Normaliser parent_id : convertir chaîne vide en null
+    const parentId = (parent_id && parent_id.trim && parent_id.trim() !== '') ? parent_id.trim() : null;
+    
+    const folders = await FolderModel.findByOwner(userId, parentId);
+    
+    res.status(200).json({
+      data: {
+        items: folders,
+        count: folders.length
+      },
+      message: 'Folders retrieved'
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Renommer un dossier
 async function updateFolder(req, res, next) {
   try {
@@ -455,6 +478,7 @@ async function getFolder(req, res, next) {
 
 module.exports = {
   createFolder,
+  listFolders,
   getFolder,
   updateFolder,
   deleteFolder,

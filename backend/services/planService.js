@@ -27,8 +27,8 @@ const PLANS = {
       maxFilesPerUpload: 10,
       
       // Partage
-      publicSharing: false,
-      maxShareLinks: 0,
+      publicSharing: true,
+      maxShareLinks: 5, // Permettre 5 partages pour le plan gratuit
       sharePassword: false,
       shareExpiration: false,
       

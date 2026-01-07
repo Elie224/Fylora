@@ -10,13 +10,18 @@ router.get('/:id/download', optionalAuthMiddleware, foldersController.downloadFo
 
 // Routes protégées (toutes les autres routes nécessitent une authentification)
 router.use(authMiddleware);
-router.use(validateObjectId); // Valider tous les ObjectIds dans les paramètres
+
+// Lister les dossiers (DOIT être avant /:id)
+router.get('/', foldersController.listFolders);
 
 // Créer un dossier
 router.post('/', createFolderSchema, validate, foldersController.createFolder);
 
 // Lister les dossiers supprimés (corbeille) - DOIT être avant les autres routes /:id
 router.get('/trash', foldersController.listTrash);
+
+// Valider tous les ObjectIds dans les paramètres pour les routes avec :id
+router.use(validateObjectId);
 
 // Routes avec segments supplémentaires - DOIVENT être avant /:id pour éviter les conflits
 // Restaurer un dossier

@@ -353,72 +353,6 @@ export default function Preview() {
         <div style={{ fontSize: '48px' }}>⚠️</div>
         <h2 style={{ color: textColor, margin: 0 }}>{t('error')}</h2>
         <p style={{ color: textSecondary, maxWidth: '600px' }}>{error}</p>
-        <button
-          onClick={async () => {
-            try {
-              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-              const token = localStorage.getItem('access_token');
-              
-              if (!token) {
-                showToast(t('mustBeConnected') || 'Vous devez être connecté', 'warning');
-                return;
-              }
-              
-              const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
-              });
-              
-              if (!response.ok) {
-                const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur de téléchargement' } }));
-                throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
-              }
-              
-              // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
-              const contentDisposition = response.headers.get('Content-Disposition');
-              let finalFileName = file?.name || 'download';
-              if (contentDisposition) {
-                const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (fileNameMatch && fileNameMatch[1]) {
-                  finalFileName = fileNameMatch[1].replace(/['"]/g, '');
-                  try {
-                    finalFileName = decodeURIComponent(finalFileName);
-                  } catch (e) {
-                    // Si le décodage échoue, utiliser le nom tel quel
-                  }
-                }
-              }
-              
-              const blob = await response.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = finalFileName; // Utiliser le nom de fichier original avec extension
-              document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
-              document.body.removeChild(a);
-            } catch (err) {
-              console.error('Download failed:', err);
-              showToast(err.message || t('downloadError') || 'Erreur de téléchargement', 'error');
-            }
-          }}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#2196F3',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
-        >
-          ⬇️ {t('downloadFile')}
-        </button>
       </div>
     );
   }
@@ -477,31 +411,6 @@ export default function Preview() {
             {t('preview') || 'Prévisualisation'}
           </h1>
         </div>
-        <a
-          href={downloadUrl}
-          download
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#2196F3',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: 8,
-            fontWeight: '600',
-            transition: 'all 0.2s',
-            display: 'inline-block',
-            boxShadow: theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#1976D2';
-            e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(33, 150, 243, 0.5)' : '0 4px 12px rgba(33, 150, 243, 0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#2196F3';
-            e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)';
-          }}
-        >
-          ⬇️ {t('download') || 'Télécharger'}
-        </a>
       </div>
 
       <div style={{ 
@@ -625,157 +534,9 @@ export default function Preview() {
               >
                 {t('viewOnline') || 'View online'}
               </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                    const token = localStorage.getItem('access_token');
-                    
-                    if (!token) {
-                      showToast(t('mustBeConnected') || 'You must be connected', 'warning');
-                      return;
-                    }
-                    
-                    // Utiliser l'endpoint download standard
-                    let downloadUrl = null;
-                    if (previewUrl) {
-                      // Utiliser l'URL de prévisualisation si disponible
-                      downloadUrl = previewUrl;
-                    } else {
-                      // Sinon, utiliser l'endpoint download qui gérera la redirection
-                      downloadUrl = `${apiUrl}/api/files/${id}/download`;
-                    }
-                    
-                    // Si c'est une URL Cloudinary directe, ouvrir directement
-                    if (downloadUrl.startsWith('https://res.cloudinary.com') || downloadUrl.startsWith('http://res.cloudinary.com')) {
-                      const a = document.createElement('a');
-                      a.href = downloadUrl;
-                      a.download = file?.name || 'download';
-                      a.target = '_blank';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      showToast(t('downloadStarted') || 'Download started', 'success');
-                      return;
-                    }
-                    
-                    // Sinon, utiliser l'endpoint download
-                    const response = await fetch(downloadUrl, {
-                      headers: {
-                        'Authorization': `Bearer ${token}`
-                      },
-                      redirect: 'follow'
-                    });
-                    
-                    if (!response.ok) {
-                      if (response.redirected && response.url) {
-                        window.open(response.url, '_blank');
-                        showToast(t('downloadStarted') || 'Download started', 'success');
-                        return;
-                      }
-                      const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Download error' } }));
-                      throw new Error(error.error?.message || `${t('error') || 'Error'} ${response.status}`);
-                    }
-                    
-                    if (response.redirected && response.url) {
-                      window.open(response.url, '_blank');
-                      showToast(t('downloadStarted') || 'Download started', 'success');
-                      return;
-                    }
-                    
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file?.name || 'download';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    showToast(t('downloadStarted') || 'Download started', 'success');
-                  } catch (err) {
-                    console.error('Download failed:', err);
-                    showToast(err.message || t('downloadError') || 'Download error', 'error');
-                  }
-                }}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: theme === 'dark' ? '#4caf50' : '#388e3c',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}
-              >
-                {t('downloadFile') || 'Download'}
-              </button>
           </div>
         )}
             <p>{t('cannotPreviewFileType')}</p>
-            <button
-              onClick={async () => {
-                try {
-                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                  const token = localStorage.getItem('access_token');
-                  
-                  if (!token) {
-                    showToast(t('mustBeConnected') || 'Vous devez être connecté', 'warning');
-                    return;
-                  }
-                  
-                  const response = await fetch(`${apiUrl}/api/files/${id}/download`, {
-                    headers: {
-                      'Authorization': `Bearer ${token}`
-                    },
-                    redirect: 'follow' // Suivre les redirections Cloudinary
-                  });
-                  
-                  if (!response.ok) {
-                    // Si c'est une redirection (301/302), utiliser l'URL de redirection
-                    if (response.redirected && response.url) {
-                      window.open(response.url, '_blank');
-                      showToast(t('downloadStarted') || 'Téléchargement démarré', 'success');
-                      return;
-                    }
-                    const error = await response.json().catch(() => ({ error: { message: t('downloadError') || 'Erreur de téléchargement' } }));
-                    throw new Error(error.error?.message || `${t('error') || 'Erreur'} ${response.status}`);
-                  }
-                  
-                  // Si c'est une redirection vers Cloudinary, ouvrir directement
-                  if (response.redirected && response.url) {
-                    window.open(response.url, '_blank');
-                    showToast(t('downloadStarted') || 'Téléchargement démarré', 'success');
-                    return;
-                  }
-                  
-                  const blob = await response.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = file?.name || 'download';
-                  document.body.appendChild(a);
-                  a.click();
-                  window.URL.revokeObjectURL(url);
-                  document.body.removeChild(a);
-                } catch (err) {
-                  console.error('Download failed:', err);
-                  showToast(err.message || t('downloadError') || 'Erreur de téléchargement', 'error');
-                }
-              }}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer',
-                display: 'inline-block',
-              }}
-            >
-              {t('downloadFile')}
-            </button>
           </div>
         )}
       </div>
@@ -1610,21 +1371,6 @@ function OfficePreview({ fileId, fileName, mimeType, token, previewUrl }) {
             </span>
           )}
         </div>
-        <button
-          onClick={handleDownload}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: theme === 'dark' ? '#4CAF50' : '#45a049',
-            color: 'white',
-            border: 'none',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 500
-          }}
-        >
-          ⬇️ {t('download') || 'Download'}
-        </button>
       </div>
       
       {/* Viewer intégré - Utiliser Google Docs Viewer dans un iframe */}
