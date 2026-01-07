@@ -129,12 +129,28 @@ class SecurityCenterService {
    */
   async getLoginHistory(userId, limit = 50) {
     try {
-      const history = await LoginHistory.find({ user_id: userId })
+      const mongoose = require('mongoose');
+      const userIdObj = mongoose.Types.ObjectId.isValid(userId) 
+        ? new mongoose.Types.ObjectId(userId) 
+        : userId;
+      
+      const history = await LoginHistory.find({ user_id: userIdObj })
         .sort({ created_at: -1 })
         .limit(limit)
         .lean();
 
-      return history;
+      // Formater pour le frontend
+      return history.map(entry => ({
+        _id: entry._id.toString(),
+        id: entry._id.toString(),
+        ip_address: entry.ip_address || 'Inconnu',
+        user_agent: entry.user_agent || 'Inconnu',
+        location: entry.location || null,
+        success: entry.success !== false, // Par défaut true
+        failure_reason: entry.failure_reason || null,
+        created_at: entry.created_at,
+        date: entry.created_at, // Alias pour compatibilité
+      }));
     } catch (err) {
       logger.logError(err, {
         context: 'get_login_history',
@@ -185,9 +201,19 @@ class SecurityCenterService {
    */
   async revokeSession(sessionId, userId) {
     try {
+      const mongoose = require('mongoose');
+      const Session = mongoose.models.Session || mongoose.model('Session');
+      
+      const sessionIdObj = mongoose.Types.ObjectId.isValid(sessionId) 
+        ? new mongoose.Types.ObjectId(sessionId) 
+        : sessionId;
+      const userIdObj = mongoose.Types.ObjectId.isValid(userId) 
+        ? new mongoose.Types.ObjectId(userId) 
+        : userId;
+      
       const session = await Session.findOne({
-        _id: sessionId,
-        user_id: userId,
+        _id: sessionIdObj,
+        user_id: userIdObj,
       });
 
       if (!session) {

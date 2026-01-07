@@ -222,10 +222,10 @@ const SecurityCenter = () => {
                 {loginHistory.map((entry) => (
                   <tr key={entry._id || entry.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {formatDate(entry.created_at)}
+                      {formatDate(entry.created_at || entry.date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {entry.ip_address}
+                      {entry.ip_address || entry.ip || 'Inconnu'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {getLocationDisplay(entry.location)}
@@ -233,12 +233,12 @@ const SecurityCenter = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-1 text-xs rounded ${
-                          entry.success
+                          entry.success !== false
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {entry.success ? t('success') : t('failed')}
+                        {entry.success !== false ? t('success') : t('failed')}
                       </span>
                     </td>
                   </tr>
