@@ -1291,6 +1291,67 @@ async function previewFile(req, res, next) {
       });
     }
     
+    // Vérifier le type de stockage AVANT de construire le chemin
+    // Si c'est Supabase ou S3, ne pas construire de chemin local
+    if (storageType === 'supabase') {
+      const supabaseStorage = require('../services/supabaseStorageService');
+      if (supabaseStorage.isSupabaseConfigured()) {
+        try {
+          // Générer une URL signée (fonctionne avec buckets privés)
+          const previewUrl = await supabaseStorage.generatePreviewUrl(
+            file.file_path,
+            15 * 60 // 15 minutes
+          );
+          
+          // Retourner l'URL Supabase dans une réponse JSON
+          res.setHeader('Content-Type', 'application/json');
+          return res.json({ 
+            url: previewUrl, 
+            type: 'supabase',
+            mimeType: file.mime_type
+          });
+        } catch (supabaseErr) {
+          logger.logError(supabaseErr, {
+            context: 'supabase_preview',
+            fileId: id,
+            supabaseKey: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to generate preview URL' } 
+          });
+        }
+      }
+    }
+    
+    // Si c'est S3/MinIO, générer une URL signée
+    if (storageType === 's3' || storageType === 'minio') {
+      const storageService = require('../services/storageService');
+      if (storageService.isStorageConfigured()) {
+        try {
+          const previewUrl = await storageService.generatePreviewUrl(
+            file.file_path,
+            15 * 60 // 15 minutes
+          );
+          
+          res.setHeader('Content-Type', 'application/json');
+          return res.json({ 
+            url: previewUrl, 
+            type: 's3',
+            mimeType: file.mime_type
+          });
+        } catch (s3Err) {
+          logger.logError(s3Err, {
+            context: 's3_preview',
+            fileId: id,
+            s3Key: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to generate preview URL' } 
+          });
+        }
+      }
+    }
+    
     // Stockage local - résoudre le chemin du fichier
     let filePath;
     if (path.isAbsolute(file.file_path)) {
@@ -1316,35 +1377,8 @@ async function previewFile(req, res, next) {
         uploadDir: config.upload.uploadDir
       });
       
-      // Vérifier si c'est un fichier Supabase qui n'a pas été trouvé localement
-      if (storageType === 'supabase') {
-        // Le fichier devrait être sur Supabase, pas sur le disque local
-        const supabaseStorage = require('../services/supabaseStorageService');
-        if (supabaseStorage.isSupabaseConfigured()) {
-          try {
-            // Essayer de générer une URL Supabase
-            const previewUrl = await supabaseStorage.generatePreviewUrl(
-              file.file_path,
-              15 * 60 // 15 minutes
-            );
-            
-            res.setHeader('Content-Type', 'application/json');
-            return res.json({ 
-              url: previewUrl, 
-              type: 'supabase',
-              mimeType: file.mime_type
-            });
-          } catch (supabaseErr) {
-            logger.logError(supabaseErr, {
-              context: 'supabase_preview_orphan',
-              fileId: id,
-              supabaseKey: file.file_path
-            });
-            // Continuer vers le message d'erreur orphelin
-          }
-        }
-      }
-      
+      // Si on arrive ici, c'est un fichier local qui n'existe pas
+      // (les fichiers Supabase/S3 ont déjà été gérés plus haut)
       return res.status(404).json({ 
         error: { 
           message: 'Fichier introuvable',
