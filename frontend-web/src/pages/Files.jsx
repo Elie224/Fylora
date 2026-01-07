@@ -1463,6 +1463,129 @@ export default function Files() {
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {itemType === 'file' && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            // Utiliser apiClient qui gère automatiquement le refresh token
+                            const response = await apiClient.get(`/files/${itemId}/download`, {
+                              responseType: 'blob', // Important pour les fichiers binaires
+                            });
+                            
+                            if (!response || !response.data) {
+                              throw new Error(t('downloadError') || 'Download error');
+                            }
+                            
+                            // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
+                            const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];
+                            let finalFileName = item.name || 'download';
+                            if (contentDisposition) {
+                              const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                              if (fileNameMatch && fileNameMatch[1]) {
+                                finalFileName = fileNameMatch[1].replace(/['"]/g, '');
+                                try {
+                                  finalFileName = decodeURIComponent(finalFileName);
+                                } catch (e) {
+                                  // Si le décodage échoue, utiliser le nom tel quel
+                                }
+                              }
+                            }
+                            
+                            // Télécharger le blob avec le nom de fichier original
+                            const blob = response.data;
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = finalFileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            showToast(t('downloadStarted') || 'Download started', 'success');
+                          } catch (err) {
+                            console.error('Download failed:', err);
+                            showToast(err.message || t('downloadError'), 'error');
+                          }
+                        }}
+                        style={{
+                          padding: '6px',
+                          backgroundColor: '#2196F3',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '28px',
+                          height: '28px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
+                        title={t('download')}
+                      >
+                        ⬇️
+                      </button>
+                    )}
+                    {itemType === 'folder' && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                            const token = localStorage.getItem('access_token');
+                            
+                            if (!token) {
+                              showToast(t('mustBeConnected'), 'warning');
+                              return;
+                            }
+                            
+                            const response = await fetch(`${apiUrl}/api/folders/${itemId}/download`, {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            
+                            if (!response.ok) {
+                              const error = await response.json().catch(() => ({ error: { message: t('downloadError') } }));
+                              throw new Error(error.error?.message || `${t('error')} ${response.status}`);
+                            }
+                            
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${item.name}.zip`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                          } catch (err) {
+                            console.error('Download failed:', err);
+                            showToast(err.message || t('downloadError'), 'error');
+                          }
+                        }}
+                        style={{
+                          padding: '6px',
+                          backgroundColor: '#2196F3',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '28px',
+                          height: '28px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
+                        title={t('downloadZip')}
+                      >
+                        ⬇️
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1667,6 +1790,84 @@ export default function Files() {
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {itemType === 'file' && (
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                              // Utiliser apiClient qui gère automatiquement le refresh token
+                              const response = await apiClient.get(`/files/${itemId}/download`, {
+                                responseType: 'blob', // Important pour les fichiers binaires
+                              });
+                              
+                              if (!response || !response.data) {
+                                throw new Error(t('downloadError') || 'Download error');
+                              }
+                              
+                              // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
+                              // Avec axios, les headers sont dans response.headers (objet, pas Response)
+                              const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];
+                              let finalFileName = item.name || 'download';
+                              if (contentDisposition) {
+                                const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                                if (fileNameMatch && fileNameMatch[1]) {
+                                  finalFileName = fileNameMatch[1].replace(/['"]/g, '');
+                                  try {
+                                    finalFileName = decodeURIComponent(finalFileName);
+                                  } catch (e) {
+                                    // Si le décodage échoue, utiliser le nom tel quel
+                                  }
+                                }
+                              }
+                              
+                              // Télécharger le blob avec le nom de fichier original
+                              // axios retourne déjà un blob avec responseType: 'blob'
+                              const blob = response.data;
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = finalFileName; // Utiliser le nom de fichier original avec extension
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                              showToast(t('downloadStarted') || 'Download started', 'success');
+                            } catch (err) {
+                              console.error('Download failed:', err);
+                              showToast(err.message || t('downloadError'), 'error');
+                            }
+                          }}
+                          style={{
+                            padding: '8px 14px',
+                            backgroundColor: '#2196F3',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            transition: 'all 0.2s',
+                            boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#1976D2';
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = theme === 'dark' ? '0 4px 8px rgba(33, 150, 243, 0.5)' : '0 4px 12px rgba(33, 150, 243, 0.6)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#2196F3';
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = theme === 'dark' ? '0 2px 4px rgba(33, 150, 243, 0.4)' : '0 2px 6px rgba(33, 150, 243, 0.5)';
+                          }}
+                          title={t('download')}
+                        >
+                          ⬇️ {t('download')}
+                        </button>
+                      )}
                       {itemType === 'folder' && (
                         <button
                           onClick={async (e) => {
