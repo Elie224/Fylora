@@ -711,28 +711,83 @@ async function uploadFile(req, res, next) {
         storageType: storageType,
       });
       
-      // Vérifier que le fichier existe (stockage local)
-      try {
-        await fs.access(storagePath);
-        logger.logInfo('File uploaded and saved successfully (local)', {
+      // Vérifier que le fichier existe (uniquement pour stockage local)
+      if (storageType === 'local') {
+        try {
+          await fs.access(storagePath);
+          logger.logInfo('File uploaded and saved successfully (local)', {
+            fileId: file.id,
+            fileName: req.file.originalname,
+            filePath: storagePath,
+            size: fileSize,
+            userId
+          });
+        } catch (postCreateErr) {
+          logger.logError('File disappeared after database creation', {
+            fileId: file.id,
+            filePath: storagePath,
+            error: postCreateErr.message,
+            userId
+          });
+          await FileModel.delete(file.id).catch(() => {});
+          return res.status(500).json({ 
+            error: { 
+              message: 'File was not saved correctly. Please try again.',
+            } 
+          });
+        }
+      } else if (storageType === 'supabase') {
+        // Pour Supabase, vérifier que le fichier existe dans Supabase
+        const supabaseStorage = require('../services/supabaseStorageService');
+        if (supabaseStorage.isSupabaseConfigured()) {
+          try {
+            const exists = await supabaseStorage.fileExists(storagePath);
+            if (!exists) {
+              logger.logError('File not found in Supabase after upload', {
+                fileId: file.id,
+                supabaseKey: storagePath,
+                userId
+              });
+              await FileModel.delete(file.id).catch(() => {});
+              return res.status(500).json({ 
+                error: { 
+                  message: 'File was not saved correctly. Please try again.',
+                } 
+              });
+            }
+            logger.logInfo('File uploaded and saved successfully (Supabase)', {
+              fileId: file.id,
+              fileName: req.file.originalname,
+              supabaseKey: storagePath,
+              size: fileSize,
+              userId
+            });
+          } catch (supabaseCheckErr) {
+            logger.logError('Error checking file in Supabase', {
+              fileId: file.id,
+              supabaseKey: storagePath,
+              error: supabaseCheckErr.message,
+              userId
+            });
+            // Ne pas supprimer le fichier en base si la vérification échoue
+            // Le fichier pourrait exister même si la vérification échoue
+            logger.logInfo('File uploaded and saved successfully (Supabase - verification skipped)', {
+              fileId: file.id,
+              fileName: req.file.originalname,
+              supabaseKey: storagePath,
+              size: fileSize,
+              userId
+            });
+          }
+        }
+      } else if (storageType === 's3' || storageType === 'minio') {
+        // Pour S3, le fichier a déjà été vérifié lors de l'upload
+        logger.logInfo('File uploaded and saved successfully (S3)', {
           fileId: file.id,
           fileName: req.file.originalname,
-          filePath: storagePath,
+          s3Key: storagePath,
           size: fileSize,
           userId
-        });
-      } catch (postCreateErr) {
-        logger.logError('File disappeared after database creation', {
-          fileId: file.id,
-          filePath: storagePath,
-          error: postCreateErr.message,
-          userId
-        });
-        await FileModel.delete(file.id).catch(() => {});
-        return res.status(500).json({ 
-          error: { 
-            message: 'File was not saved correctly. Please try again.',
-          } 
         });
       }
     } catch (dbError) {
