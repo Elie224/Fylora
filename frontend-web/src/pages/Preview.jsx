@@ -168,16 +168,35 @@ export default function Preview() {
           }
         } else {
           // Autre erreur
-          const errorData = await previewGetResponse.json().catch(() => ({}));
-          previewError = errorData.error?.message || `Erreur ${previewGetResponse.status}`;
+          if (previewGetResponse) {
+            try {
+              const errorData = await previewGetResponse.json().catch(() => ({}));
+              previewError = errorData.error?.message || `Erreur ${previewGetResponse.status}`;
+            } catch (e) {
+              previewError = `Erreur ${previewGetResponse.status}`;
+            }
+          } else {
+            previewError = 'Erreur lors du chargement du fichier';
+          }
         }
       } catch (getErr) {
         console.warn('Could not fetch preview:', getErr);
-        if (getErr.message && getErr.message.includes('404')) {
-          isOrphanFile = true;
-          previewError = 'File not found on disk';
+        // Si previewGetResponse n'a pas été défini, c'est que le fetch a complètement échoué
+        if (!previewGetResponse) {
+          if (getErr.message && getErr.message.includes('404')) {
+            isOrphanFile = true;
+            previewError = 'File not found on disk';
+          } else {
+            previewError = getErr.message || 'Erreur lors du chargement du fichier';
+          }
         } else {
-          previewError = getErr.message || 'Erreur lors du chargement du fichier';
+          // previewGetResponse existe mais il y a eu une erreur lors du traitement
+          try {
+            const errorData = await previewGetResponse.json().catch(() => ({}));
+            previewError = errorData.error?.message || `Erreur ${previewGetResponse.status}`;
+          } catch (e) {
+            previewError = getErr.message || 'Erreur lors du chargement du fichier';
+          }
         }
       }
       
