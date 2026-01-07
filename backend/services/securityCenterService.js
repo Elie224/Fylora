@@ -130,9 +130,18 @@ class SecurityCenterService {
   async getLoginHistory(userId, limit = 50) {
     try {
       const mongoose = require('mongoose');
-      const userIdObj = mongoose.Types.ObjectId.isValid(userId) 
-        ? new mongoose.Types.ObjectId(userId) 
-        : userId;
+      
+      // Convertir userId en ObjectId si c'est une string
+      let userIdObj;
+      if (typeof userId === 'string') {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+          logger.logError(new Error(`Invalid user ID: ${userId}`), { context: 'get_login_history' });
+          return [];
+        }
+        userIdObj = new mongoose.Types.ObjectId(userId);
+      } else {
+        userIdObj = userId;
+      }
       
       const history = await LoginHistory.find({ user_id: userIdObj })
         .sort({ created_at: -1 })
@@ -168,8 +177,20 @@ class SecurityCenterService {
       const mongoose = require('mongoose');
       const Session = mongoose.models.Session || mongoose.model('Session');
       
+      // Convertir userId en ObjectId si c'est une string
+      let userIdObj;
+      if (typeof userId === 'string') {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+          logger.logError(new Error(`Invalid user ID: ${userId}`), { context: 'get_active_sessions' });
+          return [];
+        }
+        userIdObj = new mongoose.Types.ObjectId(userId);
+      } else {
+        userIdObj = userId;
+      }
+      
       const sessions = await Session.find({
-        user_id: userId,
+        user_id: userIdObj,
         is_revoked: false,
         expires_at: { $gt: new Date() }, // Seulement les sessions non expirées
       })
@@ -350,20 +371,39 @@ class SecurityCenterService {
       const mongoose = require('mongoose');
       const Session = mongoose.models.Session || mongoose.model('Session');
       
+      // Convertir userId en ObjectId si c'est une string
+      let userIdObj;
+      if (typeof userId === 'string') {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+          logger.logError(new Error(`Invalid user ID: ${userId}`), { context: 'get_security_stats' });
+          return {
+            totalLogins: 0,
+            successfulLogins: 0,
+            failedLogins: 0,
+            activeSessions: 0,
+            uniqueIPs: 0,
+            lastLogin: null,
+          };
+        }
+        userIdObj = new mongoose.Types.ObjectId(userId);
+      } else {
+        userIdObj = userId;
+      }
+      
       const [totalLogins, successfulLogins, failedLogins, activeSessions, uniqueIPs] = await Promise.all([
-        LoginHistory.countDocuments({ user_id: userId }),
-        LoginHistory.countDocuments({ user_id: userId, success: true }),
-        LoginHistory.countDocuments({ user_id: userId, success: false }),
+        LoginHistory.countDocuments({ user_id: userIdObj }),
+        LoginHistory.countDocuments({ user_id: userIdObj, success: true }),
+        LoginHistory.countDocuments({ user_id: userIdObj, success: false }),
         Session.countDocuments({ 
-          user_id: userId, 
+          user_id: userIdObj, 
           is_revoked: false,
           expires_at: { $gt: new Date() } // Seulement les sessions non expirées
         }),
-        LoginHistory.distinct('ip_address', { user_id: userId }),
+        LoginHistory.distinct('ip_address', { user_id: userIdObj }),
       ]);
 
       // Dernière connexion
-      const lastLogin = await LoginHistory.findOne({ user_id: userId })
+      const lastLogin = await LoginHistory.findOne({ user_id: userIdObj })
         .sort({ created_at: -1 })
         .lean();
 
