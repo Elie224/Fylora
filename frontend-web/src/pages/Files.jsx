@@ -179,6 +179,16 @@ export default function Files() {
       }
       
       const items = response.data?.data?.items || response.data?.items || [];
+      console.log('📥 Fichiers chargés depuis le serveur:', {
+        totalItems: items.length,
+        items: items.map(item => ({
+          name: item.name,
+          size: item.size,
+          type: item.type,
+          hasSize: item.size !== undefined && item.size !== null && item.size > 0,
+          allKeys: Object.keys(item)
+        }))
+      });
       setItems(items);
     } catch (err) {
       console.error('Failed to load files:', err);
@@ -316,13 +326,27 @@ export default function Files() {
             // Mise à jour optimiste : ajouter le fichier immédiatement à la liste
             if (response?.data?.data) {
               const uploadedFile = response.data.data;
+              console.log('📤 Fichier uploadé - données reçues:', {
+                name: uploadedFile.name,
+                size: uploadedFile.size,
+                type: uploadedFile.type,
+                allKeys: Object.keys(uploadedFile),
+                fullData: uploadedFile
+              });
               uploadedFiles.push(uploadedFile);
               // Ajouter immédiatement à la liste pour feedback instantané
+              const fileToAdd = { ...uploadedFile, type: 'file' };
+              console.log('📤 Fichier à ajouter à la liste:', {
+                name: fileToAdd.name,
+                size: fileToAdd.size,
+                type: fileToAdd.type,
+                hasSize: fileToAdd.size !== undefined && fileToAdd.size !== null && fileToAdd.size > 0
+              });
               setItems(prevItems => {
                 // Vérifier si le fichier n'est pas déjà dans la liste
                 const exists = prevItems.some(item => (item.id || item._id) === (uploadedFile.id || uploadedFile._id));
                 if (exists) return prevItems;
-                return [...prevItems, { ...uploadedFile, type: 'file' }];
+                return [...prevItems, fileToAdd];
               });
             }
             
