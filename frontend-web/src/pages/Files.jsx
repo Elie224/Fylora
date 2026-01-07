@@ -1719,23 +1719,30 @@ export default function Files() {
               </thead>
               <tbody>
                 {items.map((item, index) => {
-                  // S'assurer que le type est bien défini - amélioration de la logique
+                  // S'assurer que le type est bien défini - logique améliorée avec priorité à la taille
                   let itemType = item.type;
-                  if (!itemType) {
-                    // Si pas de type explicite, déterminer par les propriétés
-                    if (item.folder_id === undefined && item.parent_id === undefined) {
-                      // Si ni folder_id ni parent_id, c'est probablement un dossier racine
-                      itemType = 'folder';
-                    } else if (item.folder_id !== null || item.parent_id !== null) {
-                      // Si folder_id ou parent_id existe, c'est un fichier
-                      itemType = 'file';
-                    } else {
-                      // Par défaut, considérer comme fichier si on ne peut pas déterminer
-                      itemType = 'file';
-                    }
+                  
+                  // Si l'élément a une taille définie et > 0, c'est définitivement un fichier
+                  const hasSize = item.size !== undefined && item.size !== null && item.size > 0;
+                  const hasMimeType = item.mimeType !== undefined && item.mimeType !== null && item.mimeType !== '';
+                  
+                  // Priorité 1 : Si taille ou mimeType existe, c'est un fichier
+                  if (hasSize || hasMimeType) {
+                    itemType = 'file';
                   }
-                  // Normaliser le type
-                  itemType = itemType === 'folder' ? 'folder' : 'file';
+                  // Priorité 2 : Si type explicite et valide, l'utiliser
+                  else if (itemType === 'folder' || itemType === 'file') {
+                    // Garder le type tel quel
+                  }
+                  // Priorité 3 : Sinon, déterminer par les propriétés
+                  else {
+                    // Un dossier racine a généralement folder_id === null ET parent_id === null
+                    // Mais c'est peu fiable, donc par défaut considérer comme fichier si on ne peut pas déterminer
+                    itemType = 'file';
+                  }
+                  
+                  // Normaliser le type pour être sûr
+                  itemType = (itemType === 'folder') ? 'folder' : 'file';
                   // S'assurer que l'ID est toujours une string, même si c'est un objet
                   const rawId = item.id || item._id;
                   let itemId;
@@ -1821,6 +1828,8 @@ export default function Files() {
                     <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>{new Date(item.updated_at || item.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {/* Bouton de téléchargement pour les fichiers */}
+                      {/* Afficher si ce n'est pas un dossier OU si l'élément a une taille (indicateur de fichier) */}
                       {itemType !== 'folder' && (
                         <button
                           onClick={async (e) => {
