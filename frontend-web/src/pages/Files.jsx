@@ -1683,7 +1683,8 @@ export default function Files() {
                               }
                               
                               // Obtenir le nom de fichier depuis les headers Content-Disposition pour préserver l'extension
-                              const contentDisposition = response.headers.get('Content-Disposition');
+                              // Avec axios, les headers sont dans response.headers (objet, pas Response)
+                              const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];
                               let finalFileName = item.name || 'download';
                               if (contentDisposition) {
                                 const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
@@ -1698,7 +1699,8 @@ export default function Files() {
                               }
                               
                               // Télécharger le blob avec le nom de fichier original
-                              const blob = await response.blob();
+                              // axios retourne déjà un blob avec responseType: 'blob'
+                              const blob = response.data;
                               const url = window.URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.href = url;
