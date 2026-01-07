@@ -306,6 +306,23 @@ async function login(req, res, next) {
         deviceName: null, 
         expiresIn: config.jwt.refreshExpiresIn 
       });
+      
+      // Enregistrer dans l'historique des connexions
+      try {
+        const securityCenterService = require('../services/securityCenterService');
+        await securityCenterService.recordLogin(
+          utilisateur.id,
+          adresseIP,
+          userAgent,
+          null, // Localisation (peut être ajoutée plus tard via géolocalisation)
+          true,
+          null
+        );
+      } catch (historyErr) {
+        // Ne pas bloquer la connexion si l'enregistrement de l'historique échoue
+        logger.logError(historyErr, { contexte: 'enregistrement_historique_connexion', userId: utilisateur.id });
+      }
+      
       logger.logInfo(`Session créée pour l'utilisateur ${utilisateur.id}`);
     } catch (erreur) {
       logger.logError(erreur, { 

@@ -16,8 +16,11 @@ const SessionSchema = new Schema({
   user_agent: String,
   ip_address: String,
   device_name: String,
+  location: String, // Localisation géographique (peut être null)
+  last_activity: { type: Date, default: Date.now }, // Dernière activité
   is_revoked: { type: Boolean, default: false },
   expires_at: { type: Date, required: true },
+  revoked_at: Date, // Date de révocation
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 const Session = mongoose.models.Session || mongoose.model('Session', SessionSchema);

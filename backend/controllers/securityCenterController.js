@@ -80,18 +80,20 @@ async function revokeSession(req, res, next) {
 async function revokeAllOtherSessions(req, res, next) {
   try {
     const userId = req.user.id;
-    const currentToken = req.headers.authorization?.replace('Bearer ', '');
+    // Le refresh token devrait être envoyé dans le body, pas dans l'Authorization header
+    // Car l'Authorization header contient l'access token, pas le refresh token
+    const { refresh_token } = req.body;
 
-    if (!currentToken) {
-      return next(new AppError('Current token not found', 400));
+    if (!refresh_token) {
+      return next(new AppError('Refresh token not found', 400));
     }
 
-    const revokedCount = await securityCenterService.revokeAllOtherSessions(userId, currentToken);
+    const revokedCount = await securityCenterService.revokeAllOtherSessions(userId, refresh_token);
 
     res.json({
       success: true,
       message: 'All other sessions revoked',
-      revokedCount,
+      data: { revokedCount },
     });
   } catch (err) {
     logger.logError(err, {

@@ -61,7 +61,14 @@ const SecurityCenter = () => {
     }
 
     try {
-      await api.delete('/security/sessions');
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        showToast(t('errorRevokingSessions'), 'error');
+        return;
+      }
+      
+      // Envoyer le refresh_token dans le body de la requête DELETE
+      await api.delete('/security/sessions', { data: { refresh_token: refreshToken } });
       await loadData();
       showToast(t('allOtherSessionsRevoked'), 'success');
     } catch (err) {

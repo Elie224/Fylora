@@ -7,20 +7,10 @@ const logger = require('../utils/logger');
 const UserModel = require('../models/userModel');
 const mongoose = require('mongoose');
 
-// Schéma pour les sessions actives
-const SessionSchema = new mongoose.Schema({
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  token: { type: String, required: true, unique: true },
-  ip_address: { type: String, required: true },
-  user_agent: { type: String },
-  location: { type: String },
-  created_at: { type: Date, default: Date.now },
-  last_activity: { type: Date, default: Date.now },
-  is_revoked: { type: Boolean, default: false },
-  revoked_at: Date,
-}, { timestamps: true });
-
-const Session = mongoose.models.Session || mongoose.model('Session', SessionSchema);
+// Utiliser le modèle Session existant de sessionModel.js
+// Le schéma est défini dans models/sessionModel.js
+const SessionModel = require('../models/sessionModel');
+const Session = mongoose.models.Session || mongoose.model('Session');
 
 // Schéma pour l'historique des connexions
 const LoginHistorySchema = new mongoose.Schema({
@@ -38,17 +28,22 @@ const LoginHistory = mongoose.models.LoginHistory || mongoose.model('LoginHistor
 class SecurityCenterService {
   /**
    * Enregistrer une nouvelle session
+   * Note: Cette méthode est maintenant obsolète car les sessions sont créées via SessionModel.createSession()
+   * Elle est conservée pour compatibilité mais ne devrait plus être appelée directement
    */
-  async recordSession(userId, token, ipAddress, userAgent, location = null) {
+  async recordSession(userId, refreshToken, ipAddress, userAgent, location = null) {
     try {
-      const session = new Session({
-        user_id: userId,
-        token,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-        location,
+      // Mettre à jour la session existante avec la localisation si nécessaire
+      const session = await Session.findOne({ 
+        user_id: userId, 
+        refresh_token: refreshToken 
       });
-      await session.save();
+      
+      if (session && location) {
+        session.location = location;
+        session.last_activity = new Date();
+        await session.save();
+      }
 
       // Enregistrer dans l'historique
       await this.recordLogin(userId, ipAddress, userAgent, location, true);
@@ -154,14 +149,28 @@ class SecurityCenterService {
    */
   async getActiveSessions(userId) {
     try {
+      const mongoose = require('mongoose');
+      const Session = mongoose.models.Session || mongoose.model('Session');
+      
       const sessions = await Session.find({
         user_id: userId,
         is_revoked: false,
+        expires_at: { $gt: new Date() }, // Seulement les sessions non expirées
       })
-        .sort({ last_activity: -1 })
+        .sort({ last_activity: -1, created_at: -1 })
         .lean();
 
-      return sessions;
+      // Formater les sessions pour le frontend
+      return sessions.map(session => ({
+        _id: session._id.toString(),
+        id: session._id.toString(),
+        user_agent: session.user_agent || 'Inconnu',
+        ip_address: session.ip_address || 'Inconnu',
+        location: session.location || null,
+        created_at: session.created_at,
+        last_activity: session.last_activity || session.updated_at || session.created_at,
+        expires_at: session.expires_at,
+      }));
     } catch (err) {
       logger.logError(err, {
         context: 'get_active_sessions',
@@ -210,10 +219,16 @@ class SecurityCenterService {
    */
   async revokeAllOtherSessions(userId, currentToken) {
     try {
+      const mongoose = require('mongoose');
+      const Session = mongoose.models.Session || mongoose.model('Session');
+      
+      // Extraire le refresh token du token Bearer si nécessaire
+      const refreshToken = currentToken.replace('Bearer ', '').trim();
+      
       const result = await Session.updateMany(
         {
           user_id: userId,
-          token: { $ne: currentToken },
+          refresh_token: { $ne: refreshToken }, // Utiliser refresh_token au lieu de token
           is_revoked: false,
         },
         {
@@ -240,10 +255,13 @@ class SecurityCenterService {
   /**
    * Mettre à jour l'activité d'une session
    */
-  async updateSessionActivity(token) {
+  async updateSessionActivity(refreshToken) {
     try {
+      const mongoose = require('mongoose');
+      const Session = mongoose.models.Session || mongoose.model('Session');
+      
       await Session.updateOne(
-        { token, is_revoked: false },
+        { refresh_token: refreshToken, is_revoked: false }, // Utiliser refresh_token
         { last_activity: new Date() }
       );
     } catch (err) {
@@ -256,9 +274,12 @@ class SecurityCenterService {
   /**
    * Vérifier si une session est révoquée
    */
-  async isSessionRevoked(token) {
+  async isSessionRevoked(refreshToken) {
     try {
-      const session = await Session.findOne({ token });
+      const mongoose = require('mongoose');
+      const Session = mongoose.models.Session || mongoose.model('Session');
+      
+      const session = await Session.findOne({ refresh_token: refreshToken }); // Utiliser refresh_token
       return session ? session.is_revoked : true;
     } catch (err) {
       logger.logError(err, {
@@ -273,11 +294,18 @@ class SecurityCenterService {
    */
   async getSecurityStats(userId) {
     try {
+      const mongoose = require('mongoose');
+      const Session = mongoose.models.Session || mongoose.model('Session');
+      
       const [totalLogins, successfulLogins, failedLogins, activeSessions, uniqueIPs] = await Promise.all([
         LoginHistory.countDocuments({ user_id: userId }),
         LoginHistory.countDocuments({ user_id: userId, success: true }),
         LoginHistory.countDocuments({ user_id: userId, success: false }),
-        Session.countDocuments({ user_id: userId, is_revoked: false }),
+        Session.countDocuments({ 
+          user_id: userId, 
+          is_revoked: false,
+          expires_at: { $gt: new Date() } // Seulement les sessions non expirées
+        }),
         LoginHistory.distinct('ip_address', { user_id: userId }),
       ]);
 
@@ -287,11 +315,11 @@ class SecurityCenterService {
         .lean();
 
       return {
-        totalLogins,
-        successfulLogins,
-        failedLogins,
-        activeSessions,
-        uniqueIPs: uniqueIPs.length,
+        totalLogins: totalLogins || 0,
+        successfulLogins: successfulLogins || 0,
+        failedLogins: failedLogins || 0,
+        activeSessions: activeSessions || 0,
+        uniqueIPs: uniqueIPs ? uniqueIPs.length : 0,
         lastLogin: lastLogin ? {
           date: lastLogin.created_at,
           ip: lastLogin.ip_address,
