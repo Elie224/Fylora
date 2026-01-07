@@ -29,7 +29,10 @@ Supabase Storage est **beaucoup plus simple** à configurer que AWS S3 :
 1. Dans votre projet Supabase, allez dans **Storage** (menu de gauche)
 2. Cliquez sur **"New bucket"**
 3. Nom du bucket : `fylora-files`
-4. **Public bucket** : Désactivé (pour la sécurité)
+4. **Public bucket** : **Désactivé** ✅ (recommandé pour la sécurité)
+   - Le bucket doit être **PRIVÉ** (pas public)
+   - Le code utilise des URLs signées qui fonctionnent avec les buckets privés
+   - C'est plus sécurisé car seuls les utilisateurs autorisés peuvent accéder aux fichiers
 5. Cliquez sur **"Create bucket"**
 
 ### Étape 3 : Obtenir les clés API

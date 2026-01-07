@@ -1977,14 +1977,18 @@ async function servePublicPreview(req, res, next) {
       });
     }
     
-    // Si c'est un fichier Supabase, générer une URL pour la prévisualisation publique
+    // Si c'est un fichier Supabase, générer une URL signée pour la prévisualisation publique
     if (storageType === 'supabase') {
       const supabaseStorage = require('../services/supabaseStorageService');
       if (supabaseStorage.isSupabaseConfigured()) {
         try {
-          const previewUrl = supabaseStorage.generatePreviewUrl(file.file_path);
+          // Générer une URL signée (fonctionne avec buckets privés)
+          const previewUrl = await supabaseStorage.generatePreviewUrl(
+            file.file_path,
+            15 * 60 // 15 minutes
+          );
           
-          // Rediriger vers l'URL Supabase
+          // Rediriger vers l'URL signée Supabase
           return res.redirect(previewUrl);
         } catch (supabaseErr) {
           logger.logError(supabaseErr, {

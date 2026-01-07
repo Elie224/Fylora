@@ -149,11 +149,12 @@ async function generateDownloadUrl(fileKey, expiresIn = 3600) {
 }
 
 /**
- * Générer une URL publique pour prévisualisation
+ * Générer une URL signée pour prévisualisation (fonctionne avec buckets privés)
  * @param {string} fileKey - Clé du fichier
- * @returns {string} URL publique
+ * @param {number} expiresIn - Durée de validité en secondes (défaut: 3600)
+ * @returns {Promise<string>} URL signée
  */
-function generatePreviewUrl(fileKey) {
+async function generatePreviewUrl(fileKey, expiresIn = 3600) {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase not configured');
   }
@@ -161,11 +162,16 @@ function generatePreviewUrl(fileKey) {
   const bucket = process.env.SUPABASE_BUCKET || 'fylora-files';
 
   try {
-    const { data } = supabaseClient.storage
+    // Utiliser createSignedUrl pour supporter les buckets privés (plus sécurisé)
+    const { data, error } = await supabaseClient.storage
       .from(bucket)
-      .getPublicUrl(fileKey);
+      .createSignedUrl(fileKey, expiresIn);
 
-    return data.publicUrl;
+    if (error) {
+      throw error;
+    }
+
+    return data.signedUrl;
   } catch (error) {
     logger.logError(error, {
       context: 'supabase_preview_url',
