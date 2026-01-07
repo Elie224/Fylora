@@ -32,8 +32,10 @@ S3_ENDPOINT=https://votre-endpoint.com  # Laissez vide pour AWS S3 standard
 
 ### 1. Créer un bucket S3 sur AWS
 
+**Lien direct vers S3 Console :** https://console.aws.amazon.com/s3/
+
 1. Connectez-vous à [AWS Console](https://console.aws.amazon.com/)
-2. Allez dans **S3** → **Create bucket**
+2. Allez dans **S3** → **Create bucket** (ou utilisez le lien direct ci-dessus)
 3. Choisissez un nom unique (ex: `fylora-files`)
 4. Sélectionnez une région (ex: `us-east-1`)
 5. Désactivez **Block all public access** (ou configurez selon vos besoins)
@@ -41,11 +43,20 @@ S3_ENDPOINT=https://votre-endpoint.com  # Laissez vide pour AWS S3 standard
 
 ### 2. Créer un utilisateur IAM avec accès S3
 
-1. Allez dans **IAM** → **Users** → **Create user**
+**Lien direct vers IAM Console :** https://console.aws.amazon.com/iam/
+
+1. Allez dans **IAM** → **Users** → **Create user** (ou utilisez le lien direct ci-dessus)
 2. Nommez l'utilisateur (ex: `fylora-s3-user`)
 3. Attachez la politique `AmazonS3FullAccess` (ou créez une politique personnalisée plus restrictive)
 4. Créez l'utilisateur
 5. **Important** : Notez l'**Access Key ID** et le **Secret Access Key** (affichés une seule fois)
+   
+   **Pour créer les Access Keys :**
+   - Cliquez sur l'utilisateur créé
+   - Onglet **Security credentials**
+   - **Create access key**
+   - Choisissez **Application running outside AWS**
+   - Copiez l'**Access Key ID** et le **Secret Access Key** (affichés une seule fois !)
 
 ### 3. Configurer les variables sur Render
 
