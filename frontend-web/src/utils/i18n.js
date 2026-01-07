@@ -182,6 +182,7 @@ const translations = {
     no: 'Non',
     mustBeConnected: 'Vous devez être connecté pour télécharger',
     downloadError: 'Erreur lors du téléchargement',
+    downloadStarted: 'Téléchargement démarré',
     renameError: 'Erreur lors du renommage',
     createFolderError: 'Erreur lors de la création du dossier',
     loadError: 'Erreur lors du chargement',
