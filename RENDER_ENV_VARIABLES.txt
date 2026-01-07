@@ -1,0 +1,61 @@
+==========================================
+VARIABLES D'ENVIRONNEMENT POUR RENDER
+==========================================
+
+Ajoutez ces 3 variables dans Render, une par une :
+
+------------------------------------------
+VARIABLE 1
+------------------------------------------
+KEY (Nom de la variable) :
+SUPABASE_URL
+
+VALUE (Valeur) :
+https://vajplmdfwwczsksfngrs.supabase.co
+
+------------------------------------------
+VARIABLE 2
+------------------------------------------
+KEY (Nom de la variable) :
+SUPABASE_SERVICE_ROLE_KEY
+
+VALUE (Valeur) :
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhanBsbWRmd3djenNrc2ZuZ3JzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc3NTM0NCwiZXhwIjoyMDgzMzUxMzQ0fQ.0d-TPrrSeVo0l0X401ItgesD2CmW9SKyW6nYQ62AI28
+
+------------------------------------------
+VARIABLE 3
+------------------------------------------
+KEY (Nom de la variable) :
+SUPABASE_BUCKET
+
+VALUE (Valeur) :
+fylora-files
+
+==========================================
+ÉTAPES DÉTAILLÉES
+==========================================
+
+1. Allez sur https://dashboard.render.com/
+2. Cliquez sur votre service backend (fylora-1 ou similaire)
+3. Dans le menu de gauche, cliquez sur "Environment"
+4. Cliquez sur le bouton "Add Environment Variable"
+5. Pour chaque variable :
+   a. Collez le KEY dans le champ "Key"
+   b. Collez le VALUE dans le champ "Value"
+   c. Cliquez sur "Save Changes"
+6. Répétez pour les 3 variables
+7. Une fois les 3 variables ajoutées, allez dans "Events" ou "Manual Deploy"
+8. Cliquez sur "Restart" ou "Deploy latest commit" pour redémarrer
+
+==========================================
+VÉRIFICATION
+==========================================
+
+Après redémarrage, dans les logs, vous devriez voir :
+
+✅ Supabase storage service initialized
+  url: https://vajplmdfwwczsksfngrs.supabase.co
+  bucket: fylora-files
+
+Si vous voyez ce message, c'est bon !
+
