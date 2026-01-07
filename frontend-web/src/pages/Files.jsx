@@ -1479,8 +1479,8 @@ export default function Files() {
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* FORCER l'affichage : afficher si l'élément a une taille (indicateur fiable de fichier) OU si le type n'est pas 'folder' */}
-                    {((item.size !== undefined && item.size !== null && item.size > 0) || itemType !== 'folder') && (
+                    {/* FORCER l'affichage : afficher si l'élément a une taille (fichier) OU si item.type n'est pas 'folder' */}
+                    {((item.size !== undefined && item.size !== null && item.size > 0) || (item.type !== 'folder' && item.type !== undefined)) && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -1751,6 +1751,17 @@ export default function Files() {
                     itemType = 'file';
                   }
                   
+                  // DEBUG: Log pour vérifier les données de l'élément
+                  if (item.size && item.size > 0) {
+                    console.log('📄 Fichier détecté:', {
+                      name: item.name,
+                      size: item.size,
+                      type: item.type,
+                      itemType: itemType,
+                      shouldShowDownload: (item.size > 0) || (item.type !== 'folder' && item.type !== undefined)
+                    });
+                  }
+                  
                   // S'assurer que l'ID est toujours une string, même si c'est un objet
                   const rawId = item.id || item._id;
                   let itemId;
@@ -1837,9 +1848,9 @@ export default function Files() {
                     <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {/* Bouton de téléchargement pour les fichiers */}
-                      {/* FORCER l'affichage : afficher si l'élément a une taille (indicateur fiable de fichier) */}
-                      {/* OU si le type n'est pas 'folder' (fallback si pas de taille) */}
-                      {((item.size !== undefined && item.size !== null && item.size > 0) || itemType !== 'folder') && (
+                      {/* FORCER l'affichage : afficher si l'élément a une taille (fichier) OU si item.type n'est pas 'folder' */}
+                      {/* Utiliser item.type directement du backend plutôt que itemType calculé */}
+                      {((item.size !== undefined && item.size !== null && item.size > 0) || (item.type !== 'folder' && item.type !== undefined)) && (
                         <button
                           onClick={async (e) => {
                             e.preventDefault();
