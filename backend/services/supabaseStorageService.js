@@ -22,9 +22,9 @@ let isConfigured = false;
 function initSupabase() {
   const supabaseUrl = process.env.SUPABASE_URL;
   // Essayer service_role (legacy) ou secret key (nouvelle), mais PAS anon
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                      process.env.SUPABASE_SECRET_KEY || 
-                      process.env.SUPABASE_KEY;
+  let supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                    process.env.SUPABASE_SECRET_KEY || 
+                    process.env.SUPABASE_KEY;
   const bucketName = process.env.SUPABASE_BUCKET || 'fylora-files';
 
   if (!supabaseUrl || !supabaseKey) {
@@ -32,8 +32,16 @@ function initSupabase() {
     return null;
   }
 
+  // Nettoyer la clé (enlever les espaces, retours à la ligne, etc.)
+  supabaseKey = supabaseKey.trim().replace(/\n/g, '').replace(/\r/g, '');
+
   try {
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
     isConfigured = true;
     
     logger.logInfo('Supabase storage service initialized', {
