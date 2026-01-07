@@ -1226,14 +1226,44 @@ async function previewFile(req, res, next) {
         uploadDir: config.upload.uploadDir
       });
       
+      // Vérifier si c'est un fichier Supabase qui n'a pas été trouvé localement
+      if (storageType === 'supabase') {
+        // Le fichier devrait être sur Supabase, pas sur le disque local
+        const supabaseStorage = require('../services/supabaseStorageService');
+        if (supabaseStorage.isSupabaseConfigured()) {
+          try {
+            // Essayer de générer une URL Supabase
+            const previewUrl = await supabaseStorage.generatePreviewUrl(
+              file.file_path,
+              15 * 60 // 15 minutes
+            );
+            
+            res.setHeader('Content-Type', 'application/json');
+            return res.json({ 
+              url: previewUrl, 
+              type: 'supabase',
+              mimeType: file.mime_type
+            });
+          } catch (supabaseErr) {
+            logger.logError(supabaseErr, {
+              context: 'supabase_preview_orphan',
+              fileId: id,
+              supabaseKey: file.file_path
+            });
+            // Continuer vers le message d'erreur orphelin
+          }
+        }
+      }
+      
       return res.status(404).json({ 
         error: { 
-          message: 'File not found on disk',
-          details: 'The file record exists in the database but the physical file is missing. This can happen if the file was manually deleted or if the server was restarted and temporary files were lost.',
-          suggestion: 'This file will be automatically cleaned up by the orphan cleanup service. You can also delete it manually from your file list.',
+          message: 'Fichier introuvable',
+          details: 'Le fichier existe dans la base de données mais le fichier physique est manquant. Cela peut arriver si le fichier a été supprimé manuellement ou si le serveur a été redémarré et que les fichiers temporaires ont été perdus (stockage éphémère).',
+          suggestion: 'Ce fichier sera automatiquement nettoyé par le service de nettoyage. Vous pouvez également le supprimer manuellement de votre liste de fichiers. Pour éviter ce problème à l\'avenir, assurez-vous que Supabase est configuré pour un stockage persistant.',
           fileId: id,
           fileName: file.name,
-          isOrphan: true
+          isOrphan: true,
+          storageType: storageType
         } 
       });
     }

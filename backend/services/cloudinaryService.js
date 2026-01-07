@@ -31,8 +31,8 @@ function initCloudinary() {
   return true;
 }
 
-// Initialiser au chargement
-initCloudinary();
+// Initialiser au chargement (désactivé - on utilise Supabase maintenant)
+// initCloudinary(); // Désactivé - Supabase est utilisé à la place
 
 /**
  * Uploader un fichier vers Cloudinary
