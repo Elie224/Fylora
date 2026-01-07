@@ -1843,8 +1843,10 @@ async function servePublicPreview(req, res, next) {
       return res.status(404).json({ error: { message: 'File has been deleted' } });
     }
 
-    // Vérifier si le fichier est sur Cloudinary (non supporté)
+    // Vérifier le type de stockage
     const storageType = file.storage_type || 'local';
+    
+    // Si le fichier est marqué comme Cloudinary, retourner une erreur
     if (storageType === 'cloudinary' || (file.file_path && file.file_path.startsWith('fylora/'))) {
       return res.status(410).json({ 
         error: { 
@@ -1853,6 +1855,32 @@ async function servePublicPreview(req, res, next) {
           fileName: file.name
         } 
       });
+    }
+    
+    // Si c'est un fichier S3, générer une URL signée pour la prévisualisation publique
+    if (storageType === 's3' || storageType === 'minio') {
+      const storageService = require('../services/storageService');
+      if (storageService.isStorageConfigured()) {
+        try {
+          const previewData = await storageService.generatePreviewUrl(
+            file.file_path,
+            file.mime_type,
+            60 // 60 minutes pour les URLs publiques
+          );
+          
+          // Rediriger vers l'URL signée S3
+          return res.redirect(previewData.previewUrl);
+        } catch (s3Err) {
+          logger.logError(s3Err, {
+            context: 's3_public_preview',
+            fileId: tokenData.fileId,
+            s3Key: file.file_path
+          });
+          return res.status(500).json({ 
+            error: { message: 'Failed to generate preview URL' } 
+          });
+        }
+      }
     }
 
     // Pour les fichiers locaux, servir le fichier
