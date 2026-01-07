@@ -59,6 +59,10 @@ async function revokeSession(req, res, next) {
     const userId = req.user.id;
     const { sessionId } = req.params;
 
+    if (!sessionId) {
+      return next(new AppError('Session ID is required', 400));
+    }
+
     await securityCenterService.revokeSession(sessionId, userId);
 
     res.json({
@@ -69,7 +73,14 @@ async function revokeSession(req, res, next) {
     logger.logError(err, {
       context: 'revoke_session',
       userId: req.user?.id,
+      sessionId: req.params?.sessionId,
     });
+    
+    // Retourner un message d'erreur plus spécifique
+    if (err.message && (err.message.includes('not found') || err.message.includes('Invalid'))) {
+      return next(new AppError(err.message, 404));
+    }
+    
     next(new AppError('Failed to revoke session', 500));
   }
 }

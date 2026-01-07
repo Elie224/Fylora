@@ -204,37 +204,64 @@ class SecurityCenterService {
       const mongoose = require('mongoose');
       const Session = mongoose.models.Session || mongoose.model('Session');
       
-      const sessionIdObj = mongoose.Types.ObjectId.isValid(sessionId) 
-        ? new mongoose.Types.ObjectId(sessionId) 
-        : sessionId;
-      const userIdObj = mongoose.Types.ObjectId.isValid(userId) 
-        ? new mongoose.Types.ObjectId(userId) 
-        : userId;
+      // Valider les IDs
+      if (!sessionId) {
+        throw new Error('Session ID is required');
+      }
       
+      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        throw new Error('Invalid session ID format');
+      }
+      
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new Error('Invalid user ID format');
+      }
+      
+      const sessionIdObj = new mongoose.Types.ObjectId(sessionId);
+      const userIdObj = new mongoose.Types.ObjectId(userId);
+      
+      // Vérifier que la session existe et appartient à l'utilisateur
       const session = await Session.findOne({
         _id: sessionIdObj,
         user_id: userIdObj,
-      });
+      }).lean();
 
       if (!session) {
-        throw new Error('Session not found');
+        throw new Error('Session not found or does not belong to this user');
       }
 
-      session.is_revoked = true;
-      session.revoked_at = new Date();
-      await session.save();
+      // Révoquer la session en utilisant updateOne directement
+      const result = await Session.updateOne(
+        {
+          _id: sessionIdObj,
+          user_id: userIdObj,
+        },
+        {
+          $set: {
+            is_revoked: true,
+            revoked_at: new Date(),
+          }
+        }
+      );
 
-      logger.logInfo('Session revoked', {
+      if (result.matchedCount === 0) {
+        throw new Error('Session not found or does not belong to this user');
+      }
+
+      logger.logInfo('Session revoked successfully', {
         sessionId,
         userId,
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
       });
 
-      return session;
+      return { success: true, sessionId, userId };
     } catch (err) {
       logger.logError(err, {
         context: 'revoke_session',
         sessionId,
         userId,
+        errorMessage: err.message,
       });
       throw err;
     }

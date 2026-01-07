@@ -56,18 +56,26 @@ const SecurityCenter = () => {
   };
 
   const handleRevokeSession = async (sessionId) => {
+    if (!sessionId) {
+      showToast(t('errorRevokingSession'), 'error');
+      return;
+    }
+
     const confirmed = await confirm(t('confirmRevokeSession'));
     if (!confirmed) {
       return;
     }
 
     try {
-      await api.delete(`/security/sessions/${sessionId}`);
+      console.log('Revoking session:', sessionId);
+      const response = await api.delete(`/security/sessions/${sessionId}`);
+      console.log('Revoke response:', response);
       await loadData();
       showToast(t('sessionRevoked'), 'success');
     } catch (err) {
       console.error('Failed to revoke session:', err);
-      showToast(err.response?.data?.error?.message || t('errorRevokingSession'), 'error');
+      const errorMessage = err.response?.data?.error?.message || err.message || t('errorRevokingSession');
+      showToast(errorMessage, 'error');
     }
   };
 
