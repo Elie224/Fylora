@@ -931,24 +931,46 @@ async function downloadFile(req, res, next) {
     
     // IMPORTANT: Si pas de token de partage ET pas d'utilisateur authentifié, exiger l'authentification
     // Vérifier si l'Authorization header est présent même si req.user n'est pas défini
-    const hasAuthHeader = req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
+    const authHeader = req.headers.authorization;
+    const hasAuthHeader = authHeader && authHeader.startsWith('Bearer ');
+    const authToken = hasAuthHeader ? authHeader.split(' ')[1] : null;
+    
+    // Si pas de token de partage ET pas d'utilisateur authentifié ET pas de header Authorization
     if (!token && !req.user && !hasAuthHeader) {
       logger.logWarn('Download request without authentication or share token', {
         fileId: id,
-        hasAuthHeader: !!req.headers.authorization,
-        authHeaderValue: req.headers.authorization ? 'present' : 'missing'
+        hasAuthHeader: false,
+        authHeaderValue: 'missing'
       });
       return res.status(401).json({ error: { message: 'Authentication required or share token required' } });
     }
     
     // Si l'Authorization header est présent mais req.user n'est pas défini, 
-    // c'est que le token est invalide ou expiré
+    // c'est que le token est invalide ou expiré - essayer de le vérifier manuellement
     if (hasAuthHeader && !req.user && !token) {
-      logger.logWarn('Download request with invalid or expired token', {
-        fileId: id,
-        hasAuthHeader: true
-      });
-      return res.status(401).json({ error: { message: 'Invalid or expired authentication token' } });
+      try {
+        const jwt = require('jsonwebtoken');
+        const config = require('../config');
+        const decoded = jwt.verify(authToken, config.jwt.secret, { algorithms: ['HS256'] });
+        req.user = decoded; // Définir req.user si le token est valide
+        logger.logInfo('Token verified manually in download', {
+          fileId: id,
+          userId: decoded.id || decoded._id
+        });
+      } catch (jwtErr) {
+        logger.logWarn('Download request with invalid or expired token', {
+          fileId: id,
+          hasAuthHeader: true,
+          error: jwtErr.message
+        });
+        return res.status(401).json({ 
+          error: { 
+            message: jwtErr.name === 'TokenExpiredError' 
+              ? 'Your session has expired. Please refresh your token.' 
+              : 'Invalid or expired authentication token' 
+          } 
+        });
+      }
     }
     
     // Logger pour déboguer (toujours logger en production pour diagnostiquer)
