@@ -8,7 +8,7 @@ const FileSchema = new Schema({
   folder_id: { type: Schema.Types.ObjectId, ref: 'Folder', required: true },
   owner_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   file_path: { type: String, required: true, unique: true },
-  storage_type: { type: String, enum: ['local', 'cloudinary', 's3'], default: 'local' },
+  storage_type: { type: String, enum: ['local', 'cloudinary', 's3', 'minio', 'supabase'], default: 'local' },
   is_deleted: { type: Boolean, default: false },
   deleted_at: Date,
   // Champs pour les limitations
