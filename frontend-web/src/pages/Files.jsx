@@ -1053,33 +1053,157 @@ export default function Files() {
       </div>
 
       {showNewFolder && (
-        <div style={{ marginBottom: 16, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
+        <div style={{ 
+          marginBottom: 16, 
+          padding: 16, 
+          border: `1px solid ${borderColor}`, 
+          borderRadius: 12,
+          backgroundColor: cardBg,
+          boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
+        }}>
           <input
             type="text"
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
             placeholder={t('folderName')}
             onKeyPress={(e) => e.key === 'Enter' && createFolder()}
-            style={{ padding: 8, width: 300, marginRight: 8 }}
+            style={{ 
+              padding: 10, 
+              width: 300, 
+              marginRight: 8,
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor,
+              border: `1px solid ${borderColor}`,
+              borderRadius: 8,
+              fontSize: '14px'
+            }}
           />
-          <button onClick={createFolder} style={{ padding: '8px 16px', marginRight: 8 }}>{t('create')}</button>
-          <button onClick={() => { setShowNewFolder(false); setNewFolderName(''); }}>{t('cancel')}</button>
+          <button 
+            onClick={createFolder} 
+            style={{ 
+              padding: '10px 20px', 
+              marginRight: 8,
+              backgroundColor: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 4px rgba(33, 150, 243, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#1976D2';
+              e.target.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#2196F3';
+              e.target.style.boxShadow = '0 2px 4px rgba(33, 150, 243, 0.3)';
+            }}
+          >
+            {t('create')}
+          </button>
+          <button 
+            onClick={() => { setShowNewFolder(false); setNewFolderName(''); }} 
+            style={{ 
+              padding: '10px 20px',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor,
+              border: `1px solid ${borderColor}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+            }}
+          >
+            {t('cancel')}
+          </button>
         </div>
       )}
 
       {editingItem && (
-        <div style={{ marginBottom: 16, padding: 16, border: '1px solid #ddd', borderRadius: 4, backgroundColor: '#fff9c4' }}>
+        <div style={{ 
+          marginBottom: 16, 
+          padding: 16, 
+          border: `1px solid ${borderColor}`, 
+          borderRadius: 12, 
+          backgroundColor: cardBg,
+          boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)'
+        }}>
           <input
             type="text"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             placeholder={t('renameItem')}
             onKeyPress={(e) => e.key === 'Enter' && renameItem()}
-            style={{ padding: 8, width: 300, marginRight: 8 }}
+            style={{ 
+              padding: 10, 
+              width: 300, 
+              marginRight: 8,
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor,
+              border: `1px solid ${borderColor}`,
+              borderRadius: 8,
+              fontSize: '14px'
+            }}
             autoFocus
           />
-          <button onClick={renameItem} style={{ padding: '8px 16px', marginRight: 8 }}>{t('rename')}</button>
-          <button onClick={() => { setEditingItem(null); setEditName(''); }}>{t('cancel')}</button>
+          <button 
+            onClick={renameItem} 
+            style={{ 
+              padding: '10px 20px', 
+              marginRight: 8,
+              backgroundColor: '#FF9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 4px rgba(255, 152, 0, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f57c00';
+              e.target.style.boxShadow = '0 4px 8px rgba(255, 152, 0, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#FF9800';
+              e.target.style.boxShadow = '0 2px 4px rgba(255, 152, 0, 0.3)';
+            }}
+          >
+            {t('rename')}
+          </button>
+          <button 
+            onClick={() => { setEditingItem(null); setEditName(''); }} 
+            style={{ 
+              padding: '10px 20px',
+              backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+              color: textColor,
+              border: `1px solid ${borderColor}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = theme === 'dark' ? '#3d3d3d' : '#f5f5f5';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#ffffff';
+            }}
+          >
+            {t('cancel')}
+          </button>
         </div>
       )}
 
