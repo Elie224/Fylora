@@ -205,7 +205,8 @@ export default function Login() {
                   boxSizing: 'border-box',
                   backgroundColor: inputBg,
                   color: textColor,
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  outline: 'none'
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = primaryColor;
@@ -220,27 +221,40 @@ export default function Login() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPassword(!showPassword);
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 style={{
                   position: 'absolute',
-                  right: '12px',
+                  right: '8px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  background: 'none',
+                  background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
                   color: textSecondary,
                   fontSize: '18px',
-                  padding: '4px',
+                  padding: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'color 0.2s'
+                  transition: 'color 0.2s',
+                  zIndex: 2,
+                  outline: 'none',
+                  minWidth: '32px',
+                  minHeight: '32px'
                 }}
                 onMouseEnter={(e) => e.target.style.color = textColor}
                 onMouseLeave={(e) => e.target.style.color = textSecondary}
                 disabled={loading}
                 tabIndex={-1}
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
