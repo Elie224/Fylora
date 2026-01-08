@@ -84,7 +84,7 @@ export default function Signup() {
     const countryName = country ? country.name : countryCode;
 
     try {
-      const result = await signup(email, password, firstName, lastName, null, countryName);
+      const result = await signup(email, password, firstName, lastName, undefined, countryName);
       
       if (result.success) {
         navigate('/dashboard');

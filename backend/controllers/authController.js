@@ -84,7 +84,7 @@ async function signup(req, res, next) {
         passwordHash: motDePasseHache,
         first_name: firstName,
         last_name: lastName,
-        phone: phone,
+        phone: phone || null,
         country: country,
         display_name: `${firstName} ${lastName}`.trim(),
         plan: 'free',

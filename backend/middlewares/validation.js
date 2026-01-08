@@ -185,10 +185,19 @@ const signupSchema = [
     .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/)
     .withMessage('lastName can only contain letters, spaces, hyphens, and apostrophes'),
   body('phone')
-    .optional()
-    .trim()
-    .matches(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/)
-    .withMessage('phone must be a valid phone number'),
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      // Si phone est null, undefined ou chaîne vide, c'est OK
+      if (!value || value === null || value === '' || value === 'null' || value === 'undefined') {
+        return true;
+      }
+      // Si phone est fourni, il doit respecter le format
+      const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+      if (!phoneRegex.test(String(value).trim())) {
+        throw new Error('phone must be a valid phone number');
+      }
+      return true;
+    }),
   body('country')
     .trim()
     .notEmpty()
