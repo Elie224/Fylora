@@ -98,11 +98,17 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       
       if (!refreshToken) {
-        // Pas de refresh token - nettoyer et rediriger
+        // Pas de refresh token - nettoyer complètement et rediriger
         processQueue(error, null);
         isRefreshing = false;
+        
+        // NETTOYER COMPLÈTEMENT TOUS LES STORAGES
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('auth-storage');
         
         // Utiliser un événement personnalisé pour éviter les problèmes de navigation
         window.dispatchEvent(new CustomEvent('auth:logout'));
@@ -129,11 +135,17 @@ apiClient.interceptors.response.use(
         
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // Refresh échoué - nettoyer et rediriger
+        // Refresh échoué - nettoyer complètement et rediriger
         processQueue(refreshError, null);
         isRefreshing = false;
+        
+        // NETTOYER COMPLÈTEMENT TOUS LES STORAGES
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('auth-storage');
         
         // Utiliser un événement personnalisé pour éviter les problèmes de navigation
         window.dispatchEvent(new CustomEvent('auth:logout'));

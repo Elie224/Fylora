@@ -38,7 +38,17 @@ const SessionModel = {
   },
 
   async revokeByToken(token) {
-    return Session.findOneAndUpdate({ refresh_token: token }, { is_revoked: true }, { new: true }).lean();
+    const result = await Session.findOneAndUpdate(
+      { refresh_token: token },
+      { 
+        $set: { 
+          is_revoked: true,
+          revoked_at: new Date()
+        }
+      },
+      { new: true }
+    );
+    return result ? result.toObject() : null;
   },
 
   async rotateToken(oldToken, newToken, expiresIn = '7d') {

@@ -14,10 +14,26 @@ const useAuthStore = create(
       // Inscription
       signup: async (email, password, firstName, lastName, phone, country) => {
         set({ loading: true, error: null });
+        
+        // NETTOYER COMPLÈTEMENT L'ANCIEN COMPTE AVANT L'INSCRIPTION
+        // Supprimer tous les tokens et données de l'ancien utilisateur
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
+        
+        // Réinitialiser complètement le state
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          error: null,
+        });
+        
         try {
           const response = await authService.signup(email, password, firstName, lastName, phone, country);
           const { user, access_token, refresh_token } = response.data.data;
           
+          // Charger les nouvelles données utilisateur
           set({
             user,
             accessToken: access_token,
@@ -26,7 +42,7 @@ const useAuthStore = create(
             error: null,
           });
 
-          // Sauvegarder les tokens dans localStorage
+          // Sauvegarder les nouveaux tokens dans localStorage
           localStorage.setItem('access_token', access_token);
           localStorage.setItem('refresh_token', refresh_token);
 
@@ -51,7 +67,7 @@ const useAuthStore = create(
             errorMessage = err.message;
           }
           
-          set({ loading: false, error: errorMessage });
+          set({ loading: false, error: errorMessage, user: null, accessToken: null, refreshToken: null });
           return { success: false, error: errorMessage };
         }
       },
@@ -85,27 +101,46 @@ const useAuthStore = create(
 
       // Déconnexion
       logout: async () => {
-        const { refreshToken } = get();
+        const { refreshToken, accessToken } = get();
         
         // Appeler l'API de déconnexion si on a un refresh token
         if (refreshToken) {
           try {
+            // Utiliser accessToken pour l'authentification si disponible
             await authService.logout(refreshToken);
           } catch (err) {
-            console.error('Logout error:', err);
+            console.error('Logout API error:', err);
+            // Continuer même si l'API échoue pour s'assurer que la déconnexion locale fonctionne
           }
         }
 
-        // Nettoyer le state et localStorage
+        // NETTOYER COMPLÈTEMENT LE STATE ET LE STORAGE
+        // Réinitialiser le state
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           error: null,
+          loading: false,
         });
 
+        // Supprimer tous les tokens du localStorage
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        
+        // Supprimer le storage Zustand persisté pour s'assurer qu'aucune donnée ne reste
+        try {
+          localStorage.removeItem('auth-storage');
+          // Vider aussi sessionStorage au cas où
+          sessionStorage.removeItem('auth-storage');
+          sessionStorage.removeItem('access_token');
+          sessionStorage.removeItem('refresh_token');
+        } catch (e) {
+          console.error('Error clearing storage:', e);
+        }
+        
+        // Forcer le nettoyage du state Zustand en vidant complètement
+        // Le persist middleware se réinitialisera automatiquement
       },
 
       // Mettre à jour les informations utilisateur
