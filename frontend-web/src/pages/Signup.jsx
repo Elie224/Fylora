@@ -225,8 +225,6 @@ export default function Signup() {
               value={countryCode}
               onChange={(e) => {
                 setCountryCode(e.target.value);
-                setPhoneError('');
-                setPhone(''); // Réinitialiser le téléphone quand on change de pays
               }}
               style={{
                 width: '100%',
