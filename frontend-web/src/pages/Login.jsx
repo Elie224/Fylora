@@ -7,7 +7,6 @@ import { useTheme } from '../contexts/ThemeContext';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
@@ -190,92 +189,37 @@ export default function Login() {
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('password')}
             </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                style={{
-                  width: '100%',
-                  padding: '12px 48px 12px 12px',
-                  border: `1px solid ${borderColor}`,
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                  backgroundColor: inputBg,
-                  color: textColor,
-                  transition: 'all 0.2s',
-                  outline: 'none',
-                  WebkitAppearance: 'none',
-                  appearance: 'none',
-                  touchAction: 'manipulation'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = primaryColor;
-                  e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = borderColor;
-                  e.target.style.boxShadow = 'none';
-                }}
-                required
-                disabled={loading}
-                autoComplete="off"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowPassword(!showPassword);
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowPassword(!showPassword);
-                }}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: textSecondary,
-                  fontSize: '18px',
-                  padding: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color 0.2s',
-                  zIndex: 2,
-                  outline: 'none',
-                  minWidth: '32px',
-                  minHeight: '32px',
-                  touchAction: 'none',
-                  WebkitTouchCallout: 'none',
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => e.target.style.color = textColor}
-                onMouseLeave={(e) => e.target.style.color = textSecondary}
-                disabled={loading}
-                tabIndex={-1}
-                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-              >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
-            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '16px',
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s',
+                outline: 'none',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                touchAction: 'manipulation'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+              disabled={loading}
+            />
           </div>
 
           <button
