@@ -251,7 +251,7 @@ export default function Signup() {
             >
               {countries.map(country => (
                 <option key={country.code} value={country.code}>
-                  {country.name} ({country.phoneCode})
+                  {country.name}
                 </option>
               ))}
             </select>
@@ -311,7 +311,10 @@ export default function Signup() {
                   backgroundColor: inputBg,
                   color: textColor,
                   transition: 'all 0.2s',
-                  outline: 'none'
+                  outline: 'none',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  touchAction: 'manipulation'
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = primaryColor;
@@ -323,6 +326,7 @@ export default function Signup() {
                 }}
                 required
                 disabled={loading}
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -334,6 +338,15 @@ export default function Signup() {
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPassword(!showPassword);
                 }}
                 style={{
                   position: 'absolute',
@@ -353,7 +366,11 @@ export default function Signup() {
                   zIndex: 2,
                   outline: 'none',
                   minWidth: '32px',
-                  minHeight: '32px'
+                  minHeight: '32px',
+                  touchAction: 'none',
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none'
                 }}
                 onMouseEnter={(e) => e.target.style.color = textColor}
                 onMouseLeave={(e) => e.target.style.color = textSecondary}
@@ -389,7 +406,10 @@ export default function Signup() {
                   backgroundColor: inputBg,
                   color: textColor,
                   transition: 'all 0.2s',
-                  outline: 'none'
+                  outline: 'none',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  touchAction: 'manipulation'
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = primaryColor;
@@ -401,6 +421,7 @@ export default function Signup() {
                 }}
                 required
                 disabled={loading}
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -412,6 +433,15 @@ export default function Signup() {
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPassword(!showPassword);
                 }}
                 style={{
                   position: 'absolute',
@@ -431,7 +461,11 @@ export default function Signup() {
                   zIndex: 2,
                   outline: 'none',
                   minWidth: '32px',
-                  minHeight: '32px'
+                  minHeight: '32px',
+                  touchAction: 'none',
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none'
                 }}
                 onMouseEnter={(e) => e.target.style.color = textColor}
                 onMouseLeave={(e) => e.target.style.color = textSecondary}
