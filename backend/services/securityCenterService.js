@@ -63,19 +63,39 @@ class SecurityCenterService {
    */
   async recordLogin(userId, ipAddress, userAgent, location = null, success = true, failureReason = null) {
     try {
+      const mongoose = require('mongoose');
+      
+      // Convertir userId en ObjectId si c'est une string
+      let userIdObj;
+      if (typeof userId === 'string') {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+          logger.logError(new Error(`Invalid user ID: ${userId}`), { context: 'record_login' });
+          throw new Error('Invalid user ID');
+        }
+        userIdObj = new mongoose.Types.ObjectId(userId);
+      } else {
+        userIdObj = userId;
+      }
+      
       const loginHistory = new LoginHistory({
-        user_id: userId,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-        location,
-        success,
-        failure_reason: failureReason,
+        user_id: userIdObj,
+        ip_address: ipAddress || 'Unknown',
+        user_agent: userAgent || 'Unknown',
+        location: location || null,
+        success: success !== false, // Par défaut true
+        failure_reason: failureReason || null,
       });
       await loginHistory.save();
+      
+      logger.logInfo('Login recorded', {
+        userId: userIdObj.toString(),
+        success,
+        ipAddress: ipAddress || 'Unknown',
+      });
 
       // Détecter les IP suspectes
       if (!success) {
-        await this.detectSuspiciousActivity(userId, ipAddress);
+        await this.detectSuspiciousActivity(userIdObj, ipAddress);
       }
 
       return loginHistory;
