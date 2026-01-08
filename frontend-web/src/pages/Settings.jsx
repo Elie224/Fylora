@@ -576,22 +576,21 @@ export default function Settings() {
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('country')}</label>
-              <input
-                type="text"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                style={{
-                  padding: 12,
-                  width: '100%',
-                  border: `1px solid ${borderColor}`,
-                  borderRadius: 8,
-                  fontSize: '1em',
-                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
-                  color: textColor
-                }}
-                required
-              />
-            </div>
+            <input
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              style={{
+                padding: 12,
+                width: '100%',
+                border: `1px solid ${borderColor}`,
+                borderRadius: 8,
+                fontSize: '1em',
+                backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
+                color: textColor
+              }}
+              required
+            />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('displayName')}</label>
