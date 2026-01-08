@@ -16,18 +16,24 @@ const useAuthStore = create(
         set({ loading: true, error: null });
         
         // NETTOYER COMPLÈTEMENT L'ANCIEN COMPTE AVANT L'INSCRIPTION
-        // Supprimer tous les tokens et données de l'ancien utilisateur
+        // CRITIQUE : Supprimer auth-storage AVANT de set le state pour éviter que Zustand réécrive l'ancien state
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('auth-storage');
         
-        // Réinitialiser complètement le state
+        // Réinitialiser complètement le state AVANT l'inscription
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           error: null,
         });
+        
+        // Attendre un tick pour s'assurer que le nettoyage est effectif
+        await new Promise(resolve => setTimeout(resolve, 50));
         
         try {
           const response = await authService.signup(email, password, firstName, lastName, phone, country);
@@ -75,10 +81,32 @@ const useAuthStore = create(
       // Connexion
       login: async (email, password) => {
         set({ loading: true, error: null });
+        
+        // NETTOYER COMPLÈTEMENT L'ANCIEN COMPTE AVANT LA CONNEXION
+        // CRITIQUE : Supprimer auth-storage AVANT de set le state pour éviter que Zustand réécrive l'ancien state
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('auth-storage');
+        
+        // Réinitialiser complètement le state AVANT la nouvelle connexion
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          error: null,
+        });
+        
+        // Attendre un tick pour s'assurer que le nettoyage est effectif
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
         try {
           const response = await authService.login(email, password);
           const { user, access_token, refresh_token } = response.data.data;
           
+          // Charger les nouvelles données utilisateur
           set({
             user,
             accessToken: access_token,
@@ -87,14 +115,14 @@ const useAuthStore = create(
             error: null,
           });
 
-          // Sauvegarder les tokens dans localStorage
+          // Sauvegarder les nouveaux tokens dans localStorage
           localStorage.setItem('access_token', access_token);
           localStorage.setItem('refresh_token', refresh_token);
 
           return { success: true };
         } catch (err) {
           const errorMessage = err.response?.data?.error?.message || err.message || 'La connexion a échoué';
-          set({ loading: false, error: errorMessage });
+          set({ loading: false, error: errorMessage, user: null, accessToken: null, refreshToken: null });
           return { success: false, error: errorMessage };
         }
       },
@@ -114,8 +142,19 @@ const useAuthStore = create(
           }
         }
 
-        // NETTOYER COMPLÈTEMENT LE STATE ET LE STORAGE
-        // Réinitialiser le state
+        // CRITIQUE : Supprimer auth-storage AVANT de set le state pour éviter que Zustand réécrive l'ancien state
+        // NETTOYER COMPLÈTEMENT TOUS LES STORAGES EN PREMIER
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('auth-storage');
+        
+        // Attendre un tick pour s'assurer que le nettoyage est effectif
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // NETTOYER COMPLÈTEMENT LE STATE
         set({
           user: null,
           accessToken: null,
@@ -123,24 +162,10 @@ const useAuthStore = create(
           error: null,
           loading: false,
         });
-
-        // Supprimer tous les tokens du localStorage
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
         
-        // Supprimer le storage Zustand persisté pour s'assurer qu'aucune donnée ne reste
-        try {
-          localStorage.removeItem('auth-storage');
-          // Vider aussi sessionStorage au cas où
-          sessionStorage.removeItem('auth-storage');
-          sessionStorage.removeItem('access_token');
-          sessionStorage.removeItem('refresh_token');
-        } catch (e) {
-          console.error('Error clearing storage:', e);
-        }
-        
-        // Forcer le nettoyage du state Zustand en vidant complètement
-        // Le persist middleware se réinitialisera automatiquement
+        // Forcer un rechargement complet de la page pour s'assurer qu'aucune donnée ne persiste
+        // Cela garantit que tous les composants React sont réinitialisés
+        window.location.href = '/login';
       },
 
       // Mettre à jour les informations utilisateur
@@ -172,6 +197,26 @@ const useAuthStore = create(
         const accessToken = localStorage.getItem('access_token');
         const refreshToken = localStorage.getItem('refresh_token');
         
+        // CRITIQUE : Si auth-storage existe mais ne correspond pas aux tokens, le supprimer
+        const storedState = localStorage.getItem('auth-storage');
+        if (storedState) {
+          try {
+            const parsed = JSON.parse(storedState);
+            const state = parsed.state || parsed;
+            // Si les tokens stockés dans auth-storage ne correspondent pas aux tokens dans localStorage, nettoyer
+            if (state.accessToken !== accessToken || state.refreshToken !== refreshToken) {
+              console.warn('Tokens mismatch detected, clearing auth-storage');
+              localStorage.removeItem('auth-storage');
+              sessionStorage.removeItem('auth-storage');
+            }
+          } catch (e) {
+            // Si auth-storage est corrompu, le supprimer
+            console.warn('Corrupted auth-storage detected, clearing');
+            localStorage.removeItem('auth-storage');
+            sessionStorage.removeItem('auth-storage');
+          }
+        }
+        
         if (accessToken && refreshToken) {
           set({ accessToken, refreshToken });
           
@@ -195,22 +240,32 @@ const useAuthStore = create(
                 const userResponse = await userService.getMe();
                 set({ user: userResponse.data.data });
               } catch (refreshErr) {
-                // Refresh échoué - nettoyer
+                // Refresh échoué - nettoyer complètement
                 console.error('Token refresh failed:', refreshErr);
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
+                localStorage.removeItem('auth-storage');
+                sessionStorage.removeItem('access_token');
+                sessionStorage.removeItem('refresh_token');
+                sessionStorage.removeItem('auth-storage');
                 set({ user: null, accessToken: null, refreshToken: null });
               }
             } else {
-              // Autre erreur - nettoyer
+              // Autre erreur - nettoyer complètement
               console.error('Failed to fetch user info:', err);
               localStorage.removeItem('access_token');
               localStorage.removeItem('refresh_token');
+              localStorage.removeItem('auth-storage');
+              sessionStorage.removeItem('access_token');
+              sessionStorage.removeItem('refresh_token');
+              sessionStorage.removeItem('auth-storage');
               set({ user: null, accessToken: null, refreshToken: null });
             }
           }
         } else {
-          // Pas de tokens - nettoyer le state
+          // Pas de tokens - nettoyer complètement le state
+          localStorage.removeItem('auth-storage');
+          sessionStorage.removeItem('auth-storage');
           set({ user: null, accessToken: null, refreshToken: null });
         }
       },
