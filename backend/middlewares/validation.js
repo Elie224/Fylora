@@ -185,9 +185,8 @@ const signupSchema = [
     .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/)
     .withMessage('lastName can only contain letters, spaces, hyphens, and apostrophes'),
   body('phone')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('phone is required')
     .matches(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/)
     .withMessage('phone must be a valid phone number'),
   body('country')
