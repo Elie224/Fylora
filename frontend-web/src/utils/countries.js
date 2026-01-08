@@ -152,24 +152,43 @@ export const validatePhoneNumber = (phone, countryCode) => {
     cleaned = cleaned.substring(phoneCodeDigits.length);
   }
   
-  // Ajouter un 0 au début si nécessaire (pour correspondre au pattern)
-  // Les patterns attendent généralement +XX ou 0 au début
-  // Mais l'utilisateur saisit sans code pays ni 0, donc on teste avec 0
+  // Pour tester avec le pattern, on doit ajouter soit 0 soit +XX au début
+  // Car les patterns attendent généralement +XX ou 0 au début
+  // Test 1: avec 0 au début (format local)
   const testWithZero = '0' + cleaned;
-  const testWithCode = country.phoneCode.replace(/\+/g, '') + cleaned;
   
-  // Tester avec le pattern original (avec +XX ou 0)
+  // Test 2: avec le code pays sans le +
+  const testWithCode = phoneCodeDigits + cleaned;
+  
+  // Test 3: avec le code pays avec le +
+  const testWithPlusCode = country.phoneCode + cleaned;
+  
+  // Test 4: avec le numéro tel quel (si l'utilisateur a déjà ajouté le code ou le 0)
+  const testAsIs = phone.replace(/\s/g, '').replace(/-/g, '');
+  
+  // Tester avec le pattern
   const matchesPattern = country.pattern.test(testWithZero) || 
                          country.pattern.test(testWithCode) ||
-                         country.pattern.test('+' + testWithCode);
+                         country.pattern.test(testWithPlusCode) ||
+                         country.pattern.test(testAsIs) ||
+                         country.pattern.test(cleaned);
   
-  // Vérifier aussi la longueur minimale
-  // Pour la France par exemple: 9 chiffres après le code pays (sans le 0)
-  // Patterns généraux pour la plupart des pays: 7-15 chiffres
+  // Si le pattern correspond, retourner true
+  if (matchesPattern) return true;
+  
+  // Sinon, vérifier la longueur minimale et maximale
+  // Pour la France: 9 chiffres (sans le 0 initial ni le code pays)
+  // Pour la plupart des pays: entre 7 et 15 chiffres
   const minLength = 7;
   const maxLength = 15;
   const validLength = cleaned.length >= minLength && cleaned.length <= maxLength;
   
-  return matchesPattern || validLength;
+  // Si la longueur est valide et que le numéro commence par un chiffre non-zéro, accepter
+  // (car certains patterns sont trop restrictifs pour être fiables)
+  if (validLength && /^[1-9]/.test(cleaned)) {
+    return true;
+  }
+  
+  return false;
 };
 
