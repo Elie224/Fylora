@@ -38,7 +38,6 @@ export default function Settings() {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -71,10 +70,9 @@ export default function Settings() {
       const stats = statsResponse.data.data;
       
       setEmail(userData.email || '');
-      setFirstName(userData.first_name || '');
-      setLastName(userData.last_name || '');
-      setPhone(userData.phone || '');
-      setCountry(userData.country || '');
+        setFirstName(userData.first_name || '');
+        setLastName(userData.last_name || '');
+        setCountry(userData.country || '');
       setDisplayName(userData.display_name || '');
       setAvatarUrl(userData.avatar_url || '');
       // Ne pas forcer la langue - utiliser celle de l'utilisateur
@@ -140,7 +138,6 @@ export default function Settings() {
         email, 
         first_name: firstName,
         last_name: lastName,
-        phone: phone,
         country: country,
         display_name: displayName 
       });
@@ -577,27 +574,8 @@ export default function Settings() {
               required
             />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '16px', marginBottom: 20 }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('phone')}</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                style={{
-                  padding: 12,
-                  width: '100%',
-                  border: `1px solid ${borderColor}`,
-                  borderRadius: 8,
-                  fontSize: '1em',
-                  backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
-                  color: textColor
-                }}
-                required
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('country')}</label>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: textColor }}>{t('country')}</label>
               <input
                 type="text"
                 value={country}

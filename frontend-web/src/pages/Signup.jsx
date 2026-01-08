@@ -3,12 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { countries, getCountryByCode, formatPhoneNumber, validatePhoneNumber } from '../utils/countries';
+import { countries, getCountryByCode } from '../utils/countries';
 
 export default function Signup() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('FR'); // France par défaut
   const [password, setPassword] = useState('');
@@ -17,7 +16,6 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [phoneError, setPhoneError] = useState('');
   
   const { signup } = useAuthStore();
   const navigate = useNavigate();
@@ -64,15 +62,8 @@ export default function Signup() {
     setError('');
 
     // Validation
-    if (!firstName || !lastName || !phone || !email || !countryCode || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !countryCode || !password || !confirmPassword) {
       setError(t('fillAllFields'));
-      return;
-    }
-
-    // Valider le numéro de téléphone selon le pays
-    if (!validatePhoneNumber(phone, countryCode)) {
-      const country = getCountryByCode(countryCode);
-      setPhoneError(t('invalidPhoneNumber') + (country ? ` (${country.phoneFormat})` : ''));
       return;
     }
 
@@ -88,14 +79,11 @@ export default function Signup() {
     }
 
     setLoading(true);
-    setPhoneError('');
 
-    // Formater le numéro de téléphone avec le code pays
-    const formattedPhone = formatPhoneNumber(phone, countryCode);
     const country = getCountryByCode(countryCode);
     const countryName = country ? country.name : countryCode;
 
-    const result = await signup(email, password, firstName, lastName, formattedPhone, countryName);
+    const result = await signup(email, password, firstName, lastName, null, countryName);
     
     if (result.success) {
       navigate('/dashboard');
@@ -269,98 +257,6 @@ export default function Signup() {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
-              {t('phone')}
-            </label>
-            <div style={{ position: 'relative' }}>
-              <div style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: textSecondary,
-                fontSize: '16px',
-                pointerEvents: 'none',
-                zIndex: 1
-              }}>
-                {getCountryByCode(countryCode)?.phoneCode || '+33'}
-              </div>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  // Nettoyer et valider en temps réel
-                  let value = e.target.value.replace(/\D/g, '');
-                  // Limiter selon le pays
-                  const country = getCountryByCode(countryCode);
-                  if (country) {
-                    // Limiter la longueur selon le format du pays
-                    const maxLength = country.phoneFormat.replace(/\D/g, '').length - country.phoneCode.replace(/\D/g, '').length;
-                    if (value.length > maxLength) {
-                      value = value.substring(0, maxLength);
-                    }
-                  }
-                  setPhone(value);
-                  setPhoneError('');
-                }}
-                autoComplete="tel"
-                placeholder={getCountryByCode(countryCode)?.phoneFormat.replace(/\+/g, '').replace(/X/g, 'X') || '6 12 34 56 78'}
-                style={{
-                  width: '100%',
-                  padding: '12px 12px 12px 60px',
-                  border: `1px solid ${phoneError ? errorText : borderColor}`,
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                  backgroundColor: inputBg,
-                  color: textColor,
-                  transition: 'all 0.2s'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = primaryColor;
-                  e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
-                }}
-                onBlur={(e) => {
-                  // Valider à la perte de focus
-                  let hasError = false;
-                  if (e.target.value && !validatePhoneNumber(e.target.value, countryCode)) {
-                    const country = getCountryByCode(countryCode);
-                    const errorMsg = t('invalidPhoneNumber') + (country ? ` (${country.phoneFormat})` : '');
-                    setPhoneError(errorMsg);
-                    hasError = true;
-                  } else {
-                    setPhoneError('');
-                    hasError = false;
-                  }
-                  // Restaurer le style de la bordure
-                  e.target.style.borderColor = hasError ? errorText : borderColor;
-                  e.target.style.boxShadow = 'none';
-                }}
-                required
-                disabled={loading}
-              />
-            </div>
-            {phoneError && (
-              <div style={{
-                marginTop: '4px',
-                fontSize: '12px',
-                color: errorText
-              }}>
-                {phoneError}
-              </div>
-            )}
-            {!phoneError && getCountryByCode(countryCode) && (
-              <div style={{
-                marginTop: '4px',
-                fontSize: '12px',
-                color: textSecondary
-              }}>
-                {t('phoneFormat')}: {getCountryByCode(countryCode).phoneFormat}
-              </div>
-            )}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
