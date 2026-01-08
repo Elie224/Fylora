@@ -39,7 +39,7 @@ const LoadingFallback = () => (
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '200px',
+    minHeight: '200vh',
   }}>
     <div style={{ fontSize: '16px', color: '#666' }}>Chargement...</div>
   </div>
