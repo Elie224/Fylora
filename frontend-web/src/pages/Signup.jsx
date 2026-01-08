@@ -83,15 +83,24 @@ export default function Signup() {
     const country = getCountryByCode(countryCode);
     const countryName = country ? country.name : countryCode;
 
-    const result = await signup(email, password, firstName, lastName, null, countryName);
-    
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setError(result.error || t('signupFailed'));
+    try {
+      const result = await signup(email, password, firstName, lastName, null, countryName);
+      
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.error || t('signupFailed'));
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      const errorMessage = err.response?.data?.error?.message || 
+                          err.response?.data?.error?.details?.[0]?.msg ||
+                          err.message || 
+                          t('signupFailed');
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (

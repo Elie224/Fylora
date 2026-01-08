@@ -32,7 +32,25 @@ const useAuthStore = create(
 
           return { success: true };
         } catch (err) {
-          const errorMessage = err.response?.data?.error?.message || err.message || 'L\'inscription a échoué';
+          console.error('Signup API error:', err.response?.data);
+          let errorMessage = 'L\'inscription a échoué';
+          
+          if (err.response?.data?.error) {
+            // Message principal
+            if (err.response.data.error.message) {
+              errorMessage = err.response.data.error.message;
+            }
+            // Détails de validation
+            if (err.response.data.error.details && Array.isArray(err.response.data.error.details)) {
+              const details = err.response.data.error.details.map(d => d.msg || d.message).filter(Boolean);
+              if (details.length > 0) {
+                errorMessage = details.join(', ');
+              }
+            }
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          
           set({ loading: false, error: errorMessage });
           return { success: false, error: errorMessage };
         }
