@@ -342,92 +342,37 @@ export default function Signup() {
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('confirmPassword')}
             </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                style={{
-                  width: '100%',
-                  padding: '12px 48px 12px 12px',
-                  border: `1px solid ${borderColor}`,
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                  backgroundColor: inputBg,
-                  color: textColor,
-                  transition: 'all 0.2s',
-                  outline: 'none',
-                  WebkitAppearance: 'none',
-                  appearance: 'none',
-                  touchAction: 'manipulation'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = primaryColor;
-                  e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = borderColor;
-                  e.target.style.boxShadow = 'none';
-                }}
-                required
-                disabled={loading}
-                autoComplete="off"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowConfirmPassword(!showConfirmPassword);
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowPassword(!showPassword);
-                }}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: textSecondary,
-                  fontSize: '18px',
-                  padding: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color 0.2s',
-                  zIndex: 2,
-                  outline: 'none',
-                  minWidth: '32px',
-                  minHeight: '32px',
-                  touchAction: 'none',
-                  WebkitTouchCallout: 'none',
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => e.target.style.color = textColor}
-                onMouseLeave={(e) => e.target.style.color = textSecondary}
-                disabled={loading}
-                tabIndex={-1}
-                aria-label={showConfirmPassword ? 'Masquer la confirmation du mot de passe' : 'Afficher la confirmation du mot de passe'}
-              >
-                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
-            </div>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '16px',
+                boxSizing: 'border-box',
+                backgroundColor: inputBg,
+                color: textColor,
+                transition: 'all 0.2s',
+                outline: 'none',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                touchAction: 'manipulation'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = borderColor;
+                e.target.style.boxShadow = 'none';
+              }}
+              required
+              disabled={loading}
+            />
           </div>
 
           <button
