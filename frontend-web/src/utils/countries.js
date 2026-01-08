@@ -140,10 +140,36 @@ export const validatePhoneNumber = (phone, countryCode) => {
   const country = getCountryByCode(countryCode);
   if (!country) return false;
   
-  // Nettoyer le numéro
-  const cleaned = phone.replace(/\D/g, '');
+  // Nettoyer le numéro (garder seulement les chiffres)
+  let cleaned = phone.replace(/\D/g, '');
   
-  // Vérifier avec le pattern du pays
-  return country.pattern.test(cleaned) || country.pattern.test(phone);
+  // Si le numéro est vide après nettoyage, invalide
+  if (!cleaned) return false;
+  
+  // Enlever le code pays si présent au début
+  const phoneCodeDigits = country.phoneCode.replace(/\D/g, '');
+  if (cleaned.startsWith(phoneCodeDigits)) {
+    cleaned = cleaned.substring(phoneCodeDigits.length);
+  }
+  
+  // Ajouter un 0 au début si nécessaire (pour correspondre au pattern)
+  // Les patterns attendent généralement +XX ou 0 au début
+  // Mais l'utilisateur saisit sans code pays ni 0, donc on teste avec 0
+  const testWithZero = '0' + cleaned;
+  const testWithCode = country.phoneCode.replace(/\+/g, '') + cleaned;
+  
+  // Tester avec le pattern original (avec +XX ou 0)
+  const matchesPattern = country.pattern.test(testWithZero) || 
+                         country.pattern.test(testWithCode) ||
+                         country.pattern.test('+' + testWithCode);
+  
+  // Vérifier aussi la longueur minimale
+  // Pour la France par exemple: 9 chiffres après le code pays (sans le 0)
+  // Patterns généraux pour la plupart des pays: 7-15 chiffres
+  const minLength = 7;
+  const maxLength = 15;
+  const validLength = cleaned.length >= minLength && cleaned.length <= maxLength;
+  
+  return matchesPattern || validLength;
 };
 

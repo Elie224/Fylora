@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
@@ -189,33 +190,61 @@ export default function Login() {
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
               {t('password')}
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: `1px solid ${borderColor}`,
-                borderRadius: '8px',
-                fontSize: '16px',
-                boxSizing: 'border-box',
-                backgroundColor: inputBg,
-                color: textColor,
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = primaryColor;
-                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = borderColor;
-                e.target.style.boxShadow = 'none';
-              }}
-              required
-              disabled={loading}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                style={{
+                  width: '100%',
+                  padding: '12px 48px 12px 12px',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  boxSizing: 'border-box',
+                  backgroundColor: inputBg,
+                  color: textColor,
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = primaryColor;
+                  e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = borderColor;
+                  e.target.style.boxShadow = 'none';
+                }}
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: textSecondary,
+                  fontSize: '18px',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.color = textColor}
+                onMouseLeave={(e) => e.target.style.color = textSecondary}
+                disabled={loading}
+                tabIndex={-1}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
           </div>
 
           <button
