@@ -21,21 +21,21 @@ const OLD_QUOTA = 100 * 1024 * 1024 * 1024; // 100 GO en octets
 const NEW_QUOTA = 20 * 1024 * 1024 * 1024;  // 20 GO en octets
 const MONGODB_URI = mongoUri || 'mongodb://localhost:27017/Fylora';
 
-// Schéma User simplifié pour la migration
-const UserSchema = new mongoose.Schema({
-  quota_limit: Number,
-  plan: { type: String, default: 'free' }
-}, { collection: 'users' });
-
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
+// Utiliser directement le modèle User existant
+// Note: On doit se connecter d'abord avant de charger le modèle
+let User;
 
 async function migrateQuota() {
   try {
     console.log('🔄 Connexion à MongoDB...');
     await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
     });
     console.log('✅ Connecté à MongoDB\n');
+
+    // Charger le modèle User après la connexion
+    // Utiliser mongoose directement pour accéder à la collection
+    User = mongoose.connection.collection('users');
 
     // D'abord, afficher des statistiques pour comprendre la situation
     const totalUsers = await User.countDocuments({});
@@ -64,6 +64,19 @@ async function migrateQuota() {
     });
     console.log(`   - Utilisateurs sans plan défini avec quota de 100 GO: ${usersNoPlanWith100GB}\n`);
 
+    // Si aucun utilisateur avec 100 GO, vérifier s'il y a des utilisateurs avec d'autres quotas
+    if (usersWith100GB === 0) {
+      const sampleUsers = await User.find({}).limit(5).toArray();
+      if (sampleUsers.length > 0) {
+        console.log(`\n📋 Exemples de quotas trouvés (5 premiers utilisateurs):`);
+        sampleUsers.forEach((user, index) => {
+          const quotaGB = user.quota_limit ? (user.quota_limit / (1024 * 1024 * 1024)).toFixed(2) : 'N/A';
+          const plan = user.plan || 'non défini';
+          console.log(`   ${index + 1}. Email: ${user.email || 'N/A'}, Plan: ${plan}, Quota: ${quotaGB} GO`);
+        });
+      }
+    }
+
     // Requête pour trouver TOUS les utilisateurs avec quota de 100 GO
     // (plan FREE, plan non défini, ou plan null)
     const countQuery = {
@@ -77,7 +90,7 @@ async function migrateQuota() {
     };
     
     const totalAffected = await User.countDocuments(countQuery);
-    console.log(`📊 Nombre d'utilisateurs à mettre à jour: ${totalAffected}`);
+    console.log(`\n📊 Nombre d'utilisateurs à mettre à jour: ${totalAffected}`);
 
     if (totalAffected === 0) {
       console.log('\n✅ Aucun utilisateur à mettre à jour. Migration terminée.');
