@@ -65,6 +65,13 @@ export default function Home() {
       setTimeout(() => {
         setCurrentSlide(currentSlide - 1);
         setIsTransitioning(false);
+        // Faire défiler vers le carrousel après le changement de slide
+        setTimeout(() => {
+          const carouselElement = document.querySelector('[data-carousel-container]');
+          if (carouselElement) {
+            carouselElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
       }, 200);
     }
   };
@@ -79,6 +86,15 @@ export default function Home() {
       setTimeout(() => {
         setCurrentSlide(index);
         setIsTransitioning(false);
+        // Faire défiler vers le carrousel après le changement de slide
+        if (index < currentSlide) {
+          setTimeout(() => {
+            const carouselElement = document.querySelector('[data-carousel-container]');
+            if (carouselElement) {
+              carouselElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        }
       }, 200);
     }
   };
@@ -264,11 +280,14 @@ export default function Home() {
         zIndex: 1
       }}>
         {/* Slide Container */}
-        <div style={{
-          width: '100%',
-          maxWidth: 'min(700px, 95vw)',
-          position: 'relative'
-        }}>
+        <div 
+          data-carousel-container
+          style={{
+            width: '100%',
+            maxWidth: 'min(700px, 95vw)',
+            position: 'relative'
+          }}
+        >
           {/* Slide Card */}
           <div style={{
             width: '100%',

@@ -185,10 +185,26 @@ export default function Login() {
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
-              {t('password')}
-            </label>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ display: 'block', color: textColor, fontWeight: '500' }}>
+                {t('password')}
+              </label>
+              <Link 
+                to="/forgot-password" 
+                style={{ 
+                  color: primaryColor, 
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                {language === 'en' ? 'Forgot password?' : 'Mot de passe oublié ?'}
+              </Link>
+            </div>
             <input
               type="password"
               value={password}

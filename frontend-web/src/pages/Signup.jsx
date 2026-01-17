@@ -12,6 +12,8 @@ export default function Signup() {
   const [countryCode, setCountryCode] = useState('FR'); // France par défaut
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -49,10 +51,36 @@ export default function Signup() {
   const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
 
   const validatePassword = (pwd) => {
+    if (!pwd || pwd.length === 0) return null; // Ne pas valider si vide (sera validé à la soumission)
     if (pwd.length < 8) return t('passwordMinLength');
     if (!/[A-Z]/.test(pwd)) return t('passwordRequiresUppercase');
     if (!/[0-9]/.test(pwd)) return t('passwordRequiresNumber');
     return null;
+  };
+
+  // Validation en temps réel du mot de passe
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    const passwordErr = validatePassword(value);
+    setPasswordError(passwordErr || '');
+    // Valider aussi la correspondance si confirmPassword existe
+    if (confirmPassword && value !== confirmPassword) {
+      setConfirmPasswordError(t('passwordsDontMatch'));
+    } else if (confirmPassword && value === confirmPassword) {
+      setConfirmPasswordError('');
+    }
+  };
+
+  // Validation en temps réel de la confirmation
+  const handleConfirmPasswordChange = (e) => {
+    const value = e.target.value;
+    setConfirmPassword(value);
+    if (password && value !== password) {
+      setConfirmPasswordError(t('passwordsDontMatch'));
+    } else {
+      setConfirmPasswordError('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -305,12 +333,12 @@ export default function Signup() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               autoComplete="new-password"
               style={{
                 width: '100%',
                 padding: '12px',
-                border: `1px solid ${borderColor}`,
+                border: `1px solid ${passwordError ? errorText : borderColor}`,
                 borderRadius: '8px',
                 fontSize: '16px',
                 boxSizing: 'border-box',
@@ -323,19 +351,26 @@ export default function Signup() {
                 touchAction: 'manipulation'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = primaryColor;
-                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+                e.target.style.borderColor = passwordError ? errorText : primaryColor;
+                e.target.style.boxShadow = passwordError ? 'none' : `0 0 0 3px ${primaryColor}20`;
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = borderColor;
+                e.target.style.borderColor = passwordError ? errorText : borderColor;
                 e.target.style.boxShadow = 'none';
               }}
               required
               disabled={loading}
             />
-            <div style={{ marginTop: '4px', fontSize: '12px', color: textSecondary }}>
-              {t('passwordRequirements')}
-            </div>
+            {passwordError && (
+              <div style={{ marginTop: '4px', fontSize: '12px', color: errorText }}>
+                {passwordError}
+              </div>
+            )}
+            {!passwordError && (
+              <div style={{ marginTop: '4px', fontSize: '12px', color: textSecondary }}>
+                {t('passwordRequirements')}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '24px' }}>
@@ -345,12 +380,12 @@ export default function Signup() {
             <input
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={handleConfirmPasswordChange}
               autoComplete="new-password"
               style={{
                 width: '100%',
                 padding: '12px',
-                border: `1px solid ${borderColor}`,
+                border: `1px solid ${confirmPasswordError ? errorText : borderColor}`,
                 borderRadius: '8px',
                 fontSize: '16px',
                 boxSizing: 'border-box',
@@ -363,16 +398,21 @@ export default function Signup() {
                 touchAction: 'manipulation'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = primaryColor;
-                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}20`;
+                e.target.style.borderColor = confirmPasswordError ? errorText : primaryColor;
+                e.target.style.boxShadow = confirmPasswordError ? 'none' : `0 0 0 3px ${primaryColor}20`;
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = borderColor;
+                e.target.style.borderColor = confirmPasswordError ? errorText : borderColor;
                 e.target.style.boxShadow = 'none';
               }}
               required
               disabled={loading}
             />
+            {confirmPasswordError && (
+              <div style={{ marginTop: '4px', fontSize: '12px', color: errorText }}>
+                {confirmPasswordError}
+              </div>
+            )}
           </div>
 
           <button
