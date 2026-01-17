@@ -77,16 +77,10 @@ async function migrateQuota() {
     });
     console.log(`   - Utilisateurs sans plan défini avec quota > 20 GO: ${usersNoPlanAbove20GB}\n`);
 
-    // Requête pour trouver TOUS les utilisateurs du plan FREE avec quota > 20 GO
-    // (plan FREE, plan non défini, ou plan null) ET quota supérieur à 20 GO
+    // Requête pour trouver TOUS les utilisateurs avec quota > 20 GO
+    // (TOUS les plans, car l'utilisateur veut que tous les comptes aient 20 GO)
     const countQuery = {
-      quota_limit: { $gt: NEW_QUOTA }, // Quota supérieur à 20 GO
-      $or: [
-        { plan: 'free' },
-        { plan: { $exists: false } },
-        { plan: null },
-        { plan: '' }
-      ]
+      quota_limit: { $gt: NEW_QUOTA } // Quota supérieur à 20 GO
     };
     
     const totalAffected = await User.countDocuments(countQuery);
@@ -99,15 +93,17 @@ async function migrateQuota() {
     }
 
     console.log(`\n🔄 Mise à jour de ${totalAffected} utilisateur(s)...`);
+    console.log('   ⚠️  ATTENTION: Tous les utilisateurs avec quota > 20 GO seront mis à jour à 20 GO');
+    console.log('   (y compris ceux avec des plans payants)\n');
     
-    // Mettre à jour tous les utilisateurs avec quota de 100 GO
-    // (plan FREE ou plan non défini)
+    // Mettre à jour TOUS les utilisateurs avec quota > 20 GO
+    // (tous les plans, car l'utilisateur veut que tous les comptes aient 20 GO)
     const result = await User.updateMany(
       countQuery,
       { 
         $set: { 
-          quota_limit: NEW_QUOTA,
-          plan: 'free' // S'assurer que tous ont le plan 'free'
+          quota_limit: NEW_QUOTA
+          // Note: On ne change pas le plan, on garde le plan actuel
         }
       }
     );
@@ -117,12 +113,12 @@ async function migrateQuota() {
     console.log(`   - Utilisateurs correspondants: ${result.matchedCount}`);
     
     // Vérification
-    const remainingCount = await User.countDocuments({ quota_limit: OLD_QUOTA });
+    const remainingCount = await User.countDocuments({ quota_limit: { $gt: NEW_QUOTA } });
     if (remainingCount > 0) {
-      console.log(`\n⚠️  Attention: ${remainingCount} utilisateur(s) ont toujours un quota de 100 GO`);
-      console.log('   (Ils ont probablement un plan payant - non modifiés intentionnellement)');
+      console.log(`\n⚠️  Attention: ${remainingCount} utilisateur(s) ont toujours un quota > 20 GO`);
+      console.log('   (Ils n\'ont peut-être pas été trouvés par la requête)');
     } else {
-      console.log(`\n✅ Vérification: Tous les utilisateurs du plan FREE ont maintenant un quota de 20 GO`);
+      console.log(`\n✅ Vérification: Tous les utilisateurs ont maintenant un quota de 20 GO maximum`);
     }
 
     // Afficher les utilisateurs qui ont dépassé le nouveau quota (pour information)
