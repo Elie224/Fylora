@@ -42,45 +42,45 @@ async function migrateQuota() {
     console.log(`📊 Statistiques de la base de données:`);
     console.log(`   - Total d'utilisateurs: ${totalUsers}`);
 
-    // Compter les utilisateurs avec quota de 100 GO (tous plans confondus)
-    const usersWith100GB = await User.countDocuments({ quota_limit: OLD_QUOTA });
-    console.log(`   - Utilisateurs avec quota de 100 GO: ${usersWith100GB}`);
+    // Afficher les quotas actuels pour diagnostic
+    const sampleUsers = await User.find({}).limit(10).toArray();
+    if (sampleUsers.length > 0) {
+      console.log(`\n📋 Analyse des quotas actuels (${Math.min(sampleUsers.length, 10)} premiers utilisateurs):`);
+      sampleUsers.forEach((user, index) => {
+        const quotaGB = user.quota_limit ? (user.quota_limit / (1024 * 1024 * 1024)).toFixed(2) : 'N/A';
+        const plan = user.plan || 'non défini';
+        const needsUpdate = (!user.plan || user.plan === 'free' || user.plan === '') && user.quota_limit > NEW_QUOTA;
+        const status = needsUpdate ? '⚠️ À mettre à jour' : '✅ OK';
+        console.log(`   ${index + 1}. Email: ${user.email || 'N/A'}, Plan: ${plan}, Quota: ${quotaGB} GO ${status}`);
+      });
+    }
 
-    // Compter les utilisateurs avec plan 'free' et quota de 100 GO
-    const usersFreeWith100GB = await User.countDocuments({ 
-      quota_limit: OLD_QUOTA,
+    // Compter les utilisateurs avec quota supérieur à 20 GO (tous plans confondus)
+    const usersAbove20GB = await User.countDocuments({ quota_limit: { $gt: NEW_QUOTA } });
+    console.log(`\n   - Utilisateurs avec quota > 20 GO: ${usersAbove20GB}`);
+
+    // Compter les utilisateurs plan FREE avec quota supérieur à 20 GO
+    const usersFreeAbove20GB = await User.countDocuments({ 
+      quota_limit: { $gt: NEW_QUOTA },
       plan: 'free'
     });
-    console.log(`   - Utilisateurs plan FREE avec quota de 100 GO: ${usersFreeWith100GB}`);
+    console.log(`   - Utilisateurs plan FREE avec quota > 20 GO: ${usersFreeAbove20GB}`);
 
-    // Compter les utilisateurs sans plan défini et quota de 100 GO
-    const usersNoPlanWith100GB = await User.countDocuments({
-      quota_limit: OLD_QUOTA,
+    // Compter les utilisateurs sans plan défini et quota supérieur à 20 GO
+    const usersNoPlanAbove20GB = await User.countDocuments({
+      quota_limit: { $gt: NEW_QUOTA },
       $or: [
         { plan: { $exists: false } },
         { plan: null },
         { plan: '' }
       ]
     });
-    console.log(`   - Utilisateurs sans plan défini avec quota de 100 GO: ${usersNoPlanWith100GB}\n`);
+    console.log(`   - Utilisateurs sans plan défini avec quota > 20 GO: ${usersNoPlanAbove20GB}\n`);
 
-    // Si aucun utilisateur avec 100 GO, vérifier s'il y a des utilisateurs avec d'autres quotas
-    if (usersWith100GB === 0) {
-      const sampleUsers = await User.find({}).limit(5).toArray();
-      if (sampleUsers.length > 0) {
-        console.log(`\n📋 Exemples de quotas trouvés (5 premiers utilisateurs):`);
-        sampleUsers.forEach((user, index) => {
-          const quotaGB = user.quota_limit ? (user.quota_limit / (1024 * 1024 * 1024)).toFixed(2) : 'N/A';
-          const plan = user.plan || 'non défini';
-          console.log(`   ${index + 1}. Email: ${user.email || 'N/A'}, Plan: ${plan}, Quota: ${quotaGB} GO`);
-        });
-      }
-    }
-
-    // Requête pour trouver TOUS les utilisateurs avec quota de 100 GO
-    // (plan FREE, plan non défini, ou plan null)
+    // Requête pour trouver TOUS les utilisateurs du plan FREE avec quota > 20 GO
+    // (plan FREE, plan non défini, ou plan null) ET quota supérieur à 20 GO
     const countQuery = {
-      quota_limit: OLD_QUOTA,
+      quota_limit: { $gt: NEW_QUOTA }, // Quota supérieur à 20 GO
       $or: [
         { plan: 'free' },
         { plan: { $exists: false } },
