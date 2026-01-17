@@ -15,7 +15,7 @@ const PLANS = {
     id: 'free',
     name: 'Free',
     displayName: 'Gratuit',
-    storage: 100 * 1024 * 1024 * 1024, // 100 Go
+    storage: 20 * 1024 * 1024 * 1024, // 20 Go
     price: {
       monthly: 0,
       yearly: 0,

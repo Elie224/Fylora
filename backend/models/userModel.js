@@ -49,7 +49,7 @@ const UserSchema = new Schema({
   // Quota de stockage (en octets)
   quota_limit: { 
     type: Number, 
-    default: 100 * 1024 * 1024 * 1024, // 100 Go par défaut (plan FREE)
+    default: 20 * 1024 * 1024 * 1024, // 20 Go par défaut (plan FREE)
   },
   quota_used: { 
     type: Number, 
