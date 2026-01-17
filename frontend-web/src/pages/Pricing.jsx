@@ -481,7 +481,7 @@ export default function Pricing() {
               },
               {
                 question: t('faqQuestion6') || 'Y a-t-il un essai gratuit pour les plans payants ?',
-                answer: t('faqAnswer6') || 'Le plan FREE (100 Go) est déjà gratuit et sans engagement. Pour les plans payants, vous pouvez upgrader à tout moment et annuler sans frais si vous n\'êtes pas satisfait.'
+                answer: t('faqAnswer6') || 'Le plan FREE (20 Go) est déjà gratuit et sans engagement. Pour les plans payants, vous pouvez upgrader à tout moment et annuler sans frais si vous n\'êtes pas satisfait.'
               },
               {
                 question: t('faqQuestion7') || 'Comment puis-je contacter le support ?',

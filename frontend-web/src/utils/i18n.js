@@ -205,7 +205,7 @@ const translations = {
       title: 'Gratuit pour toujours',
       subtitle: 'Découvrez ce qui est inclus dans votre compte gratuit',
       items: {
-        storage: '100 Go de stockage gratuit',
+        storage: '20 Go de stockage gratuit',
         folders: 'Dossiers illimités',
         sharing: 'Partage de fichiers illimité',
         encryption: 'Chiffrement de bout en bout',
@@ -462,7 +462,7 @@ const translations = {
     faqQuestion5: 'Puis-je annuler mon abonnement ?',
     faqAnswer5: 'Oui, vous pouvez annuler votre abonnement à tout moment depuis les paramètres de votre compte. Vous conserverez l\'accès jusqu\'à la fin de la période payée, puis votre compte sera rétrogradé vers le plan gratuit.',
     faqQuestion6: 'Y a-t-il un essai gratuit pour les plans payants ?',
-    faqAnswer6: 'Le plan FREE (100 Go) est déjà gratuit et sans engagement. Pour les plans payants, vous pouvez upgrader à tout moment et annuler sans frais si vous n\'êtes pas satisfait.',
+    faqAnswer6: 'Le plan FREE (20 Go) est déjà gratuit et sans engagement. Pour les plans payants, vous pouvez upgrader à tout moment et annuler sans frais si vous n\'êtes pas satisfait.',
     faqQuestion7: 'Comment puis-je contacter le support ?',
     faqAnswer7: 'Vous pouvez nous contacter par email à kouroumaelisee@gmail.com ou par téléphone au +33689306432. Notre équipe est disponible pour vous aider.',
     
@@ -743,7 +743,7 @@ const translations = {
       title: 'Free forever',
       subtitle: 'Discover what\'s included in your free account',
       items: {
-        storage: '100 GB free storage',
+        storage: '20 GB free storage',
         folders: 'Unlimited folders',
         sharing: 'Unlimited file sharing',
         encryption: 'End-to-end encryption',
@@ -1000,7 +1000,7 @@ const translations = {
     faqQuestion5: 'Can I cancel my subscription?',
     faqAnswer5: 'Yes, you can cancel your subscription at any time from your account settings. You will retain access until the end of the paid period, then your account will be downgraded to the free plan.',
     faqQuestion6: 'Is there a free trial for paid plans?',
-    faqAnswer6: 'The FREE plan (100 GB) is already free and requires no commitment. For paid plans, you can upgrade at any time and cancel without fees if you are not satisfied.',
+    faqAnswer6: 'The FREE plan (20 GB) is already free and requires no commitment. For paid plans, you can upgrade at any time and cancel without fees if you are not satisfied.',
     faqQuestion7: 'How can I contact support?',
     faqAnswer7: 'You can contact us by email at kouroumaelisee@gmail.com or by phone at +33689306432. Our team is available to help you.',
     
