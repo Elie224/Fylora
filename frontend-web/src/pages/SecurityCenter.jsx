@@ -226,7 +226,7 @@ const SecurityCenter = () => {
                   {t('lastLogin')}
                 </p>
                 <p style={{ fontSize: '14px', color: textColor, marginBottom: '4px' }}>
-                  {formatDate(securityStats.lastLogin.date)}
+                  {formatDate(securityStats.lastLogin.date, language)}
                 </p>
                 <p style={{ fontSize: '12px', color: textSecondary }}>
                   {securityStats.lastLogin.ip}
@@ -304,7 +304,7 @@ const SecurityCenter = () => {
                     {session.user_agent || 'Inconnu'}
                   </p>
                   <p style={{ fontSize: '12px', color: textSecondary }}>
-                    {t('lastActivity')}: {formatDate(session.last_activity)}
+                    {t('lastActivity')}: {formatDate(session.last_activity, language)}
                   </p>
                 </div>
                 <button
