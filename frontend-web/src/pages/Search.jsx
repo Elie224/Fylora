@@ -308,7 +308,7 @@ export default function Search() {
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px'
+            gap: isMobile ? '8px' : '12px'
           }}>
             {filteredResults.map((item) => {
               const itemId = item.id || item._id;
@@ -319,29 +319,29 @@ export default function Search() {
                   style={{
                     backgroundColor: cardBg,
                     border: `1px solid ${borderColor}`,
-                    borderRadius: '12px',
-                    padding: '16px',
+                    borderRadius: isMobile ? '8px' : '12px',
+                    padding: isMobile ? '12px' : '16px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
+                    gap: isMobile ? '8px' : '12px',
                     transition: 'all 0.2s',
                     boxShadow: shadowColor
                   }}
                 >
                   {/* Ligne 1: Nom + Menu Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: isMobile ? '8px' : '12px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: '8px',
-                        marginBottom: '4px'
+                        gap: isMobile ? '6px' : '8px',
+                        marginBottom: isMobile ? '2px' : '4px'
                       }}>
-                        <span style={{ fontSize: '20px' }}>
+                        <span style={{ fontSize: isMobile ? '18px' : '20px' }}>
                           {isFolder ? '📁' : '📄'}
                         </span>
                         <span style={{ 
-                          fontSize: '16px', 
+                          fontSize: isMobile ? '14px' : '16px', 
                           fontWeight: '600', 
                           color: isFolder ? '#2196F3' : textColor,
                           wordBreak: 'break-word'
@@ -350,7 +350,7 @@ export default function Search() {
                         </span>
                       </div>
                       {item.updated_at && (
-                        <div style={{ fontSize: '12px', color: textSecondary, marginTop: '4px' }}>
+                        <div style={{ fontSize: isMobile ? '11px' : '12px', color: textSecondary, marginTop: isMobile ? '2px' : '4px' }}>
                           {new Date(item.updated_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
                             year: 'numeric',
                             month: '2-digit',
@@ -369,15 +369,15 @@ export default function Search() {
                           setItemActionMenuOpen(itemActionMenuOpen === itemId ? null : itemId);
                         }}
                         style={{
-                          padding: '8px',
+                          padding: isMobile ? '6px' : '8px',
                           backgroundColor: 'transparent',
                           border: 'none',
-                          borderRadius: '8px',
+                          borderRadius: isMobile ? '6px' : '8px',
                           cursor: 'pointer',
-                          fontSize: '20px',
+                          fontSize: isMobile ? '18px' : '20px',
                           color: textColor,
-                          minWidth: '36px',
-                          minHeight: '36px',
+                          minWidth: isMobile ? '32px' : '36px',
+                          minHeight: isMobile ? '32px' : '36px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -405,7 +405,7 @@ export default function Search() {
                             borderRadius: '8px',
                             boxShadow: theme === 'dark' ? '0 4px 12px rgba(0,0,0,0.6)' : '0 4px 12px rgba(0,0,0,0.15)',
                             zIndex: 1000,
-                            minWidth: '180px',
+                            minWidth: isMobile ? '160px' : '180px',
                             overflow: 'hidden'
                           }}
                           onClick={(e) => e.stopPropagation()}
@@ -422,16 +422,16 @@ export default function Search() {
                             }}
                             style={{
                               width: '100%',
-                              padding: '12px 16px',
+                              padding: isMobile ? '10px 14px' : '12px 16px',
                               backgroundColor: 'transparent',
                               border: 'none',
                               textAlign: 'left',
                               cursor: 'pointer',
-                              fontSize: '14px',
+                              fontSize: isMobile ? '13px' : '14px',
                               color: textColor,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
+                              gap: isMobile ? '6px' : '8px',
                               transition: 'all 0.2s'
                             }}
                             onMouseEnter={(e) => {

@@ -1642,10 +1642,10 @@ export default function Files() {
           // Vue Grille Moderne
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '20px',
-            padding: '20px',
-            borderRadius: '12px',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: isMobile ? '8px' : '20px',
+            padding: isMobile ? '12px' : '20px',
+            borderRadius: isMobile ? '8px' : '12px',
             backgroundColor: cardBg,
             boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
             border: `1px solid ${borderColor}`
@@ -1702,8 +1702,8 @@ export default function Files() {
                   style={{
                     backgroundColor: isSelected ? (theme === 'dark' ? '#1a237e' : '#e3f2fd') : cardBg,
                     border: `2px solid ${isSelected ? '#2196F3' : borderColor}`,
-                    borderRadius: '12px',
-                    padding: '20px',
+                    borderRadius: isMobile ? '8px' : '12px',
+                    padding: isMobile ? '12px' : '20px',
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     position: 'relative',
@@ -1712,12 +1712,12 @@ export default function Files() {
                       ? (theme === 'dark' ? '0 8px 24px rgba(33, 150, 243, 0.4)' : '0 8px 24px rgba(33, 150, 243, 0.25)')
                       : (theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)'),
                     transform: 'scale(1)',
-                    minHeight: '180px',
+                    minHeight: isMobile ? '140px' : '180px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '12px'
+                    gap: isMobile ? '8px' : '12px'
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
@@ -1746,8 +1746,8 @@ export default function Files() {
                 >
                   {/* Icône principale */}
                   <div style={{
-                    fontSize: '64px',
-                    marginBottom: '8px',
+                    fontSize: isMobile ? '48px' : '64px',
+                    marginBottom: isMobile ? '4px' : '8px',
                     filter: isSelected ? 'drop-shadow(0 4px 8px rgba(33, 150, 243, 0.5))' : 'none',
                     transition: 'all 0.3s'
                   }}>
@@ -1756,7 +1756,7 @@ export default function Files() {
                   
                   {/* Nom du fichier */}
                   <div style={{
-                    fontSize: '14px',
+                    fontSize: isMobile ? '13px' : '14px',
                     fontWeight: '600',
                     color: textColor,
                     textAlign: 'center',
@@ -1774,12 +1774,12 @@ export default function Files() {
                   
                   {/* Métadonnées */}
                   <div style={{
-                    fontSize: '12px',
+                    fontSize: isMobile ? '11px' : '12px',
                     color: textSecondary,
                     textAlign: 'center',
                     width: '100%',
                     marginTop: 'auto',
-                    paddingTop: '8px',
+                    paddingTop: isMobile ? '6px' : '8px',
                     borderTop: `1px solid ${borderColor}`
                   }}>
                     <div>{formatBytes(item.size || 0)}</div>
@@ -1796,10 +1796,10 @@ export default function Files() {
                     className="file-card-actions"
                     style={{
                       position: 'absolute',
-                      top: '8px',
-                      right: '8px',
+                      top: isMobile ? '6px' : '8px',
+                      right: isMobile ? '6px' : '8px',
                       display: 'flex',
-                      gap: '4px',
+                      gap: isMobile ? '3px' : '4px',
                       opacity: 0,
                       transition: 'opacity 0.2s'
                     }}
@@ -1859,18 +1859,18 @@ export default function Files() {
                           }
                         }}
                         style={{
-                          padding: '6px',
+                          padding: isMobile ? '4px' : '6px',
                           backgroundColor: '#2196F3',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: isMobile ? '4px' : '6px',
                           cursor: 'pointer',
-                          fontSize: '12px',
+                          fontSize: isMobile ? '11px' : '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
+                          width: isMobile ? '24px' : '28px',
+                          height: isMobile ? '24px' : '28px',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                         }}
                         title={t('download')}
@@ -1917,18 +1917,18 @@ export default function Files() {
                           }
                         }}
                         style={{
-                          padding: '6px',
+                          padding: isMobile ? '4px' : '6px',
                           backgroundColor: '#2196F3',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: isMobile ? '4px' : '6px',
                           cursor: 'pointer',
-                          fontSize: '12px',
+                          fontSize: isMobile ? '11px' : '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
+                          width: isMobile ? '24px' : '28px',
+                          height: isMobile ? '24px' : '28px',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                         }}
                         title={t('downloadZip')}
