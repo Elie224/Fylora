@@ -670,7 +670,8 @@ export default function Search() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        )
       )}
     </div>
   );
