@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Toast';
+import { formatDate } from '../utils/dateUtils';
 
 const SecurityCenter = () => {
   const { t, language } = useLanguage();
@@ -102,22 +103,6 @@ const SecurityCenter = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '-';
-      return date.toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (err) {
-      return '-';
-    }
-  };
 
   const getLocationDisplay = (location) => {
     return location || t('unknown');
@@ -429,7 +414,7 @@ const SecurityCenter = () => {
                       fontSize: '14px',
                       color: textColor
                     }}>
-                      {formatDate(entry.created_at || entry.date)}
+                      {formatDate(entry.created_at || entry.date, language)}
                     </td>
                     <td style={{
                       padding: '16px 24px',

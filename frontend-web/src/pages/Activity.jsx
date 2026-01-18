@@ -3,6 +3,7 @@ import { activityService } from '../services/activityService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../components/Toast';
+import { formatDate } from '../utils/dateUtils';
 
 export default function Activity() {
   const { t, language } = useLanguage();
@@ -81,28 +82,6 @@ export default function Activity() {
       logout: '🚪',
     };
     return icons[actionType] || '📋';
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid date string:', dateString);
-        return '-';
-      }
-      const locale = language === 'en' ? 'en-US' : 'fr-FR';
-      return date.toLocaleString(locale, {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (err) {
-      console.error('Error formatting date:', err, dateString);
-      return '-';
-    }
   };
 
   return (
@@ -318,7 +297,7 @@ export default function Activity() {
                     {activity.resource_type}
                   </td>
                   <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>
-                    {formatDate(activity.created_at)}
+                    {formatDate(activity.created_at, language)}
                   </td>
                   <td style={{ padding: '16px', color: textSecondary, fontSize: '14px' }}>
                     {JSON.stringify(activity.details || {})}
