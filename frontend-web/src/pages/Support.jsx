@@ -7,6 +7,19 @@ export default function Support() {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
+  
+  React.useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
 
   const bgColor = theme === 'dark' ? '#121212' : '#fafbfc';
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';

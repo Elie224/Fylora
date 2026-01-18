@@ -21,6 +21,21 @@ export default function Activity() {
     date_to: '',
   });
 
+  // Détecter la taille de l'écran pour le responsive
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+
   const cardBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#1a202c';
   const borderColor = theme === 'dark' ? '#333333' : '#e2e8f0';
@@ -142,7 +157,11 @@ export default function Activity() {
         boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.08)',
         border: `1px solid ${borderColor}`
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: isMobile ? '12px' : '16px' 
+        }}>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontSize: '14px', fontWeight: '500' }}>
               {t('actionType')}
@@ -152,12 +171,13 @@ export default function Activity() {
               onChange={(e) => setFilters({ ...filters, action_type: e.target.value })}
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: isMobile ? '12px' : '8px 12px',
                 backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
                 color: textColor,
                 border: `1px solid ${borderColor}`,
                 borderRadius: '6px',
-                fontSize: '14px'
+                fontSize: isMobile ? '16px' : '14px',
+                minHeight: isMobile ? '48px' : 'auto'
               }}
             >
               <option value="">{t('all')}</option>
@@ -177,12 +197,13 @@ export default function Activity() {
               onChange={(e) => setFilters({ ...filters, resource_type: e.target.value })}
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: isMobile ? '12px' : '8px 12px',
                 backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
                 color: textColor,
                 border: `1px solid ${borderColor}`,
                 borderRadius: '6px',
-                fontSize: '14px'
+                fontSize: isMobile ? '16px' : '14px',
+                minHeight: isMobile ? '48px' : 'auto'
               }}
             >
               <option value="">{t('all')}</option>
@@ -201,12 +222,13 @@ export default function Activity() {
               onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: isMobile ? '12px' : '8px 12px',
                 backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
                 color: textColor,
                 border: `1px solid ${borderColor}`,
                 borderRadius: '6px',
-                fontSize: '14px'
+                fontSize: isMobile ? '16px' : '14px',
+                minHeight: isMobile ? '48px' : 'auto'
               }}
             />
           </div>
@@ -220,12 +242,13 @@ export default function Activity() {
               onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: isMobile ? '12px' : '8px 12px',
                 backgroundColor: theme === 'dark' ? '#2d2d2d' : '#ffffff',
                 color: textColor,
                 border: `1px solid ${borderColor}`,
                 borderRadius: '6px',
-                fontSize: '14px'
+                fontSize: isMobile ? '16px' : '14px',
+                minHeight: isMobile ? '48px' : 'auto'
               }}
             />
           </div>
