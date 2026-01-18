@@ -253,20 +253,20 @@ export default function Trash() {
       ) : (
         <>
           <div style={{ 
-            marginBottom: '20px',
-            padding: '16px 20px',
+            marginBottom: isMobile ? '12px' : '20px',
+            padding: isMobile ? '12px 16px' : '16px 20px',
             backgroundColor: theme === 'dark' ? '#3d2f0f' : '#fff3e0',
-            borderRadius: '8px',
+            borderRadius: isMobile ? '6px' : '8px',
             border: `1px solid ${theme === 'dark' ? '#5d4f2f' : '#ffcc80'}`
           }}>
-            <p style={{ margin: 0, color: theme === 'dark' ? '#ffb74d' : '#e65100', fontSize: '15px', fontWeight: '500' }}>
+            <p style={{ margin: 0, color: theme === 'dark' ? '#ffb74d' : '#e65100', fontSize: isMobile ? '13px' : '15px', fontWeight: '500' }}>
               📊 {allItems.length} {allItems.length > 1 ? t('itemsInTrashPlural') : t('itemsInTrash')}
             </p>
           </div>
           
           <div style={{ 
             overflowX: 'auto', 
-            borderRadius: '12px',
+            borderRadius: isMobile ? '8px' : '12px',
             boxShadow: shadowColor,
             backgroundColor: cardBg,
             border: `1px solid ${borderColor}`
@@ -275,7 +275,7 @@ export default function Trash() {
               width: '100%', 
               borderCollapse: 'separate',
               borderSpacing: 0,
-              minWidth: '600px'
+              minWidth: isMobile ? '100%' : '600px'
             }}>
               <thead>
                 <tr style={{ 
@@ -284,8 +284,8 @@ export default function Trash() {
                 }}>
                   <th style={{ 
                     textAlign: 'left', 
-                    padding: '16px',
-                    fontSize: '14px',
+                    padding: isMobile ? '10px' : '16px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '600',
                     color: textColor,
                     textTransform: 'uppercase',
@@ -293,8 +293,8 @@ export default function Trash() {
                   }}>{t('name')}</th>
                   <th style={{ 
                     textAlign: 'left', 
-                    padding: '16px',
-                    fontSize: '14px',
+                    padding: isMobile ? '10px' : '16px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '600',
                     color: textColor,
                     textTransform: 'uppercase',
@@ -302,8 +302,8 @@ export default function Trash() {
                   }}>{t('type')}</th>
                   <th style={{ 
                     textAlign: 'left', 
-                    padding: '16px',
-                    fontSize: '14px',
+                    padding: isMobile ? '10px' : '16px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '600',
                     color: textColor,
                     textTransform: 'uppercase',
@@ -311,8 +311,8 @@ export default function Trash() {
                   }}>{t('size')}</th>
                   <th style={{ 
                     textAlign: 'left', 
-                    padding: '16px',
-                    fontSize: '14px',
+                    padding: isMobile ? '10px' : '16px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '600',
                     color: textColor,
                     textTransform: 'uppercase',
@@ -320,8 +320,8 @@ export default function Trash() {
                   }}>{t('deletedOn')}</th>
                   <th style={{ 
                     textAlign: 'left', 
-                    padding: '16px',
-                    fontSize: '14px',
+                    padding: isMobile ? '10px' : '16px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '600',
                     color: textColor,
                     textTransform: 'uppercase',
@@ -345,13 +345,13 @@ export default function Trash() {
                       e.currentTarget.style.backgroundColor = index % 2 === 0 ? cardBg : (theme === 'dark' ? '#252525' : '#fafafa');
                     }}
                   >
-                    <td style={{ padding: '16px', fontSize: '15px' }}>
+                    <td style={{ padding: isMobile ? '10px' : '16px', fontSize: isMobile ? '13px' : '15px' }}>
                       <span style={{ 
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: isMobile ? '6px' : '8px'
                       }}>
-                        <span style={{ fontSize: item.type === 'folder' ? '20px' : '18px' }}>
+                        <span style={{ fontSize: isMobile ? (item.type === 'folder' ? '18px' : '16px') : (item.type === 'folder' ? '20px' : '18px') }}>
                           {item.type === 'folder' ? '📁' : '📄'}
                         </span>
                         <span style={{ fontWeight: item.type === 'folder' ? '600' : '400', color: item.type === 'folder' ? '#2196F3' : textColor }}>
@@ -359,27 +359,27 @@ export default function Trash() {
                         </span>
                       </span>
                     </td>
-                    <td style={{ padding: '16px', fontSize: '14px', color: textSecondary }}>
+                    <td style={{ padding: isMobile ? '10px' : '16px', fontSize: isMobile ? '12px' : '14px', color: textSecondary }}>
                       {item.type === 'folder' ? t('folder') : item.mime_type || t('file')}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '14px', color: textSecondary }}>
+                    <td style={{ padding: isMobile ? '10px' : '16px', fontSize: isMobile ? '12px' : '14px', color: textSecondary }}>
                       {item.type === 'file' ? formatBytes(item.size) : '-'}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '14px', color: textSecondary }}>
+                    <td style={{ padding: isMobile ? '10px' : '16px', fontSize: isMobile ? '12px' : '14px', color: textSecondary }}>
                       {formatDate(item.deleted_at)}
                     </td>
-                    <td style={{ padding: '16px' }}>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <td style={{ padding: isMobile ? '10px' : '16px' }}>
+                      <div style={{ display: 'flex', gap: isMobile ? '6px' : '8px', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => item.type === 'file' ? restoreFile(item.id) : restoreFolder(item.id)}
                           style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '6px 12px' : '8px 16px',
                             backgroundColor: '#4CAF50',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: isMobile ? '4px' : '6px',
                             cursor: 'pointer',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '12px' : '14px',
                             fontWeight: '600',
                             transition: 'background-color 0.2s',
                             boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
@@ -392,13 +392,13 @@ export default function Trash() {
                         <button
                           onClick={() => item.type === 'file' ? permanentDeleteFile(item.id) : permanentDeleteFolder(item.id)}
                           style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '6px 12px' : '8px 16px',
                             backgroundColor: '#f44336',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: isMobile ? '4px' : '6px',
                             cursor: 'pointer',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '12px' : '14px',
                             fontWeight: '600',
                             transition: 'background-color 0.2s',
                             boxShadow: '0 2px 4px rgba(244, 67, 54, 0.3)'
