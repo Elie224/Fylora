@@ -28,6 +28,7 @@ export default function Admin() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({ display_name: '', quota_limit: '', is_active: true, is_admin: false });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est admin
@@ -168,6 +169,51 @@ export default function Admin() {
     setTimeout(() => setMessage({ type: '', text: '' }), 5000);
   };
 
+  const handleMigrateQuota = async () => {
+    if (!window.confirm(
+      language === 'fr' 
+        ? '⚠️ Voulez-vous vraiment réduire le quota de tous les utilisateurs avec quota > 20 GO à 20 GO ? Cette action est irréversible.'
+        : '⚠️ Do you really want to reduce the quota of all users with quota > 20 GB to 20 GB? This action is irreversible.'
+    )) {
+      return;
+    }
+
+    try {
+      setMigrating(true);
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/api/admin/migrate-quota-to-20gb`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || (language === 'fr' ? 'Erreur lors de la migration' : 'Migration error'));
+      }
+
+      const data = await response.json();
+      const result = data.data;
+      
+      showMessage('success', 
+        language === 'fr'
+          ? `✅ Migration terminée ! ${result.stats.modifiedCount} utilisateur(s) mis à jour. ${result.stats.totalAffected} utilisateur(s) trouvé(s).`
+          : `✅ Migration completed! ${result.stats.modifiedCount} user(s) updated. ${result.stats.totalAffected} user(s) found.`
+      );
+      
+      // Recharger les utilisateurs pour voir les changements
+      loadUsers();
+      loadStats();
+    } catch (err) {
+      console.error('Migration error:', err);
+      showMessage('error', err.message || (language === 'fr' ? 'Erreur lors de la migration' : 'Migration error'));
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   if (!user || !user.is_admin) {
     return null;
   }
@@ -267,21 +313,58 @@ export default function Admin() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '600', color: textColor, margin: 0 }}>{t('userManagement')}</h2>
-          <input
-            type="text"
-            placeholder={t('searchUsers')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: inputBg,
-              color: textColor,
-              border: `1px solid ${borderColor}`,
-              borderRadius: '8px',
-              fontSize: '14px',
-              minWidth: '250px'
-            }}
-          />
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleMigrateQuota}
+              disabled={migrating}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: migrating ? (theme === 'dark' ? '#444' : '#ccc') : '#FF9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: migrating ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                opacity: migrating ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!migrating) {
+                  e.target.style.backgroundColor = '#F57C00';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(255,152,0,0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!migrating) {
+                  e.target.style.backgroundColor = '#FF9800';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }
+              }}
+            >
+              {migrating 
+                ? (language === 'fr' ? '⏳ Migration en cours...' : '⏳ Migrating...') 
+                : (language === 'fr' ? '🔄 Migrer quota → 20 GO' : '🔄 Migrate quota → 20 GB')
+              }
+            </button>
+            <input
+              type="text"
+              placeholder={t('searchUsers')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: inputBg,
+                color: textColor,
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                fontSize: '14px',
+                minWidth: '250px'
+              }}
+            />
+          </div>
         </div>
 
         {loading ? (
