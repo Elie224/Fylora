@@ -59,6 +59,19 @@ export default function Search() {
     }
   }, [debouncedQuery, filters]);
 
+  // Fermer le menu d'actions au clic extérieur (mobile)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (itemActionMenuOpen && !e.target.closest('[data-action-menu]')) {
+        setItemActionMenuOpen(null);
+      }
+    };
+    if (itemActionMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [itemActionMenuOpen]);
+
   // Memoization de la fonction de recherche
   const handleSearch = useCallback(async (searchQuery = query) => {
     // Permettre la recherche même sans query si des filtres sont appliqués
@@ -290,14 +303,224 @@ export default function Search() {
       )}
 
       {!loading && filteredResults.length > 0 && (
-        <div style={{
-          backgroundColor: cardBg,
-          border: `1px solid ${borderColor}`,
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: shadowColor
-        }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        isMobile ? (
+          /* Vue mobile optimisée - Cards au lieu de table */
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            {filteredResults.map((item) => {
+              const itemId = item.id || item._id;
+              const isFolder = item.item_type === 'folder' || item.type === 'folder';
+              return (
+                <div
+                  key={itemId}
+                  style={{
+                    backgroundColor: cardBg,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    transition: 'all 0.2s',
+                    boxShadow: shadowColor
+                  }}
+                >
+                  {/* Ligne 1: Nom + Menu Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        marginBottom: '4px'
+                      }}>
+                        <span style={{ fontSize: '20px' }}>
+                          {isFolder ? '📁' : '📄'}
+                        </span>
+                        <span style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '600', 
+                          color: isFolder ? '#2196F3' : textColor,
+                          wordBreak: 'break-word'
+                        }}>
+                          {item.name}
+                        </span>
+                      </div>
+                      {item.updated_at && (
+                        <div style={{ fontSize: '12px', color: textSecondary, marginTop: '4px' }}>
+                          {new Date(item.updated_at).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {/* Menu Actions (⋮) */}
+                    <div style={{ position: 'relative' }} data-action-menu>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setItemActionMenuOpen(itemActionMenuOpen === itemId ? null : itemId);
+                        }}
+                        style={{
+                          padding: '8px',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '20px',
+                          color: textColor,
+                          minWidth: '36px',
+                          minHeight: '36px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = hoverBg;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        ⋮
+                      </button>
+                      {/* Menu déroulant */}
+                      {itemActionMenuOpen === itemId && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: '100%',
+                            marginTop: '4px',
+                            backgroundColor: cardBg,
+                            border: `1px solid ${borderColor}`,
+                            borderRadius: '8px',
+                            boxShadow: theme === 'dark' ? '0 4px 12px rgba(0,0,0,0.6)' : '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 1000,
+                            minWidth: '180px',
+                            overflow: 'hidden'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemActionMenuOpen(null);
+                              if (isFolder) {
+                                navigate(`/files?folder=${itemId}`);
+                              } else {
+                                navigate(`/preview/${itemId}`);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '12px 16px',
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              color: textColor,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = hoverBg;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            👁️ {t('view') || 'Voir'}
+                          </button>
+                          {!isFolder && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setItemActionMenuOpen(null);
+                                try {
+                                  const response = await fileService.download(itemId);
+                                  let blob;
+                                  if (response.data instanceof Blob) {
+                                    blob = response.data;
+                                  } else if (response.data instanceof ArrayBuffer) {
+                                    blob = new Blob([response.data]);
+                                  } else {
+                                    blob = new Blob([JSON.stringify(response.data)]);
+                                  }
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = item.name || 'file';
+                                  a.style.display = 'none';
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  setTimeout(() => {
+                                    window.URL.revokeObjectURL(url);
+                                    if (document.body.contains(a)) {
+                                      document.body.removeChild(a);
+                                    }
+                                  }, 100);
+                                } catch (err) {
+                                  showToast(err.response?.data?.error?.message || err.message || t('downloadError') || 'Erreur lors du téléchargement', 'error');
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: textColor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = hoverBg;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              ⬇️ {t('download') || 'Télécharger'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Ligne 2: Type et Taille */}
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: textSecondary }}>
+                    <span>{isFolder ? '📁 Dossier' : item.mime_type || '-'}</span>
+                    {item.size && <span>{formatBytes(item.size)}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{
+            backgroundColor: cardBg,
+            border: `1px solid ${borderColor}`,
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: shadowColor
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: secondaryBg, borderBottom: `2px solid ${borderColor}` }}>
                 <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: textColor }}>
