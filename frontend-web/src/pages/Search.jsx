@@ -53,11 +53,15 @@ export default function Search() {
   // Recherche automatique quand la requête debouncée ou les filtres changent
   useEffect(() => {
     if (debouncedQuery.trim() || filters.date_from || filters.date_to || filters.mime_type || filters.type !== 'all') {
-      handleSearch(debouncedQuery);
+      handleSearch(debouncedQuery).catch(err => {
+        console.error('Search error in useEffect:', err);
+        setResults([]);
+      });
     } else {
       setResults([]);
     }
-  }, [debouncedQuery, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, filters.type, filters.mime_type, filters.date_from, filters.date_to]);
 
   // Fermer le menu d'actions au clic extérieur (mobile)
   useEffect(() => {
@@ -72,7 +76,7 @@ export default function Search() {
     }
   }, [itemActionMenuOpen]);
 
-  // Memoization de la fonction de recherche
+  // Memoization de la fonction de recherche avec gestion d'erreur robuste
   const handleSearch = useCallback(async (searchQuery = query) => {
     // Permettre la recherche même sans query si des filtres sont appliqués
     const hasQuery = searchQuery && searchQuery.trim();
@@ -80,39 +84,56 @@ export default function Search() {
     
     if (!hasQuery && !hasFilters) {
       setResults([]);
+      setLoading(false);
       return;
     }
     
     setLoading(true);
     try {
-      // Préparer les paramètres de recherche
+      // Préparer les paramètres de recherche avec validation
       const searchParams = {
-        q: hasQuery ? searchQuery.trim() : '',
-        type: filters.type === 'files' ? 'file' : filters.type === 'folders' ? 'folder' : filters.type,
+        q: hasQuery ? String(searchQuery).trim() : '',
+        type: filters.type === 'files' ? 'file' : filters.type === 'folders' ? 'folder' : (filters.type || 'all'),
         mime_type: filters.mime_type || undefined,
         date_from: filters.date_from || undefined,
         date_to: filters.date_to || undefined,
       };
       
-      // Supprimer les paramètres undefined
+      // Supprimer les paramètres undefined ou vides
       Object.keys(searchParams).forEach(key => {
-        if (searchParams[key] === undefined || searchParams[key] === '') {
+        if (searchParams[key] === undefined || searchParams[key] === '' || searchParams[key] === 'all') {
           delete searchParams[key];
         }
       });
       
+      // Validation supplémentaire pour éviter les erreurs
+      if (!searchParams.q && !searchParams.type && !searchParams.mime_type && !searchParams.date_from && !searchParams.date_to) {
+        setResults([]);
+        setLoading(false);
+        return;
+      }
+      
       const response = await dashboardService.search(searchParams.q || '', searchParams);
-      setResults(response.data.data.items || []);
+      
+      // Validation de la réponse
+      if (response && response.data && response.data.data) {
+        setResults(Array.isArray(response.data.data.items) ? response.data.data.items : []);
+      } else {
+        setResults([]);
+      }
     } catch (err) {
       console.error('Search failed:', err);
-      console.error('Error details:', err.response?.data || err.message);
+      console.error('Error details:', err.response?.data || err.message || err);
       setResults([]);
-      // Afficher un message d'erreur à l'utilisateur
-      showToast(t('searchError') || 'Erreur lors de la recherche: ' + (err.response?.data?.error?.message || err.message || 'Erreur inconnue'), 'error');
+      // Afficher un message d'erreur à l'utilisateur seulement si ce n'est pas une erreur de réseau silencieuse
+      const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur inconnue';
+      if (!errorMessage.includes('Network') && !errorMessage.includes('network')) {
+        showToast(t('searchError') || 'Erreur lors de la recherche: ' + errorMessage, 'error');
+      }
     } finally {
       setLoading(false);
     }
-  }, [query, filters]);
+  }, [query, filters.type, filters.mime_type, filters.date_from, filters.date_to, t, showToast]);
 
   // Memoization de la fonction formatBytes
   const formatBytes = useCallback((bytes) => {
@@ -132,16 +153,18 @@ export default function Search() {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  return (
-    <div style={{ 
-      padding: isMobile ? '16px' : isTablet ? '20px' : '24px', 
-      maxWidth: '1400px', 
-      margin: '0 auto',
-      backgroundColor: bgColor,
-      minHeight: '100vh',
-      width: '100%',
-      boxSizing: 'border-box'
-    }}>
+  // Gestion d'erreur avec try-catch pour éviter les crashes
+  try {
+    return (
+      <div style={{ 
+        padding: isMobile ? '16px' : isTablet ? '20px' : '24px', 
+        maxWidth: '1400px', 
+        margin: '0 auto',
+        backgroundColor: bgColor,
+        minHeight: '100vh',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
       <h1 style={{ 
         fontSize: isMobile ? '22px' : isTablet ? '26px' : '28px', 
         marginBottom: isMobile ? '16px' : '24px',
