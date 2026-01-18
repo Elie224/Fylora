@@ -547,3 +547,83 @@ h2 {
     width: 100% !important;
   }
 }
+/* ============================================
+   TRANSITIONS ET ANIMATIONS SMOOTH
+   ============================================ */
+
+/* Transitions pour tous les boutons */
+button {
+  transition: all 0.2s ease-in-out !important;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Transitions pour les cards */
+[style*="border: 1px solid"],
+div[style*="borderRadius"],
+div[style*="border-radius"] {
+  transition: all 0.2s ease-in-out;
+}
+
+[style*="border: 1px solid"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Transitions pour les inputs */
+input, select, textarea {
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1) !important;
+}
+
+/* Transitions pour les liens */
+a {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Skeleton loaders */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    var(--bg-color) 0px, 
+    var(--secondary-bg) 40px, 
+    var(--bg-color) 80px
+  );
+  background-size: 200px;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton-card {
+  height: 200px;
+  border-radius: 8px;
+}
