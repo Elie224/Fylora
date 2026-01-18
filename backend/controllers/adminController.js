@@ -181,14 +181,26 @@ async function updateUser(req, res, next) {
 
     if (display_name !== undefined) updateData.display_name = display_name;
     
-    // Gestion du quota_limit avec validation
+    // Gestion du quota_limit avec validation améliorée
     if (quota_limit !== undefined) {
       const newQuotaLimit = parseInt(quota_limit);
+      const MAX_QUOTA_GB = 5000; // Limite maximale de 5000 GB (5 TB)
+      const MAX_QUOTA_BYTES = MAX_QUOTA_GB * 1024 * 1024 * 1024;
       
       // Validation : le quota doit être un nombre positif
       if (isNaN(newQuotaLimit) || newQuotaLimit < 0) {
         return res.status(400).json({
           error: { message: 'Le quota doit être un nombre positif' }
+        });
+      }
+
+      // Validation : le quota ne peut pas dépasser la limite maximale (5000 GB)
+      if (newQuotaLimit > MAX_QUOTA_BYTES) {
+        return res.status(400).json({
+          error: { 
+            message: `Le quota ne peut pas dépasser ${MAX_QUOTA_GB} GB (${formatBytes(MAX_QUOTA_BYTES)})`,
+            max_quota: MAX_QUOTA_BYTES
+          }
         });
       }
 
