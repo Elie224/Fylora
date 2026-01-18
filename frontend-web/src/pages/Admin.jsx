@@ -388,99 +388,262 @@ export default function Admin() {
           <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>{t('noResults')}</div>
         ) : (
           <>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                <thead>
-                  <tr style={{ backgroundColor: tableHeaderBg, borderBottom: `2px solid ${borderColor}` }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('email')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('displayName')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('storageSpace')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('status')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('admin')}</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u, index) => (
-                    <tr 
-                      key={u.id}
-                      style={{
-                        borderBottom: index < users.length - 1 ? `1px solid ${borderColor}` : 'none',
-                        backgroundColor: index % 2 === 0 ? cardBg : tableRowBg
-                      }}
-                    >
-                      <td style={{ padding: '12px', fontSize: '14px', color: textColor }}>{u.email}</td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: textSecondary }}>{u.display_name || '-'}</td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: textSecondary }}>
-                        {formatBytes(u.quota_used)} / {formatBytes(u.quota_limit)}
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        <span style={{
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          backgroundColor: u.is_active 
-                            ? (theme === 'dark' ? '#1f3d1f' : '#e8f5e9')
-                            : (theme === 'dark' ? '#3d1f1f' : '#ffebee'),
-                          color: u.is_active ? '#2e7d32' : '#c62828'
-                        }}>
-                          {u.is_active ? t('active') : t('inactive')}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        {u.is_admin && (
+            {/* Vue Desktop : Tableau */}
+            {!isMobile && (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <thead>
+                    <tr style={{ backgroundColor: tableHeaderBg, borderBottom: `2px solid ${borderColor}` }}>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('email')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('displayName')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('storageSpace')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('status')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('admin')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: textColor }}>{t('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u, index) => (
+                      <tr 
+                        key={u.id}
+                        style={{
+                          borderBottom: index < users.length - 1 ? `1px solid ${borderColor}` : 'none',
+                          backgroundColor: index % 2 === 0 ? cardBg : tableRowBg
+                        }}
+                      >
+                        <td style={{ padding: '12px', fontSize: '14px', color: textColor }}>{u.email}</td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: textSecondary }}>{u.display_name || '-'}</td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: textSecondary }}>
+                          {formatBytes(u.quota_used)} / {formatBytes(u.quota_limit)}
+                        </td>
+                        <td style={{ padding: '12px' }}>
                           <span style={{
                             padding: '4px 12px',
                             borderRadius: '12px',
                             fontSize: '12px',
                             fontWeight: '600',
-                            backgroundColor: theme === 'dark' ? '#1e3a5f' : '#e3f2fd',
-                            color: '#1976D2'
+                            backgroundColor: u.is_active 
+                              ? (theme === 'dark' ? '#1f3d1f' : '#e8f5e9')
+                              : (theme === 'dark' ? '#3d1f1f' : '#ffebee'),
+                            color: u.is_active ? '#2e7d32' : '#c62828'
                           }}>
-                            Admin
+                            {u.is_active ? t('active') : t('inactive')}
                           </span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => handleEditUser(u)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#2196F3',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          {u.is_admin && (
+                            <span style={{
+                              padding: '4px 12px',
+                              borderRadius: '12px',
                               fontSize: '12px',
-                              fontWeight: '600'
-                            }}
-                          >
-                            {t('editUser')}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#f44336',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: '600'
-                            }}
-                          >
-                            {t('delete')}
-                          </button>
+                              fontWeight: '600',
+                              backgroundColor: theme === 'dark' ? '#1e3a5f' : '#e3f2fd',
+                              color: '#1976D2'
+                            }}>
+                              Admin
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => handleEditUser(u)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#2196F3',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '600'
+                              }}
+                            >
+                              {t('editUser')}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#f44336',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '600'
+                              }}
+                            >
+                              {t('delete')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Vue Mobile : Cartes */}
+            {isMobile && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {users.map((u) => {
+                  const storagePercent = u.quota_limit > 0 ? (u.quota_used / u.quota_limit) * 100 : 0;
+                  const displayNameInitial = (u.display_name || u.email || 'U')[0].toUpperCase();
+                  
+                  return (
+                    <div
+                      key={u.id}
+                      style={{
+                        backgroundColor: cardBg,
+                        border: `1px solid ${borderColor}`,
+                        borderRadius: '12px',
+                        padding: '16px',
+                        boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)'
+                      }}
+                    >
+                      {/* Header avec Avatar et Badges */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
+                        <div style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '20px',
+                          fontWeight: '700',
+                          flexShrink: 0
+                        }}>
+                          {displayNameInitial}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3 style={{
+                            margin: 0,
+                            marginBottom: '4px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: textColor,
+                            wordBreak: 'break-word'
+                          }}>
+                            {u.display_name || 'Sans nom'}
+                          </h3>
+                          <p style={{
+                            margin: 0,
+                            fontSize: '13px',
+                            color: textSecondary,
+                            wordBreak: 'break-all'
+                          }}>
+                            {u.email}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                          {u.is_admin && (
+                            <span style={{
+                              padding: '4px 10px',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              backgroundColor: theme === 'dark' ? '#1e3a5f' : '#e3f2fd',
+                              color: '#1976D2'
+                            }}>
+                              Admin
+                            </span>
+                          )}
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: u.is_active 
+                              ? (theme === 'dark' ? '#1f3d1f' : '#e8f5e9')
+                              : (theme === 'dark' ? '#3d1f1f' : '#ffebee'),
+                            color: u.is_active ? '#2e7d32' : '#c62828'
+                          }}>
+                            {u.is_active ? t('active') : t('inactive')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stockage */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '13px', color: textSecondary }}>{t('storageSpace')}</span>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: textColor }}>
+                            {formatBytes(u.quota_used)} / {formatBytes(u.quota_limit)}
+                          </span>
+                        </div>
+                        <div style={{
+                          width: '100%',
+                          height: '8px',
+                          backgroundColor: theme === 'dark' ? '#2d2d2d' : '#e2e8f0',
+                          borderRadius: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            width: `${Math.min(storagePercent, 100)}%`,
+                            height: '100%',
+                            backgroundColor: storagePercent > 90 ? '#f44336' : storagePercent > 70 ? '#ff9800' : '#4CAF50',
+                            borderRadius: '4px',
+                            transition: 'width 0.3s ease'
+                          }} />
+                        </div>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: textSecondary }}>
+                          {storagePercent.toFixed(2)}% utilisé
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <button
+                          onClick={() => handleEditUser(u)}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            backgroundColor: '#2196F3',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            minHeight: '48px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#1976D2'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#2196F3'}
+                        >
+                          {t('editUser')}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u.id)}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            minHeight: '48px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#d32f2f'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#f44336'}
+                        >
+                          {t('delete')}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Pagination */}
             {pagination.pages > 1 && (
