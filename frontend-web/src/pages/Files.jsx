@@ -86,6 +86,7 @@ export default function Files() {
     const saved = localStorage.getItem('filesViewMode');
     return saved || 'list'; // 'list' ou 'grid'
   });
+  const [itemActionMenuOpen, setItemActionMenuOpen] = useState(null); // ID de l'item dont le menu est ouvert
 
   // Gérer la déconnexion automatique
   useEffect(() => {
@@ -97,6 +98,19 @@ export default function Files() {
     window.addEventListener('auth:logout', handleLogout);
     return () => window.removeEventListener('auth:logout', handleLogout);
   }, [logout, navigate]);
+
+  // Fermer le menu d'actions au clic extérieur (mobile)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (itemActionMenuOpen && !e.target.closest('[data-action-menu]')) {
+        setItemActionMenuOpen(null);
+      }
+    };
+    if (itemActionMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [itemActionMenuOpen]);
 
   // Charger le dossier depuis les paramètres URL au montage
   useEffect(() => {

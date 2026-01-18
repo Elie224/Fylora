@@ -12,6 +12,7 @@ export default function Trash() {
   const [files, setFiles] = useState([]);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [itemActionMenuOpen, setItemActionMenuOpen] = useState(null); // ID de l'item dont le menu est ouvert
   
   // Détecter la taille de l'écran pour le responsive
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -41,6 +42,19 @@ export default function Trash() {
   useEffect(() => {
     loadTrash();
   }, []);
+
+  // Fermer le menu d'actions au clic extérieur (mobile)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (itemActionMenuOpen && !e.target.closest('[data-action-menu]')) {
+        setItemActionMenuOpen(null);
+      }
+    };
+    if (itemActionMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [itemActionMenuOpen]);
 
   const loadTrash = async (forceRefresh = false) => {
     try {
@@ -400,7 +414,8 @@ export default function Trash() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          )}
         </>
       )}
     </div>

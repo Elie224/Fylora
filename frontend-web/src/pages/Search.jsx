@@ -39,6 +39,7 @@ export default function Search() {
   const shadowColor = theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)';
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [itemActionMenuOpen, setItemActionMenuOpen] = useState(null); // ID de l'item dont le menu est ouvert
   const [filters, setFilters] = useState({
     type: 'all',
     mime_type: '',
