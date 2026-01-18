@@ -457,6 +457,130 @@ async function handlePayPalWebhook(event) {
   }
 }
 
+/**
+ * Vérifier une carte bancaire sans prélèvement (pour l'inscription)
+ * Utilise Stripe Setup Intent pour vérifier une carte sans faire de prélèvement
+ * @param {string} email - Email de l'utilisateur
+ * @param {string} paymentMethodId - ID de la méthode de paiement Stripe (créé côté client)
+ * @returns {Promise<Object>} { success: boolean, customerId: string, setupIntentId: string }
+ */
+async function verifyCardForSignup(email, paymentMethodId) {
+  if (!stripe) {
+    throw new Error('Stripe not configured');
+  }
+
+  try {
+    // Vérifier si cette carte a déjà été utilisée pour un autre compte
+    const mongoose = require('mongoose');
+    const User = mongoose.models.User || mongoose.model('User');
+    
+    // Récupérer les détails de la méthode de paiement pour obtenir le fingerprint
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    const cardFingerprint = paymentMethod.card?.fingerprint;
+    
+    if (cardFingerprint) {
+      // Chercher tous les customers Stripe qui ont cette carte (via les payment methods)
+      const allCustomers = await stripe.customers.list({ limit: 100 });
+      let customerWithSameCard = null;
+      
+      for (const cust of allCustomers.data) {
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: cust.id,
+          type: 'card'
+        });
+        
+        const hasSameCard = paymentMethods.data.some(pm => pm.card?.fingerprint === cardFingerprint);
+        if (hasSameCard) {
+          // Vérifier si ce customer a déjà un compte avec carte vérifiée
+          const existingUser = await User.findOne({ stripe_customer_id: cust.id, card_verified: true });
+          if (existingUser) {
+            throw new Error('Cette carte bancaire a déjà été utilisée pour créer un compte. Une seule carte par compte est autorisée.');
+          }
+          customerWithSameCard = cust;
+          break;
+        }
+      }
+    }
+
+    // Créer ou récupérer un customer Stripe
+    let customer;
+    const existingCustomers = await stripe.customers.list({
+      email: email,
+      limit: 1
+    });
+
+    if (existingCustomers.data.length > 0) {
+      // Customer existe déjà - vérifier qu'il n'a pas déjà un compte
+      customer = existingCustomers.data[0];
+      
+      // Vérifier si cette carte a déjà été vérifiée pour cet email
+      // (pour empêcher la création de plusieurs comptes avec la même carte)
+      if (customer.metadata?.card_verified === 'true') {
+        throw new Error('Cette carte bancaire a déjà été utilisée pour créer un compte. Une seule carte par compte est autorisée.');
+      }
+    } else {
+      // Créer un nouveau customer
+      customer = await stripe.customers.create({
+        email: email,
+        metadata: {
+          purpose: 'signup_verification'
+        }
+      });
+    }
+
+    // Créer un Setup Intent pour vérifier la carte sans prélèvement
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customer.id,
+      payment_method: paymentMethodId,
+      payment_method_types: ['card'],
+      usage: 'off_session', // Pour usage futur (pas de prélèvement immédiat)
+      metadata: {
+        purpose: 'signup_verification',
+        email: email
+      }
+    });
+
+    // Confirmer le Setup Intent pour vérifier la carte
+    const confirmedSetupIntent = await stripe.setupIntents.confirm(setupIntent.id);
+
+    if (confirmedSetupIntent.status === 'succeeded') {
+      // Marquer le customer comme ayant une carte vérifiée
+      await stripe.customers.update(customer.id, {
+        metadata: {
+          ...customer.metadata,
+          card_verified: 'true',
+          card_verification_date: new Date().toISOString()
+        }
+      });
+
+      logger.logInfo('Card verified for signup', {
+        email,
+        customerId: customer.id,
+        setupIntentId: confirmedSetupIntent.id
+      });
+
+      return {
+        success: true,
+        customerId: customer.id,
+        setupIntentId: confirmedSetupIntent.id
+      };
+    } else {
+      throw new Error('La vérification de la carte a échoué. Veuillez réessayer avec une autre carte.');
+    }
+  } catch (error) {
+    logger.logError(error, { context: 'verify_card_for_signup', email });
+    
+    // Messages d'erreur utilisateur-friendly
+    if (error.type === 'StripeCardError') {
+      throw new Error('La carte bancaire est invalide. Veuillez vérifier les informations saisies.');
+    } else if (error.message) {
+      throw error;
+    } else {
+      throw new Error('Une erreur est survenue lors de la vérification de la carte. Veuillez réessayer.');
+    }
+  }
+}
+
 module.exports = {
   createStripeCheckoutSession,
   createPayPalPayment,
@@ -464,6 +588,7 @@ module.exports = {
   verifyPayPalPayment,
   handleStripeWebhook,
   handlePayPalWebhook,
+  verifyCardForSignup,
   isStripeConfigured: () => !!stripe,
   isPayPalConfigured: () => !!(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
 };

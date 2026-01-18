@@ -4,8 +4,14 @@ import { useAuthStore } from '../services/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { countries, getCountryByCode } from '../utils/countries';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { API_URL } from '../config';
 
-export default function Signup() {
+// Composant interne pour gérer Stripe Elements
+function SignupFormInner() {
+  const stripe = useStripe();
+  const elements = useElements();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,6 +22,11 @@ export default function Signup() {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stripePublishableKey, setStripePublishableKey] = useState(null);
+  const [stripeLoaded, setStripeLoaded] = useState(false);
+  const [cardVerified, setCardVerified] = useState(false);
+  const [stripeCustomerId, setStripeCustomerId] = useState(null);
+  const [verifyingCard, setVerifyingCard] = useState(false);
   
   const { signup } = useAuthStore();
   const navigate = useNavigate();
@@ -35,6 +46,25 @@ export default function Signup() {
   }, []);
   
   const isMobile = windowWidth < 768;
+
+  // Charger la clé Stripe publishable
+  useEffect(() => {
+    const loadStripeKey = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/auth/stripe-publishable-key`);
+        if (response.ok) {
+          const data = await response.json();
+          setStripePublishableKey(data.data.publishableKey);
+        } else {
+          console.error('Stripe not configured');
+          setError(language === 'fr' ? 'La vérification de carte n\'est pas disponible. Veuillez contacter le support.' : 'Card verification is not available. Please contact support.');
+        }
+      } catch (err) {
+        console.error('Failed to load Stripe key:', err);
+      }
+    };
+    loadStripeKey();
+  }, []);
 
   // Couleurs dynamiques selon le thème - Thème clair amélioré
   const bgColor = theme === 'dark' ? '#0a0a0a' : '#fafbfc';
@@ -104,13 +134,68 @@ export default function Signup() {
       return;
     }
 
-    setLoading(true);
+    // Vérifier que Stripe est chargé
+    if (!stripe || !elements) {
+      setError(language === 'fr' ? 'Chargement de Stripe en cours... Veuillez patienter.' : 'Loading Stripe... Please wait.');
+      return;
+    }
 
-    const country = getCountryByCode(countryCode);
-    const countryName = country ? country.name : countryCode;
+    // Vérifier la carte bancaire avant l'inscription (comme Render - aucun prélèvement)
+    setVerifyingCard(true);
+    setError('');
 
     try {
-      const result = await signup(email, password, firstName, lastName, undefined, countryName);
+      // Créer un PaymentMethod à partir des données de la carte
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error(language === 'fr' ? 'Veuillez saisir vos informations de carte bancaire.' : 'Please enter your card information.');
+      }
+
+      const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+      });
+
+      if (pmError) {
+        throw new Error(pmError.message || (language === 'fr' ? 'Erreur lors de la vérification de la carte. Veuillez vérifier les informations saisies.' : 'Error verifying card. Please check your card information.'));
+      }
+
+      if (!paymentMethod) {
+        throw new Error(language === 'fr' ? 'Impossible de créer la méthode de paiement.' : 'Unable to create payment method.');
+      }
+
+      // Vérifier la carte côté serveur (sans prélèvement - Setup Intent)
+      const verifyResponse = await fetch(`${API_URL}/api/auth/verify-card`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          paymentMethodId: paymentMethod.id,
+          firstName,
+          lastName,
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      if (!verifyResponse.ok) {
+        throw new Error(verifyData.error?.message || (language === 'fr' ? 'La vérification de la carte a échoué. Cette carte a peut-être déjà été utilisée.' : 'Card verification failed. This card may have already been used.'));
+      }
+
+      // Carte vérifiée avec succès - stocker le customerId
+      const customerId = verifyData.data.customerId;
+      setStripeCustomerId(customerId);
+      setCardVerified(true);
+
+      // Maintenant procéder à l'inscription avec le stripeCustomerId
+      setLoading(true);
+
+      const country = getCountryByCode(countryCode);
+      const countryName = country ? country.name : countryCode;
+
+      const result = await signup(email, password, firstName, lastName, undefined, countryName, customerId);
       
       if (result.success) {
         navigate('/dashboard');
@@ -120,12 +205,13 @@ export default function Signup() {
     } catch (err) {
       console.error('Signup error:', err);
       const errorMessage = err.response?.data?.error?.message || 
-                          err.response?.data?.error?.details?.[0]?.msg ||
                           err.message || 
-                          t('signupFailed');
+                          (language === 'fr' ? 'Erreur lors de l\'inscription' : 'Signup failed');
       setError(errorMessage);
+      setVerifyingCard(false);
     } finally {
       setLoading(false);
+      setVerifyingCard(false);
     }
   };
 
@@ -415,9 +501,44 @@ export default function Signup() {
             )}
           </div>
 
+          {/* Champ de carte bancaire (obligatoire - vérification sans prélèvement comme Render) */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: textColor, fontWeight: '500' }}>
+              {language === 'fr' ? '💳 Carte bancaire (vérification uniquement - aucun prélèvement)' : '💳 Card (verification only - no charge)'}
+            </label>
+            <div style={{
+              padding: '12px',
+              border: `1px solid ${borderColor}`,
+              borderRadius: '8px',
+              backgroundColor: inputBg,
+              transition: 'all 0.2s'
+            }}>
+              <CardElement
+                options={{
+                  style: {
+                    base: {
+                      fontSize: '16px',
+                      color: textColor,
+                      '::placeholder': {
+                        color: textSecondary,
+                      },
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    },
+                    invalid: {
+                      color: errorText,
+                    },
+                  },
+                }}
+              />
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '12px', color: textSecondary }}>
+              {language === 'fr' ? 'Aucun prélèvement ne sera effectué. Cette vérification permet de s\'assurer que vous êtes une personne réelle.' : 'No charge will be made. This verification ensures you are a real person.'}
+            </div>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || verifyingCard || !stripe || !elements}
             style={{
               width: '100%',
               padding: '14px',
@@ -445,7 +566,12 @@ export default function Signup() {
               }
             }}
           >
-            {loading ? t('signupLoading') : t('signupButton')}
+            {verifyingCard 
+              ? (language === 'fr' ? '⏳ Vérification de la carte...' : '⏳ Verifying card...')
+              : loading 
+                ? t('signupLoading') || (language === 'fr' ? '⏳ Inscription en cours...' : '⏳ Signing up...')
+                : t('signupButton') || (language === 'fr' ? 'S\'inscrire' : 'Sign up')
+            }
           </button>
         </form>
 
@@ -520,6 +646,59 @@ export default function Signup() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Composant parent qui charge Stripe et wrap le formulaire
+export default function Signup() {
+  const [stripePublishableKey, setStripePublishableKey] = useState(null);
+  const [stripePromise, setStripePromise] = useState(null);
+  const { language } = useLanguage();
+
+  // Charger la clé Stripe publishable
+  useEffect(() => {
+    const loadStripeKey = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/auth/stripe-publishable-key`);
+        if (response.ok) {
+          const data = await response.json();
+          const publishableKey = data.data.publishableKey;
+          setStripePublishableKey(publishableKey);
+          // Initialiser Stripe avec la clé
+          const stripe = await loadStripe(publishableKey);
+          setStripePromise(stripe);
+        } else {
+          console.error('Stripe not configured');
+        }
+      } catch (err) {
+        console.error('Failed to load Stripe key:', err);
+      }
+    };
+    loadStripeKey();
+  }, []);
+
+  // Si Stripe n'est pas encore chargé, afficher un message
+  if (!stripePublishableKey || !stripePromise) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        backgroundColor: '#fafbfc'
+      }}>
+        <div style={{ textAlign: 'center', color: '#666' }}>
+          {language === 'fr' ? 'Chargement...' : 'Loading...'}
+        </div>
+      </div>
+    );
+  }
+
+  // Wrapper avec Stripe Elements
+  return (
+    <Elements stripe={stripePromise}>
+      <SignupFormInner />
+    </Elements>
   );
 }
 

@@ -12,7 +12,7 @@ const useAuthStore = create(
       error: null,
 
       // Inscription
-      signup: async (email, password, firstName, lastName, phone, country) => {
+      signup: async (email, password, firstName, lastName, phone, country, stripeCustomerId) => {
         set({ loading: true, error: null });
         
         // NETTOYER COMPLÈTEMENT L'ANCIEN COMPTE AVANT L'INSCRIPTION
@@ -36,7 +36,7 @@ const useAuthStore = create(
         await new Promise(resolve => setTimeout(resolve, 50));
         
         try {
-          const response = await authService.signup(email, password, firstName, lastName, phone, country);
+          const response = await authService.signup(email, password, firstName, lastName, phone, country, stripeCustomerId);
           const { user, access_token, refresh_token } = response.data.data;
           
           // Charger les nouvelles données utilisateur

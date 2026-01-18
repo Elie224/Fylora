@@ -43,7 +43,16 @@ async function signup(req, res, next) {
     }
 
     const body = req.validatedBody || req.body;
-    const { email, password, firstName, lastName, phone, country } = body;
+    const { email, password, firstName, lastName, phone, country, stripeCustomerId } = body;
+
+    // Vérifier que la carte a été vérifiée (requis pour empêcher les multi-comptes)
+    if (!stripeCustomerId) {
+      return res.status(400).json({
+        error: {
+          message: 'La vérification de carte bancaire est obligatoire pour créer un compte. Veuillez vérifier votre carte bancaire avant de continuer.'
+        }
+      });
+    }
 
     // Vérifier si un utilisateur avec cet email existe déjà
     let utilisateurExistant;
@@ -77,6 +86,20 @@ async function signup(req, res, next) {
     const planService = require('../services/planService');
     const freeQuota = planService.getStorageQuota('free');
     
+    // Vérifier que la carte n'a pas déjà été utilisée pour créer un autre compte
+    const billingService = require('../services/billingService');
+    if (billingService.isStripeConfigured()) {
+      const existingUserWithCard = await User.findOne({ stripe_customer_id: stripeCustomerId });
+      if (existingUserWithCard) {
+        logger.logWarn(`Tentative d'inscription avec une carte déjà utilisée: ${email}`, { stripeCustomerId });
+        return res.status(409).json({
+          error: {
+            message: 'Cette carte bancaire a déjà été utilisée pour créer un compte. Une seule carte par compte est autorisée. Veuillez utiliser une autre carte.'
+          }
+        });
+      }
+    }
+
     let nouvelUtilisateur;
     try {
       nouvelUtilisateur = await User.create({ 
@@ -88,7 +111,10 @@ async function signup(req, res, next) {
         country: country,
         display_name: `${firstName} ${lastName}`.trim(),
         plan: 'free',
-        quota_limit: freeQuota
+        quota_limit: freeQuota,
+        card_verified: true,
+        card_verification_date: new Date(),
+        stripe_customer_id: stripeCustomerId
       });
       logger.logInfo(`Nouvel utilisateur créé: ${email}`, { userId: nouvelUtilisateur.id, plan: 'free', firstName, lastName });
     } catch (erreur) {

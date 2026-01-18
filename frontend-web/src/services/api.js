@@ -159,11 +159,15 @@ apiClient.interceptors.response.use(
 
 // Services d'authentification
 export const authService = {
-  signup: (email, password, firstName, lastName, phone, country) => {
+  signup: (email, password, firstName, lastName, phone, country, stripeCustomerId) => {
     const body = { email, password, firstName, lastName, country };
     // Ne pas inclure phone si null, undefined ou chaîne vide
     if (phone !== null && phone !== undefined && phone !== '') {
       body.phone = phone;
+    }
+    // Ajouter stripeCustomerId si fourni (obligatoire maintenant)
+    if (stripeCustomerId) {
+      body.stripeCustomerId = stripeCustomerId;
     }
     return apiClient.post('/auth/signup', body);
   },

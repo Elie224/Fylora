@@ -85,6 +85,11 @@ const UserSchema = new Schema({
   mfa_secret_temp: String, // Secret temporaire pendant la configuration
   mfa_type: { type: String, enum: ['totp', 'email', 'sms', null], default: null },
   mfa_backup_codes: [String], // Codes de backup (hashés)
+
+  // Vérification de carte bancaire (pour empêcher les multi-comptes)
+  card_verified: { type: Boolean, default: false }, // Carte bancaire vérifiée lors de l'inscription
+  card_verification_date: Date, // Date de vérification de la carte
+  stripe_customer_id: String, // ID Stripe Customer (pour éviter les doublons)
 }, { 
   timestamps: { 
     createdAt: 'created_at', 
