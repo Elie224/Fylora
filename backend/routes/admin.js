@@ -26,6 +26,10 @@ router.delete('/users/:id', adminController.deleteUser);
 router.post('/cleanup-orphans', adminController.cleanupOrphans);
 router.get('/cleanup-stats', adminController.getCleanupStats);
 
+// Migration du quota de stockage (100 GO -> 20 GO)
+// ⚠️ Route temporaire pour exécuter la migration - à supprimer après utilisation si nécessaire
+router.post('/migrate-quota-to-20gb', adminController.migrateQuotaTo20GB);
+
 // Route temporaire pour définir l'admin (à supprimer après utilisation)
 // ⚠️ Cette route doit être supprimée après avoir défini l'admin pour des raisons de sécurité
 router.post('/set-admin', adminController.setAdminUser);

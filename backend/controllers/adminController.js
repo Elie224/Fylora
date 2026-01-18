@@ -517,6 +517,118 @@ async function getCleanupStats(req, res, next) {
   }
 }
 
+// Exécuter la migration du quota de 100 GO à 20 GO
+async function migrateQuotaTo20GB(req, res, next) {
+  try {
+    const NEW_QUOTA = 20 * 1024 * 1024 * 1024; // 20 GO en octets
+    const User = mongoose.models.User || mongoose.model('User');
+    
+    // Obtenir la collection directement pour utiliser les méthodes MongoDB natives
+    const UserCollection = mongoose.connection.collection('users');
+    
+    // Statistiques avant migration
+    const totalUsers = await UserCollection.countDocuments({});
+    const usersAbove20GB = await UserCollection.countDocuments({ quota_limit: { $gt: NEW_QUOTA } });
+    
+    logger.logInfo('Migration quota started', {
+      adminUserId: req.user.id,
+      totalUsers,
+      usersAbove20GB
+    });
+    
+    // Afficher les quotas actuels pour diagnostic
+    const sampleUsers = await UserCollection.find({}).limit(10).toArray();
+    const quotaAnalysis = sampleUsers.map((user) => {
+      const quotaGB = user.quota_limit ? (user.quota_limit / (1024 * 1024 * 1024)).toFixed(2) : 'N/A';
+      const plan = user.plan || 'non défini';
+      const needsUpdate = user.quota_limit > NEW_QUOTA;
+      return {
+        email: user.email || 'N/A',
+        plan,
+        quotaGB: `${quotaGB} GO`,
+        needsUpdate
+      };
+    });
+    
+    // Requête pour trouver TOUS les utilisateurs avec quota > 20 GO
+    const countQuery = {
+      quota_limit: { $gt: NEW_QUOTA }
+    };
+    
+    const totalAffected = await UserCollection.countDocuments(countQuery);
+    
+    if (totalAffected === 0) {
+      return res.status(200).json({
+        data: {
+          success: true,
+          message: 'Aucun utilisateur à mettre à jour',
+          stats: {
+            totalUsers,
+            usersAbove20GB: 0,
+            totalAffected: 0,
+            modifiedCount: 0
+          },
+          quotaAnalysis
+        }
+      });
+    }
+    
+    // Mettre à jour TOUS les utilisateurs avec quota > 20 GO
+    const result = await UserCollection.updateMany(
+      countQuery,
+      { 
+        $set: { 
+          quota_limit: NEW_QUOTA
+        }
+      }
+    );
+    
+    // Vérification après migration
+    const remainingCount = await UserCollection.countDocuments({ quota_limit: { $gt: NEW_QUOTA } });
+    
+    // Afficher les utilisateurs qui ont dépassé le nouveau quota
+    const overQuotaCount = await UserCollection.countDocuments({
+      quota_limit: NEW_QUOTA,
+      quota_used: { $gt: NEW_QUOTA }
+    });
+    
+    logger.logInfo('Migration quota completed', {
+      adminUserId: req.user.id,
+      totalAffected,
+      modifiedCount: result.modifiedCount,
+      remainingCount,
+      overQuotaCount
+    });
+    
+    res.status(200).json({
+      data: {
+        success: true,
+        message: `Migration terminée avec succès : ${result.modifiedCount} utilisateur(s) mis à jour`,
+        stats: {
+          totalUsers,
+          usersAbove20GB,
+          totalAffected,
+          modifiedCount: result.modifiedCount,
+          matchedCount: result.matchedCount,
+          remainingCount,
+          overQuotaCount
+        },
+        quotaAnalysis,
+        warnings: overQuotaCount > 0 ? [
+          `${overQuotaCount} utilisateur(s) utilisent plus de 20 GO et ne pourront plus uploader jusqu'à libération d'espace.`
+        ] : []
+      }
+    });
+  } catch (err) {
+    logger.logError('Error in migrateQuotaTo20GB', {
+      error: err.message,
+      stack: err.stack,
+      adminUserId: req.user?.id
+    });
+    next(err);
+  }
+}
+
 module.exports = {
   getStats,
   getUsers,
@@ -527,5 +639,6 @@ module.exports = {
   setAdminUser,
   cleanupOrphans,
   getCleanupStats,
+  migrateQuotaTo20GB,
 };
 
